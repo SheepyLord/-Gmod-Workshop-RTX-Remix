@@ -790,23 +790,53 @@ Result ImportTexture(const TextureImportConfig& config,
     }
     std::error_code ec;
     std::filesystem::path source = input.source;
+    // Decide containment lexically, before canonical() or any probe outside the
+    // game folder, so a source outside the allowed area is refused the same way
+    // whether or not it exists. Otherwise a server's client Lua could tell a
+    // present file from a missing one anywhere on the player's PC from the error
+    // code alone: "not a readable regular file" when canonical() fails on a
+    // missing path, "outside the configured import roots" when it resolves
+    // (R19 follow-up). A path lexically inside an allowed root or rtx-remix/mods
+    // keeps today's behaviour; the allowed-roots check and InsideLinkedModFolder
+    // below still judge where it really resolves.
+    const auto modsFolder = (config.gameRoot / "rtx-remix" / "mods").lexically_normal();
+    const auto lexicallyInsideAllowedArea = [&](const std::filesystem::path& candidate) {
+        for (const auto& root : config.allowedRoots) {
+            if (IsDescendantOrSame(candidate, root)) return true;  // normalizes both sides
+        }
+        return IsDescendantOrSame(candidate, modsFolder);
+    };
+
     if (source.is_relative()) {
         // The Lua file API commonly reports paths relative to garrysmod/ or
-        // garrysmod/data/. Resolve only these well-known in-install locations.
+        // garrysmod/data/. Resolve only these well-known in-install locations,
+        // and probe only candidates that stay lexically inside the game folder,
+        // so a crafted "../.." or drive-relative "\dir" source (which Windows
+        // would resolve against the game root's current drive, not inside it)
+        // cannot probe elsewhere. An unresolved relative source stays on the
+        // game root, where the gate below allows the usual "not readable" reply.
         const auto& gameRoot = config.gameRoot;
         const std::filesystem::path candidates[]{
             gameRoot / source,
             gameRoot / "garrysmod" / source,
             gameRoot / "garrysmod" / "data" / source,
         };
+        source = candidates[0];
         for (const auto& candidate : candidates) {
-            if (std::filesystem::is_regular_file(candidate, ec)) {
+            if (IsDescendantOrSame(candidate, gameRoot) &&
+                std::filesystem::is_regular_file(candidate, ec)) {
                 source = candidate;
                 break;
             }
             ec.clear();
         }
     }
+
+    if (!lexicallyInsideAllowedArea(source)) {
+        return Result::Failure("texture_path_outside_allowed_roots",
+            "texture source resolves outside the configured import roots");
+    }
+
     const auto canonicalSource = std::filesystem::canonical(source, ec);
     if (ec || !std::filesystem::is_regular_file(canonicalSource, ec)) {
         return Result::Failure("invalid_texture_path", "texture source is not a readable regular file");

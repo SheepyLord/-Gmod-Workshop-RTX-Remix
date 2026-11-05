@@ -1695,17 +1695,70 @@ int main() {
 #endif
         assert(std::chrono::steady_clock::now() - started < std::chrono::seconds(5));
 
-        // Local spellings work as before: an absolute path, a path relative to
-        // the game, to garrysmod/ and to garrysmod/data/, and one with a root
-        // directory but no drive.
+        // Local spellings work as before: an absolute path, and a path relative
+        // to the game, to garrysmod/ and to garrysmod/data/.
         WriteMinimalDds(data / "local.dds");
         assert(apply(data / "local.dds", "00000000AE000002").ok);
         assert(apply("garrysmod/data/local.dds", "00000000AE000003").ok);
         assert(apply("data/local.dds", "00000000AE000004").ok);
         assert(apply("local.dds", "00000000AE000005").ok);
+        // A root-relative "\dir\x.dds" has no drive, so Windows would resolve it
+        // against the game root's current drive, not inside the game folder. It
+        // is now refused as outside the roots, before any probe of that drive.
         const auto rooted = apply(L"\\no_such_folder_advmat\\x.dds", "00000000AE000006");
-        assert(!rooted.ok && rooted.code == "invalid_texture_path");
+        assert(!rooted.ok && rooted.code == "texture_path_outside_allowed_roots");
         assert(remoteBridge.ClearAllOwned().ok);
+    }
+
+    // A source outside every allowed root is refused the same way whether or not
+    // the file exists, decided before canonical(): a server's client Lua must
+    // not learn from the error code whether a file is present on the player's PC
+    // (R19 follow-up). A file inside the game folder may still be told apart.
+    {
+        const auto outsideRoot = root / "outside_roots_game";
+        const auto data = outsideRoot / "garrysmod" / "data";
+        std::filesystem::create_directories(data);
+        std::filesystem::create_directories(outsideRoot / "rtx-remix");
+        Config outsideConfig;
+        outsideConfig.gameRoot = outsideRoot;
+        Bridge outsideBridge(std::move(outsideConfig));
+        std::uint64_t nextHash = 0xA0000001ull;
+        const auto applyOutside = [&](const std::filesystem::path& source) {
+            ApplyRequest outside;
+            outside.profileId = "material_outside_roots";
+            std::ostringstream hash;
+            hash << std::uppercase << std::hex << std::setw(16) << std::setfill('0') << nextHash++;
+            outside.hashes = {hash.str()};
+            outside.material.textures.push_back({TextureRole::Albedo, source, {}});
+            return outsideBridge.ApplyLegacyMaterial(outside);
+        };
+
+        // Two absolute paths outside the game folder: one real, one missing.
+        // `root` is the parent of outsideRoot, so a file directly under it is
+        // outside the only allowed root.
+        const auto presentOutside = root / "present_outside.dds";
+        WriteMinimalDds(presentOutside);
+        const auto missingOutside = root / "missing_outside.dds";
+        assert(!std::filesystem::exists(missingOutside));
+        const auto present = applyOutside(presentOutside);
+        const auto missing = applyOutside(missingOutside);
+        assert(!present.ok && !missing.ok);
+        assert(present.code == "texture_path_outside_allowed_roots");
+        assert(missing.code == present.code && missing.message == present.message);
+
+        // The same for a root-relative path, present or not, before any probe.
+        const auto rootedPresent = applyOutside(L"\\present_outside.dds");
+        const auto rootedMissing = applyOutside(L"\\missing_outside.dds");
+        assert(rootedPresent.code == "texture_path_outside_allowed_roots");
+        assert(rootedMissing.code == rootedPresent.code &&
+               rootedMissing.message == rootedPresent.message);
+
+        // A file in the game folder is still told apart: inside and allowed.
+        WriteMinimalDds(data / "inside.dds");
+        assert(applyOutside(data / "inside.dds").ok);
+        const auto insideMissing = applyOutside(data / "gone.dds");
+        assert(!insideMissing.ok && insideMissing.code == "invalid_texture_path");
+        assert(outsideBridge.ClearAllOwned().ok);
     }
 
     // A folder in rtx-remix/mods may be a link to a mod kept elsewhere

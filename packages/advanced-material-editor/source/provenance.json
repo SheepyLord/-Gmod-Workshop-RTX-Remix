@@ -7,7 +7,7 @@
   "shipped_binary": {
     "file": "bin/gmcl_advmat_rtx_bridge_win64.dll",
     "size": 325120,
-    "sha256": "2cc935b0903c6e916f5b8a0ee59e70d409247b576ae3e9646f6928f2cf171ac4",
+    "sha256": "a22bdf4aee6f0a173d5edde263973f8d8585ab872dc1ca29af341364ece7ba67",
     "note": "R19-E: built from this copy with tools/ci/build_modules.ps1 -Only advmat (VS 2022 Build Tools, MSVC 14.44, garrysmod_common a854f237), its tests passing. Before R19 the part shipped 316,416 bytes, SHA-256 aeb5de42edcf537e517d713100f455eeaa3916f8f148e41ce5266732d3cf87ff, byte-identical to a local build of the origin commit."
   },
   "build": {
@@ -33,8 +33,8 @@
       "README.md": "describes the DDS layout check, the refused source spellings and the new tests",
       "src/lua_bindings.cpp": "BR-02: request strings are refused by length before they are copied (hashes 18 bytes, paths 2048, names 64, others 4096, no NUL); every exported function catches C++ exceptions and returns false and a reason; a failed provider construction registers an unavailable provider",
       "src/standalone_module.cpp": "BR-02: no C++ exception leaves the module entry point",
-      "src/texture_ingest.cpp": "BR-03: a DDS is checked against its file size (known format, mip count at most 16 and what the dimensions allow, faces and array layers, every described byte present); a cached copy gets the same check from its headers and size. The H3 class (found by R19-X): a texture source spelled as a network, device or drive-relative path (two leading separators, a root name other than a drive letter, a drive letter without a root directory) is refused before any filesystem call, so a caller cannot make Windows open an SMB session",
-      "tests/writer_tests.cpp": "BR-03: valid DDS fixtures, crafted headers refused, a cached copy cut to its header is not reused; UNC, device and drive-relative sources refused from their spelling, local spellings still accepted",
+      "src/texture_ingest.cpp": "BR-03: a DDS is checked against its file size (known format, mip count at most 16 and what the dimensions allow, faces and array layers, every described byte present); a cached copy gets the same check from its headers and size. The H3 class (found by R19-X): a texture source spelled as a network, device or drive-relative path (two leading separators, a root name other than a drive letter, a drive letter without a root directory) is refused before any filesystem call, so a caller cannot make Windows open an SMB session. Any source lexically outside every allowed root and outside rtx-remix/mods is refused with one code (texture_path_outside_allowed_roots) before canonical(), whether it exists or not, so the error cannot reveal a file on the player PC",
+      "tests/writer_tests.cpp": "BR-03: valid DDS fixtures, crafted headers refused, a cached copy cut to its header is not reused; UNC, device and drive-relative sources refused from their spelling, local spellings still accepted; a present and a missing file outside the roots give identical results, a game-folder file is still told apart",
       "tests/lua_binding_tests.cpp": "new, BR-02: the Lua boundary against an in-memory ILuaBase"
     }
   },
@@ -52,8 +52,8 @@
       "sha256": "5a1f6cd3f04b99d96721458a6ac902787ea87c7775a907e0b2474b3e04ee8858"
     },
     "README.md": {
-      "size": 6437,
-      "sha256": "ff9f0cfa2f0c856c7f1e35d1d82ddee3ae4667b78cfc96f7ff8d854ec782bc3a"
+      "size": 6667,
+      "sha256": "e4e7540e9224065aae44f6efcc08d29d6fb309607bb9f8d0a8e98d3d6b8d09dc"
     },
     "src/bridge.cpp": {
       "size": 53691,
@@ -76,8 +76,8 @@
       "sha256": "164bd526eb74b954a7cb34bf63e7a906cc3247b1219b78948e66576f422ad6d1"
     },
     "src/texture_ingest.cpp": {
-      "size": 42933,
-      "sha256": "26449ce319286e92ea23bde8c49d7a99b5ae997a8ea9abbd2e80d65b620e9352"
+      "size": 44745,
+      "sha256": "99572defa0e68a87871fc0dc14fe860bcdac3264c5401ffd8e33694ee386cd70"
     },
     "src/usda_writer.cpp": {
       "size": 16259,
@@ -88,8 +88,8 @@
       "sha256": "f97ae2ac614b687cb80079a8646209ccbba1cf1f829d1ca6586b348304bfd8af"
     },
     "tests/writer_tests.cpp": {
-      "size": 98198,
-      "sha256": "2611f5ec3c30fcc76bb05a0f1639db2d77a6c3c83649a6c094310b0484803ced"
+      "size": 101283,
+      "sha256": "65d9c0a548a9cd2086137717af9834fbc31b9d071a175cf1b55467d9e71e8432"
     }
   }
 }

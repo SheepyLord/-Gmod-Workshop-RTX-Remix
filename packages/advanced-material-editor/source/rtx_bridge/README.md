@@ -38,7 +38,10 @@ TIFF, GIF, and so every map with bake operations) keeps the conservative
 `maxTextureDimension` and the decode limits as `maxDecodedTextureBytes` /
 `maxDecodedTextureDimension`. A source spelled as a network, device or
 drive-relative path (`\\host\share`, `//host`, `\\?\`, `\\.\`, `\??\`, `C:file`)
-is refused before any filesystem call. A source must resolve inside the game folder,
+is refused before any filesystem call. A source lexically outside every allowed
+root and outside `rtx-remix/mods` is refused the same way (one error code,
+before `canonical`) whether or not it exists, so the error cannot reveal whether
+a file is on the player's PC. A source must resolve inside the game folder,
 except one read through a folder in `rtx-remix/mods` that is itself a link or
 junction to a mod kept elsewhere: it may resolve anywhere inside that link's
 own target. Unchanged
