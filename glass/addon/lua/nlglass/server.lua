@@ -29,9 +29,18 @@ function S.MigrateSettings()
 end
 timer.Simple(0,S.MigrateSettings)
 local function send(target) if target then net.Send(target) else net.Broadcast() end end
+-- R19 (glass F-02): what a player asks for is paced. Without GMod's byte count, one pane per tick.
+S.SYNC_BYTES=16000
+local function written()
+    return tonumber(net.BytesWritten and net.BytesWritten()) or S.SYNC_BYTES
+end
+-- Returns the bytes written, for the pacing below.
 function S.Snapshot(r,target)
     S.Refresh(r)
-    net.Start("nlglass_state") P.WriteRecord(r) send(target)
+    net.Start("nlglass_state") P.WriteRecord(r)
+    local bytes=written()
+    send(target)
+    return bytes
 end
 function S.Forget(r)
     if not S.records[r.id] then return end
@@ -281,8 +290,47 @@ hook.Add("EntityRemoved","NLGlass.Remove",function(ent)
         S.Forget(r)
     end
 end)
+-- R19 (glass F-02): a late joiner's snapshots go out paced instead of in one callback. A near-cap
+-- pane is about 10 KiB, so dozens of cracked panes sent at once could overflow a joiner's reliable
+-- stream. Each player gets one full initial sync per connection (the player entity lives exactly one
+-- connection; a later request for pane 0 is ignored), and its targeted resyncs, served first, share
+-- the same queue. Every tick sends each waiting player at least one pane, then more while that
+-- tick's bytes for the player stay under SYNC_BYTES. Timers run only while something waits: there is
+-- no per-tick polling. A pane gone by its turn is sent as a removal.
+S.syncQueues={}
+local pumping=false
+local function pump()
+    pumping=false
+    for ply,q in pairs(S.syncQueues) do
+        if not IsValid(ply) then S.syncQueues[ply]=nil
+        else
+            local spent=0
+            while q.first<=q.last and spent<S.SYNC_BYTES do
+                local id=q.ids[q.first]
+                q.ids[q.first],q.queued[id],q.first=nil,nil,q.first+1
+                local r=S.records[id]
+                if r then spent=spent+S.Snapshot(r,ply)
+                else
+                    net.Start("nlglass_remove") net.WriteUInt(id,32)
+                    spent=spent+written() net.Send(ply)
+                end
+            end
+            if q.first>q.last then S.syncQueues[ply]=nil end
+        end
+    end
+    if next(S.syncQueues)~=nil then pumping=true timer.Simple(0,pump) end
+end
+local function enqueue(ply,id,urgent)
+    local q=S.syncQueues[ply]
+    if not q then q={ids={},queued={},first=1,last=0} S.syncQueues[ply]=q end
+    if q.queued[id] then return end
+    q.queued[id]=true
+    if urgent then q.first=q.first-1 q.ids[q.first]=id else q.last=q.last+1 q.ids[q.last]=id end
+    if not pumping then pumping=true timer.Simple(0,pump) end
+end
 hook.Add("PreCleanupMap","NLGlass.Clear",function()
     S.epoch=S.epoch+1 S.records={} S.byEntity={} S.surfaces={}
+    S.syncQueues={} -- every pane registered after cleanup is broadcast anyway
     net.Start("nlglass_clear") net.Broadcast()
 end)
 hook.Add("PostCleanupMap","NLGlass.Map",scan)
@@ -291,14 +339,20 @@ hook.Add("PostRestore","NLGlass.Restore",scan)
 net.Receive("nlglass_sync",function(_,ply)
     if not IsValid(ply) then return end
     local id=net.ReadUInt(32)
+    if id==0 then
+        if ply.NLGlassFullSync then return end
+        ply.NLGlassFullSync=true
+        local ids={}
+        for rid in pairs(S.records) do ids[#ids+1]=rid end
+        table.sort(ids)
+        for _,rid in ipairs(ids) do enqueue(ply,rid,false) end
+        return
+    end
     local window=ply.NLGlassSyncWindow
     if not window or window.at<CurTime()-2 then window={at=CurTime(),count=0,ids={}} ply.NLGlassSyncWindow=window end
     if window.count>=16 or window.ids[id] then return end
     window.count=window.count+1 window.ids[id]=true
-    if id==0 then
-        for _,r in pairs(S.records) do S.Snapshot(r,ply) end
-    elseif S.records[id] then S.Snapshot(S.records[id],ply)
-    else net.Start("nlglass_remove") net.WriteUInt(id,32) net.Send(ply) end
+    enqueue(ply,id,true)
 end)
 net.Receive("nlglass_setting",function(_,ply)
     if not IsValid(ply) or not ply:IsAdmin() then return end

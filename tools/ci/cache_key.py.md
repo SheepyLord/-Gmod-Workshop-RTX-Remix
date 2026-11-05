@@ -13,7 +13,7 @@ python tools\ci\cache_key.py hotloader
 | Build | What the key covers |
 |---|---|
 | `runtime` | every file under `runtime/` except its Markdown (patches, `base.json`, `submodules/`, `build_runtime.ps1`), `collect_runtime.py`, `tools/lib/VsDevEnv.psm1`, and the list of files the runtime part ships under `files/` (names, not hashes) |
-| `modules` | `build_modules.ps1`, `tools/lib/VsDevEnv.psm1`, the four fixes patches, the debug module's and the bridge's source copies, and `pins.json`'s `garrysmod_common`, `premake`, `fixes`, `rtxdebug` and `advmat_bridge` |
+| `modules` | `build_modules.ps1`, `tools/lib/VsDevEnv.psm1`, the fixes' patches (`fixes.patches`) and RTX Water's (`fixes.rtxwater_patches`, R19), the debug module's and the bridge's source copies, and `pins.json`'s `garrysmod_common`, `premake`, `fixes`, `rtxdebug` and `advmat_bridge` |
 | `hotloader` | `build_hotloader.ps1`, `tools/lib/VsDevEnv.psm1`, `tools/inputs.py`, the Model Hotloader's source copy (`packages/model-hotloader/source`), the policy the build rewrites, and `pins.json`'s `hotloader` |
 
 Each file counts with its path and its bytes with CRLF read as LF, so a checkout's line-ending conversion

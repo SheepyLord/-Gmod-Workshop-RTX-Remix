@@ -14,7 +14,34 @@ std::pair<btVector3,btQuaternion> decode(const Bytes& b,size_t bone,size_t strea
  for(int k=0;k<6;k++){size_t ptr=stream+4+(k/3)*6;size_t values=ptr+read<int16_t>(b,ptr+(k%3)*2);float scale=read<float>(b,bone+(k<3?84:72)+(k%3)*4);float value=read<int16_t>(b,values+2)*scale;if(k<3)angles[k]=value;else p[k-3]=value;}
  if(!delta){p+=vectorAt(b,bone+32);angles+=vectorAt(b,bone+60);}btMatrix3x3 m;m.setEulerZYX(angles.x(),angles.y(),angles.z());btQuaternion q;m.getRotation(q);return {p,q};
 }
+// Remote collision shapes (R19, review MH-05): kept while frames name them, within a budget.
+// A sphere of radius r is the smallest shape the wire format carries (48 bytes).
+static void remoteShapeBudget(){
+ auto sphere=[](float radius){Bytes b(48,0);uint32_t magic=0x43534d4d,version=1;int kind=SceneGeometry::Sphere;std::memcpy(b.data(),&magic,4);std::memcpy(b.data()+4,&version,4);std::memcpy(b.data()+8,&kind,4);std::memcpy(b.data()+12,&radius,4);return b;};
+ auto frame=[](const std::vector<std::string>& keys,uint64_t sequence){Json objects=Json::array();uint64_t id=1;
+  for(auto& key:keys)objects.push_back({{"id",id++},{"owner",0},{"shape",key},{"static",false},{"actor",0},{"position",{0,0,0}},{"rotation",{0,0,0,1}},{"velocity",{0,0,0}},{"angular",{0,0,0}}});
+  return Json{{"sequence",sequence},{"timestamp",double(sequence)},{"objects",objects}};};
+ double time=1000;SceneShare share;share.clock=[&]{return time;};World client;
+ std::vector<std::string> keys;for(int i=0;i<4;i++){auto b=sphere(1.f+i);keys.push_back(hash(b));share.accept(keys.back(),b);}
+ if(share.imported.size()!=4||share.importedBytes!=4*48)throw std::runtime_error("Remote shapes were not kept: "+std::to_string(share.imported.size()));
+ // Shapes a frame names stay; the others go once no frame named them for IdleSeconds, and the
+ // client is told to forget them (and to ask again for a shape a frame names but that is gone).
+ if(!share.publish(client,frame({keys[0],keys[1]},1)).empty()||readScene(&client)->objects.size()!=2)throw std::runtime_error("A remote frame lost its shapes");
+ time+=SceneShare::IdleSeconds-1;share.publish(client,frame({keys[0],keys[1]},2));
+ time+=2;auto forget=share.publish(client,frame({keys[0]},3));std::sort(forget.begin(),forget.end());
+ auto idle=std::vector<std::string>{keys[2],keys[3]};std::sort(idle.begin(),idle.end());
+ if(forget!=idle||share.imported.size()!=2||!share.imported.contains(keys[0])||!share.imported.contains(keys[1])||share.importedBytes!=2*48)throw std::runtime_error("Idle remote shapes were kept, or used ones dropped");
+ time+=SceneShare::IdleSeconds+1;forget=share.publish(client,frame({keys[0],keys[2]},4));std::sort(forget.begin(),forget.end());
+ auto told=std::vector<std::string>{keys[1],keys[2]};std::sort(told.begin(),told.end());
+ if(forget!=told||share.imported.size()!=1||readScene(&client)->objects.size()!=1)throw std::runtime_error("The client was not told which shapes to ask for again");
+ // Past the count limit the shape unused the longest goes first.
+ SceneShare full;full.clock=[&]{return time;};std::string first;
+ for(size_t i=0;i<SceneShare::ImportLimit+1;i++){auto b=sphere(1.f+float(i));auto key=hash(b);if(!i)first=key;full.accept(key,b);time+=.001;}
+ if(full.imported.size()!=SceneShare::ImportLimit||full.imported.contains(first))throw std::runtime_error("The remote shape limit was not kept");
+ full.clear();if(!full.imported.empty()||full.importedBytes)throw std::runtime_error("Clearing kept remote shapes");
+}
 int main(int argc,char** argv){try{
+ remoteShapeBudget();
  // Automatic c_arms exclude upper-arm sleeves near the view camera while
  // retaining forearms/hands. Explicit material choices still override it.
  {

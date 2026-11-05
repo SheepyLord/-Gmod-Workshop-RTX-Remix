@@ -9,7 +9,7 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
 
 | File | What |
 |---|---|
-| [`pins.json`](pins.json) | The sources and tools: garrysmod_common and its submodules, premake 5.0.0-beta2 (archive SHA-256), the RTX fixes' public base commit with the four GPL patches from `packages/fixes/licenses` (they give the native tree of `913bb6b`), RTX Water's commit (native Version 4), the debug module's and the bridge's source copies in `packages/`, this repository's own modules (`repository_builds`), and the files that are fetched (`fetched`: URL, size, SHA-256, a member of an archive, files a packager takes out of them) |
+| [`pins.json`](pins.json) | The sources and tools: garrysmod_common and its submodules, premake 5.0.0-beta2 (archive SHA-256), the RTX fixes' public base commit with the GPL patches from `packages/fixes/licenses` and the object ids of the patched native tree they give (`patched_tree`; R19), RTX Water's commit (native Version 4) with its own GPL patch and recorded tree (`rtxwater_patches`, `rtxwater_tree`), the debug module's and the bridge's source copies in `packages/`, this repository's own modules (`repository_builds`), and the files that are fetched (`fetched`: URL, size, SHA-256, a member of an archive, files a packager takes out of them) |
 | [`build_hotloader.ps1`](build_hotloader.ps1.md) | Builds the Model Hotloader's four natives from its source copy in `packages/` with the add-on's own recipe, and regenerates its hash records (`native_policy.lua`, `mmdhl-native-release.json`), with `provenance-hotloader.json` |
 | [`build_modules.ps1`](build_modules.ps1.md) | Builds `gmcl_RTXFixesBinary`, `gmcl_rtxwater`, `gmcl_rtxdebug` and the material editor's bridge from those pins into `out\ci\built\<part>\<path>`, with `provenance-modules.json` |
 | [`collect_runtime.py`](collect_runtime.py.md) | Lays out the runtime build's install folder (`runtime\build_runtime.ps1 -Install`) as the runtime part's files, with `provenance-runtime.json` |
@@ -27,10 +27,19 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
 3. Job `package`: Git LFS content except the binaries the run makes, the three jobs' caches,
    `tools\build.ps1 -Config Release`, `collect_repo_build.py`, `fetch_prebuilt.py`, then
    [`tools/build_package.py`](../build_package.py.md) `--built out/ci/built` and
-   [`tools/package_report.py`](../package_report.py.md) into the run's summary. The older `rtx-package`
-   artifacts are deleted before the new `.gma` is uploaded; `rtx-package-report` keeps the report.
+   [`tools/package_report.py`](../package_report.py.md) into the run's summary. `rtx-package-report`
+   keeps the report. The older `rtx-package` artifacts are deleted, then the new `.gma` is uploaded as
+   `rtx-package`. The order is deliberate (review R19, F-07): Actions storage (2 GB) cannot hold two
+   packages, so a failed upload leaves none; the last good package stays on the Workshop item and in
+   `out\workshop\ci` on the developer's machine, and a new run builds it again.
 4. On the developer's machine, [`tools/publish_workshop.py`](../publish_workshop.py.md) `--from-ci
-   --commit <sha>` uploads that `.gma` after checking it against the report.
+   --commit <sha>` uploads that `.gma` after checking it against the report. Without a successful run of
+   that commit it uploads nothing and exits 1.
+
+**Permissions** (review R19, F-04): the workflow's token can only read the repository. Only the
+`package` job, which deletes the older artifacts, may also write to Actions; the `runtime`, `modules`
+and `hotloader` jobs, which run other people's build scripts and downloads, cannot. Values a run gets
+from GitHub (the run's URL) reach the scripts as environment variables, never pasted into them.
 
 Only a person starts the workflow, for a release
 ([ADR 0108](../../docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)); during

@@ -24,16 +24,18 @@ runs without RTX and after the failed activation; with the loader switched off
 (`NATIVE_LOADER_DISABLE`) it must fail with `ERROR_MOD_NOT_FOUND` (126), which shows the fixture needs
 the hook. It places the host as `bin\win64\gmod.exe` beside the
 built `winmm.dll` and the three fixtures, creates the user's own add-on folder `user_addon`, writes a
-`config.cfg` with the user's values, then runs the host's `--m5-probe` twelve times. Each probe also
+`config.cfg` with the user's values, then runs the host's `--m5-probe` thirteen times. Each probe also
 lists `garrysmod\addons` through the fake `filesystem_stdio.dll`, relative with the A functions and
-absolute with the W ones, and `garrysmod\cfg`:
+absolute with the W ones, and `garrysmod\cfg`, and loads the shader a second time with
+`LOAD_LIBRARY_SEARCH_DEFAULT_DIRS`, a flag Windows refuses next to `LOAD_WITH_ALTERED_SEARCH_PATH`:
 
 | Run | Expected |
 |---|---|
-| RTX on, `-insecure` | the marker is patched before the fixture's DllMain; `stdshader_dx6.dll` comes from the package; `+exec nativeloader_session.cfg`; the user's values recorded; both add-on folders listed, none reported hidden |
+| RTX on, `-insecure` | the marker is patched before the fixture's DllMain; `stdshader_dx6.dll` comes from the package, by both loads (R19, proxy F-05); `+exec nativeloader_session.cfg`; the user's values recorded; both add-on folders listed, none reported hidden |
 | RTX on, no `-insecure` | no patches (and a note why), the override still applies, record and cfg not rewritten |
+| RTX on, `NL_M5_DEP_RETRY` (R19, proxy F-04) | the probe moves the module's runtime aside for a first `require` (`ERROR_MOD_NOT_FOUND`, 126) and back for a second, which loads; `session.json` reports the dependency `failed`, then `loaded`; the runtime is back in place |
 | RTX off, invalid journal (R1-004) | `config.cfg` first rewritten as the game would archive it (the session's `r_nl_test`, and `r_3dsky` changed by the user); no restore and no command-line change; the record untouched |
-| RTX off | the vanilla marker and shader; `+exec nativeloader_restore.cfg` with only `r_nl_test` (the user's own `r_3dsky` stays); the record marked done; `nl_rtx_addon` left out of both listings while `user_addon` and `garrysmod\cfg` are listed in full; `status.json` and `session.json` (with its `utc`) name it; its file unchanged on disk |
+| RTX off | the vanilla marker and shader, by both loads; `+exec nativeloader_restore.cfg` with only `r_nl_test` (the user's own `r_3dsky` stays); the record marked done; `nl_rtx_addon` left out of both listings while `user_addon` and `garrysmod\cfg` are listed in full; `status.json` and `session.json` (with its `utc`) name it; its file unchanged on disk |
 | RTX off again | the record forgotten, nothing added to the command line; the add-on still hidden |
 | RTX off, `filesystem_stdio.dll` without an import name table (R1-006) | a copy whose KERNEL32 descriptor has `OriginalFirstThunk` 0: the add-on still hidden (hooked by bound address) |
 | `native-loader\logs` a junction (R1-001) | the junction's target `loader.log` unchanged |

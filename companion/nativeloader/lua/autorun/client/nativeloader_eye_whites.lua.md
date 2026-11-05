@@ -61,7 +61,9 @@ Discovery visits at most 128 slots per frame, resource/hash work eight names, pr
 per second (max 128 MiB per atlas and 256 MiB per session), publication at most ten times per second.
 Textures are shared across eligible parts of one atlas. Prepared images stay cached for the process;
 the DATA cache is kept under 1 GiB: before a new proxy is written, the oldest files go first (a deleted
-proxy is rebuilt when needed again), never one this session bound;
+proxy is rebuilt when needed again), never one this session bound. Only the companion's own entries,
+named by the SHA-256 of their bytes (`<64 lowercase hex digits>.vtf`), are counted or deleted; any
+other file a player puts in the folder stays and does not count (R19, companion F-03);
 removed assets release bindings and registry entries. Restoration compares the current texture's normalized name
 with the owned proxy, preserving subsequent user changes. `nativeloader_eye_whites_status` prints
 support, enablement, percent, material counts, proxy byte count, maximum preparation time and aliases.

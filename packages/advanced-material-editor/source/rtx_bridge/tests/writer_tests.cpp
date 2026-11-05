@@ -45,16 +45,62 @@ void PutU32(std::vector<std::uint8_t>& bytes, std::size_t offset, std::uint32_t 
     bytes[offset + 3] = static_cast<std::uint8_t>(value >> 24u);
 }
 
-void WriteMinimalDds(const std::filesystem::path& path,
-                     std::uint32_t width = 1, std::uint32_t height = 1) {
-    const auto pixelBytes = static_cast<std::size_t>(width) * height * 4u;
-    std::vector<std::uint8_t> bytes(128 + pixelBytes, 0);
+// A DDS file's header fields, and how many data bytes follow the headers.
+// The defaults describe one level of 32-bit BGRA pixels.
+struct DdsFixture {
+    std::uint32_t width = 1;
+    std::uint32_t height = 1;
+    std::uint32_t depth = 0;
+    std::uint32_t mipCount = 0;
+    std::uint32_t flags = 0x1u | 0x2u | 0x4u | 0x1000u;  // CAPS, HEIGHT, WIDTH, PIXELFORMAT
+    std::uint32_t pixelFlags = 0x1u | 0x40u;            // ALPHAPIXELS, RGB
+    std::uint32_t fourCc = 0;
+    std::uint32_t bitCount = 32;
+    std::uint32_t caps2 = 0;
+    bool dx10 = false;
+    std::uint32_t dxgiFormat = 0;
+    std::uint32_t dimension = 3;                        // TEXTURE2D
+    std::uint32_t miscFlag = 0;
+    std::uint32_t arraySize = 1;
+    std::size_t dataBytes = 0;
+};
+
+constexpr std::uint32_t TestFourCc(char a, char b, char c, char d) {
+    return static_cast<std::uint32_t>(static_cast<std::uint8_t>(a)) |
+        (static_cast<std::uint32_t>(static_cast<std::uint8_t>(b)) << 8u) |
+        (static_cast<std::uint32_t>(static_cast<std::uint8_t>(c)) << 16u) |
+        (static_cast<std::uint32_t>(static_cast<std::uint8_t>(d)) << 24u);
+}
+
+void WriteDds(const std::filesystem::path& path, const DdsFixture& fixture) {
+    const std::size_t headers = 128u + (fixture.dx10 ? 20u : 0u);
+    std::vector<std::uint8_t> bytes(headers + fixture.dataBytes, 0);
     bytes[0] = 'D'; bytes[1] = 'D'; bytes[2] = 'S'; bytes[3] = ' ';
     PutU32(bytes, 4, 124);
-    PutU32(bytes, 12, height);
-    PutU32(bytes, 16, width);
+    PutU32(bytes, 8, fixture.flags);
+    PutU32(bytes, 12, fixture.height);
+    PutU32(bytes, 16, fixture.width);
+    PutU32(bytes, 24, fixture.depth);
+    PutU32(bytes, 28, fixture.mipCount);
     PutU32(bytes, 76, 32);
-    for (std::size_t offset = 128; offset < bytes.size(); offset += 4) {
+    PutU32(bytes, 80, fixture.pixelFlags);
+    PutU32(bytes, 84, fixture.fourCc);
+    PutU32(bytes, 88, fixture.bitCount);
+    if (fixture.bitCount == 32 && !(fixture.pixelFlags & 0x4u)) {
+        PutU32(bytes, 92, 0x00ff0000u);
+        PutU32(bytes, 96, 0x0000ff00u);
+        PutU32(bytes, 100, 0x000000ffu);
+        PutU32(bytes, 104, 0xff000000u);
+    }
+    PutU32(bytes, 108, 0x1000u);  // DDSCAPS_TEXTURE
+    PutU32(bytes, 112, fixture.caps2);
+    if (fixture.dx10) {
+        PutU32(bytes, 128, fixture.dxgiFormat);
+        PutU32(bytes, 132, fixture.dimension);
+        PutU32(bytes, 136, fixture.miscFlag);
+        PutU32(bytes, 140, fixture.arraySize);
+    }
+    for (std::size_t offset = headers; offset + 3 < bytes.size(); offset += 4) {
         bytes[offset + 0] = 0x10;
         bytes[offset + 1] = 0x20;
         bytes[offset + 2] = 0x30;
@@ -64,6 +110,15 @@ void WriteMinimalDds(const std::filesystem::path& path,
     std::ofstream output(path, std::ios::binary);
     output.write(reinterpret_cast<const char*>(bytes.data()),
                  static_cast<std::streamsize>(bytes.size()));
+}
+
+void WriteMinimalDds(const std::filesystem::path& path,
+                     std::uint32_t width = 1, std::uint32_t height = 1) {
+    DdsFixture fixture;
+    fixture.width = width;
+    fixture.height = height;
+    fixture.dataBytes = static_cast<std::size_t>(width) * height * 4u;
+    WriteDds(path, fixture);
 }
 
 #ifdef _WIN32
@@ -1437,6 +1492,273 @@ int main() {
         overLimit.material.textures.front().source = data / "decoded.bmp";
         assert(limitBridge.ApplyLegacyMaterial(overLimit).ok);
 #endif
+    }
+
+    // A DDS is checked against its own size before it is copied: a known
+    // format, a mip count its dimensions allow (16 at most, all the runtime
+    // records), sane faces and array layers, and every byte the header
+    // describes present. A copy made earlier gets the same check before it is
+    // used again (R19, BR-03).
+    {
+        const auto layoutRoot = root / "dds_layout_game";
+        const auto data = layoutRoot / "garrysmod" / "data";
+        std::filesystem::create_directories(data);
+        std::filesystem::create_directories(layoutRoot / "rtx-remix");
+        Config layoutConfig;
+        layoutConfig.gameRoot = layoutRoot;
+        Bridge layoutBridge(std::move(layoutConfig));
+        std::uint64_t nextHash = 0xD0000001ull;
+        const auto apply = [&](const std::filesystem::path& source) {
+            ApplyRequest dds;
+            dds.profileId = "material_dds_layout";
+            std::ostringstream hash;
+            hash << std::uppercase << std::hex << std::setw(16) << std::setfill('0') << nextHash++;
+            dds.hashes = {hash.str()};
+            dds.material.textures.push_back({TextureRole::Albedo, source, {}});
+            return layoutBridge.ApplyLegacyMaterial(dds);
+        };
+        const auto refused = [&](const char* name, const DdsFixture& fixture) {
+            WriteDds(data / name, fixture);
+            const auto result = apply(data / name);
+            return !result.ok && result.code == "invalid_dds";
+        };
+
+        // Accepted: full mip chains of 32-bit pixels, BC1 and BC7 (DX10).
+        DdsFixture pixels;
+        pixels.width = 8;
+        pixels.height = 4;
+        pixels.mipCount = 4;
+        pixels.flags |= 0x20000u;  // MIPMAPCOUNT
+        pixels.dataBytes = (8 * 4 + 4 * 2 + 2 * 1 + 1 * 1) * 4;
+        WriteDds(data / "pixels.dds", pixels);
+        const auto pixelsApply = apply(data / "pixels.dds");
+        assert(pixelsApply.ok && pixelsApply.importedTextures.size() == 1);
+
+        DdsFixture bc1;
+        bc1.width = 16;
+        bc1.height = 16;
+        bc1.mipCount = 5;
+        bc1.flags |= 0x20000u;
+        bc1.pixelFlags = 0x4u;  // FOURCC
+        bc1.fourCc = TestFourCc('D', 'X', 'T', '1');
+        bc1.bitCount = 0;
+        bc1.dataBytes = (16 + 4 + 1 + 1 + 1) * 8;
+        WriteDds(data / "bc1.dds", bc1);
+        assert(apply(data / "bc1.dds").ok);
+
+        DdsFixture bc7;
+        bc7.width = 8;
+        bc7.height = 8;
+        bc7.mipCount = 4;
+        bc7.flags |= 0x20000u;
+        bc7.pixelFlags = 0x4u;
+        bc7.fourCc = TestFourCc('D', 'X', '1', '0');
+        bc7.bitCount = 0;
+        bc7.dx10 = true;
+        bc7.dxgiFormat = 98;  // BC7_UNORM
+        bc7.dataBytes = (4 + 1 + 1 + 1) * 16;
+        WriteDds(data / "bc7.dds", bc7);
+        assert(apply(data / "bc7.dds").ok);
+
+        // More mips than the runtime records, or than the dimensions allow.
+        for (const std::uint32_t mips : {17u, 18u, 0x80000000u}) {
+            DdsFixture many = pixels;
+            many.mipCount = mips;
+            many.dataBytes = 64 * 1024;
+            assert(refused("too_many_mips.dds", many));
+        }
+        DdsFixture deep = pixels;
+        deep.mipCount = 5;  // an 8 x 4 texture has 4 levels
+        deep.dataBytes = 64 * 1024;
+        assert(refused("deep_mips.dds", deep));
+
+        // Headers whose data is missing: none at all, one byte short, or a
+        // DX10 header cut off.
+        DdsFixture headerOnly;
+        headerOnly.width = 4;
+        headerOnly.height = 4;
+        assert(refused("header_only.dds", headerOnly));
+        DdsFixture shortData = headerOnly;
+        shortData.dataBytes = 4 * 4 * 4 - 1;
+        assert(refused("short_data.dds", shortData));
+        DdsFixture shortChain = pixels;
+        shortChain.dataBytes -= 4;
+        assert(refused("short_chain.dds", shortChain));
+        DdsFixture cutDx10 = bc7;
+        cutDx10.dx10 = false;  // the FourCC says DX10; its header is not there
+        cutDx10.dataBytes = 0;
+        assert(refused("cut_dx10.dds", cutDx10));
+
+        // Array sizes, dimensions and formats the header cannot have.
+        for (const std::uint32_t layers : {0u, 2049u, 0xFFFFFFFFu}) {
+            DdsFixture array = bc7;
+            array.arraySize = layers;
+            assert(refused("array.dds", array));
+        }
+        DdsFixture bigArray = bc7;
+        bigArray.arraySize = 2048;  // allowed, but the data for one layer is not enough
+        assert(refused("big_array.dds", bigArray));
+        DdsFixture badDimension = bc7;
+        badDimension.dimension = 5;
+        assert(refused("bad_dimension.dds", badDimension));
+        DdsFixture planar = bc7;
+        planar.dxgiFormat = 103;  // NV12
+        assert(refused("planar.dds", planar));
+        DdsFixture unknown = bc1;
+        unknown.fourCc = TestFourCc('A', 'B', 'C', 'D');
+        assert(refused("unknown.dds", unknown));
+        DdsFixture noFormat = headerOnly;  // the header-only test fixture of old
+        noFormat.pixelFlags = 0;
+        noFormat.bitCount = 0;
+        noFormat.dataBytes = 4 * 4 * 4;
+        assert(refused("no_format.dds", noFormat));
+        DdsFixture faceless = headerOnly;
+        faceless.caps2 = 0x200u;  // a cube map without faces
+        faceless.dataBytes = 4 * 4 * 4 * 6;
+        assert(refused("faceless.dds", faceless));
+        DdsFixture volume = headerOnly;
+        volume.flags |= 0x800000u;  // DEPTH
+        volume.depth = 0x80000000u;
+        volume.dataBytes = 4 * 4 * 4;
+        assert(refused("volume.dds", volume));
+
+#ifdef _WIN32
+        // A cached copy cut down to its header is not used again: with the
+        // source held open without sharing, the apply has to read it and fails;
+        // once readable, the copy is written whole again.
+        const auto cached = pixelsApply.importedTextures.front();
+        std::filesystem::resize_file(cached, 128);
+        ApplyRequest again;
+        again.profileId = "material_dds_layout";
+        again.hashes = {"00000000D0000001"};
+        again.material.textures.push_back({TextureRole::Albedo, data / "pixels.dds", {}});
+        {
+            const HANDLE lock = CreateFileW((data / "pixels.dds").c_str(), GENERIC_READ, 0,
+                nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            assert(lock != INVALID_HANDLE_VALUE);
+            const auto locked = layoutBridge.ApplyLegacyMaterial(again);
+            CloseHandle(lock);
+            assert(!locked.ok && locked.code == "texture_read_failed");
+        }
+        const auto restored = layoutBridge.ApplyLegacyMaterial(again);
+        assert(restored.ok && restored.importedTextures.size() == 1);
+        assert(restored.importedTextures.front() == cached);
+        assert(ReadText(cached) == ReadText(data / "pixels.dds"));
+#endif
+        assert(layoutBridge.ClearAllOwned().ok);
+    }
+
+    // A texture source that leaves this computer is refused from its spelling,
+    // before any filesystem call: probing a UNC path makes Windows open an SMB
+    // session to the host the caller named and offer the player's credentials
+    // (R19, the class of the review's H3). 192.0.2.1 is TEST-NET-1, never
+    // routable. The refusal reason is the spelling check's own; a probe that
+    // failed would report invalid_texture_path, and an SMB attempt to that host
+    // would take many seconds instead of none.
+    {
+        const auto remoteRoot = root / "remote_source_game";
+        const auto data = remoteRoot / "garrysmod" / "data";
+        std::filesystem::create_directories(data);
+        std::filesystem::create_directories(remoteRoot / "rtx-remix");
+        Config remoteConfig;
+        remoteConfig.gameRoot = remoteRoot;
+        Bridge remoteBridge(std::move(remoteConfig));
+        const auto apply = [&](const std::filesystem::path& source, const char* hash) {
+            ApplyRequest remote;
+            remote.profileId = "material_remote_source";
+            remote.hashes = {hash};
+            remote.material.textures.push_back({TextureRole::Albedo, source, {}});
+            return remoteBridge.ApplyLegacyMaterial(remote);
+        };
+        const auto refusedFromSpelling = [&](const wchar_t* spelling) {
+            const auto result = apply(std::filesystem::path(spelling), "00000000AE000001");
+            return !result.ok && result.code == "texture_path_outside_allowed_roots" &&
+                result.message.find("must be a path on this computer") != std::string::npos;
+        };
+        const wchar_t* const remoteSpellings[]{
+            LR"(\\192.0.2.1\share\x.png)",           // UNC
+            L"//192.0.2.1/share/x.png",              // UNC with forward slashes
+            LR"(\/192.0.2.1/share\x.png)",           // separators mixed
+            LR"(\\?\UNC\192.0.2.1\share\x.png)",     // the long-path UNC form
+            LR"(\\?\C:\x.png)",                      // device paths
+            LR"(\\.\C:\x.png)",
+            LR"(\\192.0.2.1\share\..\..\x.png)",
+        };
+        const auto started = std::chrono::steady_clock::now();
+        for (const auto* spelling : remoteSpellings) assert(refusedFromSpelling(spelling));
+#ifdef _WIN32
+        // Other root names, and a drive letter without a root directory.
+        assert(refusedFromSpelling(LR"(\??\C:\x.png)"));
+        assert(refusedFromSpelling(LR"(\??\UNC\192.0.2.1\share\x.png)"));
+        assert(refusedFromSpelling(L"C:x.png"));
+        assert(refusedFromSpelling(L"C:"));
+#endif
+        assert(std::chrono::steady_clock::now() - started < std::chrono::seconds(5));
+
+        // Local spellings work as before: an absolute path, and a path relative
+        // to the game, to garrysmod/ and to garrysmod/data/.
+        WriteMinimalDds(data / "local.dds");
+        assert(apply(data / "local.dds", "00000000AE000002").ok);
+        assert(apply("garrysmod/data/local.dds", "00000000AE000003").ok);
+        assert(apply("data/local.dds", "00000000AE000004").ok);
+        assert(apply("local.dds", "00000000AE000005").ok);
+        // A root-relative "\dir\x.dds" has no drive, so Windows would resolve it
+        // against the game root's current drive, not inside the game folder. It
+        // is now refused as outside the roots, before any probe of that drive.
+        const auto rooted = apply(L"\\no_such_folder_advmat\\x.dds", "00000000AE000006");
+        assert(!rooted.ok && rooted.code == "texture_path_outside_allowed_roots");
+        assert(remoteBridge.ClearAllOwned().ok);
+    }
+
+    // A source outside every allowed root is refused the same way whether or not
+    // the file exists, decided before canonical(): a server's client Lua must
+    // not learn from the error code whether a file is present on the player's PC
+    // (R19 follow-up). A file inside the game folder may still be told apart.
+    {
+        const auto outsideRoot = root / "outside_roots_game";
+        const auto data = outsideRoot / "garrysmod" / "data";
+        std::filesystem::create_directories(data);
+        std::filesystem::create_directories(outsideRoot / "rtx-remix");
+        Config outsideConfig;
+        outsideConfig.gameRoot = outsideRoot;
+        Bridge outsideBridge(std::move(outsideConfig));
+        std::uint64_t nextHash = 0xA0000001ull;
+        const auto applyOutside = [&](const std::filesystem::path& source) {
+            ApplyRequest outside;
+            outside.profileId = "material_outside_roots";
+            std::ostringstream hash;
+            hash << std::uppercase << std::hex << std::setw(16) << std::setfill('0') << nextHash++;
+            outside.hashes = {hash.str()};
+            outside.material.textures.push_back({TextureRole::Albedo, source, {}});
+            return outsideBridge.ApplyLegacyMaterial(outside);
+        };
+
+        // Two absolute paths outside the game folder: one real, one missing.
+        // `root` is the parent of outsideRoot, so a file directly under it is
+        // outside the only allowed root.
+        const auto presentOutside = root / "present_outside.dds";
+        WriteMinimalDds(presentOutside);
+        const auto missingOutside = root / "missing_outside.dds";
+        assert(!std::filesystem::exists(missingOutside));
+        const auto present = applyOutside(presentOutside);
+        const auto missing = applyOutside(missingOutside);
+        assert(!present.ok && !missing.ok);
+        assert(present.code == "texture_path_outside_allowed_roots");
+        assert(missing.code == present.code && missing.message == present.message);
+
+        // The same for a root-relative path, present or not, before any probe.
+        const auto rootedPresent = applyOutside(L"\\present_outside.dds");
+        const auto rootedMissing = applyOutside(L"\\missing_outside.dds");
+        assert(rootedPresent.code == "texture_path_outside_allowed_roots");
+        assert(rootedMissing.code == rootedPresent.code &&
+               rootedMissing.message == rootedPresent.message);
+
+        // A file in the game folder is still told apart: inside and allowed.
+        WriteMinimalDds(data / "inside.dds");
+        assert(applyOutside(data / "inside.dds").ok);
+        const auto insideMissing = applyOutside(data / "gone.dds");
+        assert(!insideMissing.ok && insideMissing.code == "invalid_texture_path");
+        assert(outsideBridge.ClearAllOwned().ok);
     }
 
     // A folder in rtx-remix/mods may be a link to a mod kept elsewhere

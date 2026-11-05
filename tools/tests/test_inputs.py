@@ -261,6 +261,54 @@ class InputsTests(unittest.TestCase):
         with self.assertRaises(inputs.InputsError):
             inputs.part_dir('../escape', self.packages)
 
+    def test_names_windows_reads_as_other_files_are_refused(self):
+        # Review R19, F-09: `files/foo.dll.` is `files/foo.dll` to Windows, and `foo.dll..xz` stores beside
+        # `foo.dll.xz` while both unpack to one file: whichever thread wrote last went into the package.
+        for bad in ('bin/x.dll.', 'bin/x.dll ', 'bin./x.dll', 'bin/NUL', 'bin/com1.dll', 'bin/aux.txt',
+                    'bin/LONGNA~1.DLL', 'bin/x?.dll', 'bin/x<y', 'bin/x\x01'):
+            with self.subTest(bad=bad), self.assertRaises(inputs.InputsError):
+                inputs.import_files('r', [], [(self.src / 'addon/lua/a.lua', bad)], None, prune=False,
+                                    packages=self.packages, log=quiet, workers=1)
+        self.assertFalse((self.packages / 'r').exists())  # refused before anything was stored
+        # Folders named like the add-ons' own (`~gmod_topbr`) stay allowed: no digit after the tilde.
+        inputs.check_rel('garrysmod/rtx-remix/mods/~gmod_topbr/mod.usda')
+        # A hand-edited index is checked whole before verify, unpack, extract or import read by it.
+        self.store_all()
+        index_path = self.packages / 'p' / inputs.INDEX
+        good = json.loads(index_path.read_text(encoding='utf-8'))
+        entry = good['files']['bin/gmcl_x_win64.dll']
+        for files, message in (({'bin/gmcl_x_win64.dll': entry, 'bin/gmcl_x_win64.dll.': entry}, 'ends in a dot'),
+                               ({'bin/gmcl_x_win64.dll': entry, 'BIN/gmcl_x_win64.dll': entry}, 'differ only in case'),
+                               ({'bin/gmcl_x_win64.dll': entry, 'bin/gmcl_x_win64.dll.xz': {**entry, 'stored': 'plain'}},
+                                'stored under one name')):
+            index_path.write_text(json.dumps({**good, 'files': {**good['files'], **files}}), encoding='utf-8')
+            with self.subTest(message=message):
+                self.assertIn(message, '\n'.join(inputs.verify(['p'], self.packages)))
+                for read in (lambda: inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1),
+                             lambda: inputs.extract('p', 'bin/', self.root / 'extracted', self.packages),
+                             lambda: self.store_all()):
+                    with self.assertRaisesRegex(inputs.InputsError, message):
+                        read()
+        self.assertFalse((self.dest / 'p').exists())
+        index_path.write_text(json.dumps(good), encoding='utf-8')
+        self.assertEqual(inputs.verify(['p'], self.packages), [])
+        # A new path naming an indexed path's file is refused before it is stored over that file.
+        before = (self.packages / 'p' / 'addon/lua/a.lua').read_bytes()
+        with self.assertRaisesRegex(inputs.InputsError, 'differ only in case'):
+            inputs.import_files('p', [], [(self.src / 'addon/latin.txt', 'ADDON/lua/a.lua')], None, prune=False,
+                                packages=self.packages, log=quiet, workers=1)
+        self.assertEqual((self.packages / 'p' / 'addon/lua/a.lua').read_bytes(), before)
+        self.assertEqual(inputs.verify(['p'], self.packages), [])
+
+    def test_an_index_that_cannot_be_read_stops_an_import(self):
+        # It was replaced by a new index that held only the imported files.
+        self.store_all()
+        index_path = self.packages / 'p' / inputs.INDEX
+        index_path.write_text('{not json', encoding='utf-8')
+        with self.assertRaises(inputs.InputsError):
+            self.store_all()
+        self.assertEqual(index_path.read_text(encoding='utf-8'), '{not json')
+
     def test_the_repository_packages_verify(self):
         # Every part committed under packages/ matches its index (LFS pointers are checked by oid).
         problems = inputs.verify()

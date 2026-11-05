@@ -3,19 +3,24 @@
  "part": "advanced-material-editor",
  "origins": {
   "!advanced_material_editor": {
-   "source": "H:\\BACKUP_20260815\\Modding\\ipg\\!advanced_material_editor",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\advanced-material-editor\\!advanced_material_editor",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/ipg/!advanced_material_editor",
-    "remote": "https://github.com/SheepyLord/-advanced_material_editor.git",
-    "commit": "05435bd397b3ff8c1a76517eb6c6f3fa8b9da4d1",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "f5bbedd27395d5f267b376e3cdde3236d4605194",
     "dirty": false
    },
-   "imported": "2026-10-30T00:42:45+00:00"
+   "imported": "2026-11-05T23:02:33+00:00"
   },
   "bin": {
-   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_RTX_c\\garrysmod\\lua\\bin",
-   "git": null,
-   "imported": "2026-10-30T00:42:45+00:00"
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\ci\\built\\advanced-material-editor\\bin",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
+    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "commit": "f5bbedd27395d5f267b376e3cdde3236d4605194",
+    "dirty": false
+   },
+   "imported": "2026-11-05T23:02:33+00:00"
   },
   "!advanced_material_editor/lua/advmat/cl_05_i18n.lua": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_05_i18n.lua",
@@ -58,14 +63,14 @@
    "imported": "2026-10-30T11:10:21+00:00"
   },
   "!advanced_material_editor/lua/advmat/cl_71_rtx_source.lua": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\addon-workflow-inputs\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_71_rtx_source.lua",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_71_rtx_source.lua",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "00cfdfb154cba4878837e460eb07f8ab0bec21be",
+    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
-   "imported": "2026-10-31T05:11:23+00:00"
+   "imported": "2026-11-05T22:26:32+00:00"
   },
   "!advanced_material_editor/lua/advmat/cl_71_rtx_source.lua.md": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\addon-workflow-inputs\\advanced-material-editor\\!advanced_material_editor\\lua\\advmat\\cl_71_rtx_source.lua.md",
@@ -118,14 +123,14 @@
    "imported": "2026-10-31T05:11:23+00:00"
   },
   "source": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r16\\out\\r16\\ame-stage",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-editors\\out\\r19e\\work\\advanced-material-editor\\source",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r16",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-editors",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "026dda010807adfde161d8e7fb3ac1bd3218b641",
+    "commit": "f5bbedd27395d5f267b376e3cdde3236d4605194",
     "dirty": false
    },
-   "imported": "2026-11-05T02:38:10+00:00"
+   "imported": "2026-11-05T23:02:32+00:00"
   }
  },
  "files": {
@@ -274,9 +279,9 @@
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_71_rtx_source.lua": {
-   "size": 65846,
-   "sha256": "2cda339dc8ef538f6a9954cb00e3a215aaa1d519e6893fb95a3668abdb33de92",
-   "mtime_ns": 1793423070532877200,
+   "size": 66012,
+   "sha256": "4132a759165ce13053fb4288b99211142201c149bc18f23fcd17457bcff35821",
+   "mtime_ns": 1793915872380060800,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/cl_71_rtx_source.lua.md": {
@@ -370,9 +375,9 @@
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/sh_20_net.lua": {
-   "size": 9479,
-   "sha256": "112211e878215df43d1dc78e018c748e80d7df80c87fa8d8271c763f9db6352f",
-   "mtime_ns": 1791849141895082700,
+   "size": 11803,
+   "sha256": "7d9fb77d484999e56254e65441724210bf1d8e04a9159f525df93adea874082a",
+   "mtime_ns": 1793916145475461400,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/sh_25_vmt.lua": {
@@ -454,15 +459,15 @@
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/sv_30_store.lua": {
-   "size": 39114,
-   "sha256": "c08baf75da9c1ebe8378887c65996168ee2811696f344ff19db0d57898ae050d",
-   "mtime_ns": 1791849141896299600,
+   "size": 40754,
+   "sha256": "297a8171ed8d132b92cf5e81e05a7f368a4f9b114961437cc80302320a570bf9",
+   "mtime_ns": 1793916200170212400,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/sv_31_rtx_store.lua": {
-   "size": 50714,
-   "sha256": "b23bb250d0a24f84ffb1b5465e0ad9f0de3805cf1ed5afe9b95c3e983c14c399",
-   "mtime_ns": 1791849141897300100,
+   "size": 53171,
+   "sha256": "b2394374053d57183ff1b7fb024949676d76bf8e08231a0cd80c0a608f6bf8e4",
+   "mtime_ns": 1793916270076460100,
    "stored": "plain"
   },
   "!advanced_material_editor/lua/advmat/sv_32_rtx_tool.lua": {
@@ -498,23 +503,23 @@
    "stored_sha256": "867690980294c9e121e91af761ba0c46137631be377a22b48ea4b09c4e7e33e8"
   },
   "bin/gmcl_advmat_rtx_bridge_win64.dll": {
-   "size": 316416,
-   "sha256": "aeb5de42edcf537e517d713100f455eeaa3916f8f148e41ce5266732d3cf87ff",
-   "mtime_ns": 1793047180072642900,
+   "size": 325120,
+   "sha256": "a22bdf4aee6f0a173d5edde263973f8d8585ab872dc1ca29af341364ece7ba67",
+   "mtime_ns": 1793919738652517300,
    "stored": "xz",
-   "stored_size": 114424,
-   "stored_sha256": "3f32ff370e566c41bb20e8ab80e672d62c71f2b418686cfd78f3306800ac6696"
+   "stored_size": 118128,
+   "stored_sha256": "aacae26bcd7ad192253c5861c56b507f76f17ad2e30d757d0c72eb6adbad501b"
   },
   "source/provenance.json": {
-   "size": 2788,
-   "sha256": "99eb2953be9464cc99c9d309233f03f430773b1d6133d3a2d446672da4189d2f",
-   "mtime_ns": 1793846279620517000,
+   "size": 5275,
+   "sha256": "3bced30c937bbc750e25087996ae1f541bce83632690853897c64a57ae37238d",
+   "mtime_ns": 1793919752874639700,
    "stored": "plain"
   },
   "source/rtx_bridge/CMakeLists.txt": {
-   "size": 2517,
-   "sha256": "401b2ff59a19f1607a72e80ec4ad67ef5a27e9e43f1707409a1f9cb304ec3cd5",
-   "mtime_ns": 1793846279606406000,
+   "size": 3196,
+   "sha256": "4491f9726fd4bb1c59d38545f619a48af40fca87ea40e3d6ffa5bbd5beda61bb",
+   "mtime_ns": 1793916810262280100,
    "stored": "plain"
   },
   "source/rtx_bridge/include/advmat_rtx_bridge/bridge.h": {
@@ -530,9 +535,9 @@
    "stored": "plain"
   },
   "source/rtx_bridge/README.md": {
-   "size": 5421,
-   "sha256": "6d0a1d7e62332df8813210fdf258b815442b057b7cba874991262e60919579ff",
-   "mtime_ns": 1793846279608405700,
+   "size": 6667,
+   "sha256": "e4e7540e9224065aae44f6efcc08d29d6fb309607bb9f8d0a8e98d3d6b8d09dc",
+   "mtime_ns": 1793919721668001300,
    "stored": "plain"
   },
   "source/rtx_bridge/src/bridge.cpp": {
@@ -554,21 +559,21 @@
    "stored": "plain"
   },
   "source/rtx_bridge/src/lua_bindings.cpp": {
-   "size": 39054,
-   "sha256": "fc6a7dd947155f849ec2ecfb28adbb6df5534eb488bfd0ea5f7e01b83badbf95",
-   "mtime_ns": 1793846279609621200,
+   "size": 42209,
+   "sha256": "47e9318ab74ebba54345269465b787e1e2dacbe9dba53ecb4c0de2dafa2cb36f",
+   "mtime_ns": 1793916387095974400,
    "stored": "plain"
   },
   "source/rtx_bridge/src/standalone_module.cpp": {
-   "size": 1335,
-   "sha256": "9354393abbb36a4a8da8c0afa57a9be8177bd83be4825cc36a272d81dfcbbb64",
-   "mtime_ns": 1793846279619468600,
+   "size": 1585,
+   "sha256": "164bd526eb74b954a7cb34bf63e7a906cc3247b1219b78948e66576f422ad6d1",
+   "mtime_ns": 1793916404885387900,
    "stored": "plain"
   },
   "source/rtx_bridge/src/texture_ingest.cpp": {
-   "size": 29817,
-   "sha256": "33bc95f09677db24bcf7da488462d1917a8962b82ea55eb3c4cfd6b04a43e071",
-   "mtime_ns": 1793846279619468600,
+   "size": 44745,
+   "sha256": "99572defa0e68a87871fc0dc14fe860bcdac3264c5401ffd8e33694ee386cd70",
+   "mtime_ns": 1793919653004258500,
    "stored": "plain"
   },
   "source/rtx_bridge/src/usda_writer.cpp": {
@@ -577,16 +582,22 @@
    "mtime_ns": 1793846279620517000,
    "stored": "plain"
   },
+  "source/rtx_bridge/tests/lua_binding_tests.cpp": {
+   "size": 14137,
+   "sha256": "f97ae2ac614b687cb80079a8646209ccbba1cf1f829d1ca6586b348304bfd8af",
+   "mtime_ns": 1793917378925817800,
+   "stored": "plain"
+  },
   "source/rtx_bridge/tests/writer_tests.cpp": {
-   "size": 85516,
-   "sha256": "934e65e776f0e462cac7aaf18c150ecdf92d75644df2618ce196bf1bed0e16ca",
-   "mtime_ns": 1793846279620517000,
+   "size": 101283,
+   "sha256": "65d9c0a548a9cd2086137717af9834fbc31b9d071a175cf1b55467d9e71e8432",
+   "mtime_ns": 1793919672481621800,
    "stored": "plain"
   },
   "source/Source.md": {
-   "size": 1752,
-   "sha256": "f201126d708c5a005278682a6f8e9250ab5adc346b8a2e86234479d2ead889fe",
-   "mtime_ns": 1793846288526960500,
+   "size": 3908,
+   "sha256": "8c699da5b44da9d3caeadaaa3ecba9f71a5f23e5c6c837233d77f09443e5e4a8",
+   "mtime_ns": 1793919713266723000,
    "stored": "plain"
   }
  }

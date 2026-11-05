@@ -9,11 +9,33 @@ RTX package's workflow (R16, ADR 0106), so the package does not carry a binary m
   `native/rtx_bridge` at `8ece14155d771f0465dfac32ff6dd6a0e1f8aa96` ("Skip re-reading unchanged texture
   sources on every apply"). The folder is unchanged up to the origin's `main` of 2026-11-04 (`05435bd`),
   the commit the packaged add-on comes from.
-- `rtx_bridge/` holds the folder's 12 files as they are; `provenance.json` lists each one's size and
-  SHA-256. A workflow in this repository cannot read the private origin without a token, so the source
-  is copied here.
+- `rtx_bridge/` holds the folder's 12 files with this repository's R19 changes, and one new test file;
+  `provenance.json` lists each file's size and SHA-256 and, under `r19_changes`, what changed. A workflow
+  in this repository cannot read the private origin without a token, so the source is copied here.
+- **R19-E changes** (the pre-release review's BR-02 and BR-03; the origin does not have them):
+  - `src/lua_bindings.cpp`, `src/standalone_module.cpp`: a request string is refused by its length
+    before it is copied (a hash 18 bytes, a path 2048, a name 64, anything else 4096, no NUL), and no
+    C++ exception leaves an exported function or the module's entry point: it becomes `false` and a
+    reason.
+  - `src/texture_ingest.cpp`: a DDS is checked against its file size (a known format, a mip count of at
+    most 16 and no more than the dimensions allow, sane faces and array layers, every byte the header
+    describes present), and a cached copy gets the same check before it is reused.
+  - `src/texture_ingest.cpp`, the class of the review's H3 (found by R19-X): a texture source is refused
+    from its spelling, before any filesystem call, when it starts with two separators (`\\host\share`,
+    `//host`, `\\?\`, `\\.\`), has a root name other than a drive letter and a colon (`\??\`), or has a
+    drive letter without a root directory (`C:file`). Probing a UNC path made Windows open an SMB
+    session to a host the caller named and offer the player's credentials.
+  - `src/texture_ingest.cpp`, the same information leak closed further: a source lexically outside every
+    allowed root and outside `rtx-remix/mods` is refused with the one code
+    `texture_path_outside_allowed_roots`, before `canonical`, whether it exists, cannot be resolved, or
+    resolves outside the roots. Before, a missing path answered `invalid_texture_path` and a present one
+    `texture_path_outside_allowed_roots`, so a client script could tell whether a file was on the
+    player's PC. A path inside an allowed root or `rtx-remix/mods` (linked mod folders included) is
+    unchanged, and a file in the game folder may still say "not a readable regular file".
+  - `tests/writer_tests.cpp`, the new `tests/lua_binding_tests.cpp` and `CMakeLists.txt`: tests of all
+    four.
 - The binary that shipped before R16 (316,416 bytes, SHA-256 `aeb5de42...`) is byte-identical to a local
-  build of that commit.
+  build of that commit. `provenance.json` `shipped_binary` records the R19 build that replaced it.
 - The origin has no licence file; this copy asserts or grants none. It is the same author's code as the
   add-on this part already ships.
 
@@ -23,7 +45,7 @@ RTX package's workflow (R16, ADR 0106), so the package does not carry a binary m
 cmake -S rtx_bridge -B build -G "Visual Studio 17 2022" -A x64 -DADVMAT_RTX_BUILD_GMOD_MODULE=ON `
   -DGARRYSMOD_COMMON_INCLUDE_DIR=<garrysmod_common at a854f237>/include
 cmake --build build --config Release        # -> build/Release/gmcl_advmat_rtx_bridge_win64.dll
-ctest --test-dir build -C Release           # the writer's tests
+ctest --test-dir build -C Release           # the writer's tests and the Lua boundary's
 ```
 
 Needs only garrysmod_common's public headers (https://github.com/danielga/garrysmod_common,

@@ -227,7 +227,25 @@ struct CharacterConversion;
 constexpr int MaxTextureEdge=4096,FullTextureEdge=16384;
 // character: a model the worker converted from another format (assets.hpp).
 Json importAsset(const fs::path& source,const fs::path& cache,const Json& options,const fs::path& progress={},CharacterConversion* character=nullptr);
-std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id);
+// Loads a cached character in this process (R19, reviews MH-04 and MH-06): before its model
+// and each texture are read, their sizes are checked against what loading may still take
+// (LoadBudget); `stop`, when given and set (the module is closing), ends the load at its next
+// step instead of reading and parsing the rest.
+std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id,const std::atomic_bool* stop=nullptr);
+// The memory a load in this process may take: half of the physical memory free when it
+// starts, less what loads already running hold. A model is estimated at LoadExpansion times
+// its file (the bytes, nanoem's objects, the model's own copies and what is derived from
+// them), a texture at its file. A load that does not fit fails before it allocates.
+struct LoadBudget {
+ static constexpr uint64_t LoadExpansion=8;
+ // Holds `bytes` of the budget until destroyed; throws, holding nothing, when they do not fit.
+ LoadBudget(uint64_t bytes,const std::string& what);
+ ~LoadBudget();
+ LoadBudget(const LoadBudget&)=delete;LoadBudget& operator=(const LoadBudget&)=delete;
+ // Tests only: what loading may take in all instead of the free memory (0: the free memory).
+ static void simulateLimit(uint64_t bytes);
+ uint64_t held=0;
+};
 
 // Bone hierarchy, bone morphs and IK for one pose. The render thread evaluates
 // into the Instance arrays; an asynchronous secondary world evaluates its tick

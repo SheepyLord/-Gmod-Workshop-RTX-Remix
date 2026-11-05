@@ -12,6 +12,14 @@ expire in six seconds. Numeric ray/region tests route each hit to clients whose 
 without depending on the shooter's PVS or the age/location of an old pane. `Mark(origin, radius)`
 retains a 32-region, two-second PVS bridge for the first interest update after a real break.
 
+R19 (glass F-01): a region is the client's own claim, so it only chooses which shots could touch its
+pieces. A matching shot reaches that client only when the path passes within `B.NEAR` (1,024) units of
+its eyes (`EyePos`), or its start, its hit or the point where it passes a matching claimed region is in
+the PVS (`TestPVS`) of the player or of its view entity (a camera): places whose gunfire the engine
+already sends that player. Otherwise nothing is sent; with no recipient the shot is not sent at all.
+Tests run only for clients with an overlapping region, after the rate checks. The recent-break bridge
+is server-placed and keeps the engine's `AddPVS` filter.
+
 `PostEntityFireBullets` reads final pellet endpoints/damage, with ammo-metadata damage fallback.
 `Forward(entity, from, to, damage, radius, attacker)` is shared with melee observations. Inspection
 caps at 256/s (burst 64), delivery at 64/s (burst 32) globally and 16/s (burst 8) per firing entity.

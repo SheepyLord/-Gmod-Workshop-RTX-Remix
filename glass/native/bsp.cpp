@@ -33,11 +33,20 @@ std::size_t count(Bytes b,std::size_t stride,std::size_t limit) {
 void* alloc(ISzAllocPtr,std::size_t n) { return std::malloc(n); }
 void release(ISzAllocPtr,void* p) { std::free(p); }
 const ISzAlloc allocator{alloc,release};
-std::vector<std::uint8_t> decompress(Bytes b, std::size_t expected) {
+// A requested stop ends the import between bounded units of work (World::~World requests it).
+void live(const std::stop_token& stop) { if(stop.stop_requested())throw Error("BSP import cancelled"); }
+// Compiled maps give each world leaf its own range of the leaf-brush lump, so a real map's walk
+// visits at most that lump's 2,097,152 references once. Leaves sharing one crafted range could
+// multiply it to 2^36 visits on the import worker, which ShutDown and map changes wait for (R19).
+constexpr std::size_t kMaxLeafBrushVisits=4*2097152;
+std::vector<std::uint8_t> decompress(Bytes b, std::size_t expected, std::size_t budget) {
   need(b.size()>=17 && u32(b,0)==0x414d5a4c,"invalid BSP LZMA header");
   const auto size=u32(b,4), packed=u32(b,8);
   need(size>0 && size<=128*1024*1024 && (!expected || expected==size) && packed==b.size()-17,
        "BSP LZMA size limit/mismatch");
+  // GL-01 (R19): the declared size is checked against what is left of the map's expansion budget
+  // before the output exists, so the cap bounds the allocation itself, not only the total after it.
+  need(size<=budget,"expanded BSP collision data limit");
   need(b[12]<9*5*5 && u32(b,13)<=64*1024*1024,"BSP LZMA property/dictionary limit");
   std::vector<std::uint8_t> out(size);
   SizeT dst=out.size(), src=packed;
@@ -52,12 +61,16 @@ class Reader {
 public:
   Bytes file;
   std::array<Lump,64> lumps;
-  explicit Reader(Bytes input):file(input) {
+  std::stop_token stop;
+  // Bytes of collision data counted against kMaxMapBytes: each collision lump, whether a slice of
+  // the file or inflated, plus every inflated static-prop game lump (GL-01, R19).
+  std::size_t charged=0;
+  Reader(Bytes input,std::stop_token token):file(input),stop(std::move(token)) {
+    live(stop);
     need(file.size()>=1036 && file.size()<=kMaxMapBytes && u32(file,0)==0x50534256,"invalid VBSP header/size");
     const auto version=u32(file,4); need(version>=19 && version<=21,"unsupported BSP version (expected 19-21)");
     // L4D2 v21 places lump version before offset and length. Detect using the entity lump.
     const bool swapped=version==21 && u32(file,8)<1036 && u32(file,12)>=1036;
-    std::size_t expanded=0;
     for (unsigned i=0;i<64;++i) {
       const auto at=8+i*16;
       const auto offset=u32(file,at+(swapped?4:0)), length=u32(file,at+(swapped?8:4));
@@ -67,11 +80,21 @@ public:
       // Only collision-related lumps are inflated: lighting/visibility can be enormous.
       if (i!=1 && i!=3 && i!=5 && i!=7 && i!=10 && i!=12 && i!=13 && i!=14 && i!=17 &&
           i!=18 && i!=19 && i!=26 && i!=33 && i!=35 && i!=48) continue;
+      live(stop);
       if (length>=4 && u32(l.bytes,0)==0x414d5a4c) {
-        l.owned=decompress(l.bytes,u32(file,at+12)); l.bytes=l.owned;
-      } else need(!u32(file,at+12),"BSP collision lump has unsupported compression");
-      expanded+=l.bytes.size(); need(expanded<=kMaxMapBytes,"expanded BSP collision data limit");
+        l.owned=inflate(l.bytes,u32(file,at+12)); l.bytes=l.owned;
+      } else {
+        need(!u32(file,at+12),"BSP collision lump has unsupported compression");
+        charge(l.bytes.size());
+      }
     }
+  }
+  void charge(std::size_t bytes) {
+    need(bytes<=kMaxMapBytes-charged,"expanded BSP collision data limit");charged+=bytes;
+  }
+  // Inflates within what is left of the budget; the check precedes the allocation (decompress).
+  std::vector<std::uint8_t> inflate(Bytes packed,std::size_t expected) {
+    auto out=decompress(packed,expected,kMaxMapBytes-charged);charged+=out.size();return out;
   }
   Bytes get(unsigned n) const { return lumps[n].bytes; }
 };
@@ -84,7 +107,9 @@ void read_brushes(Reader& r, Map& out) {
   need(count(models,48,65536)>0,"BSP has no world model");
   std::vector<int> stack{i32(models,36)};
   std::vector<bool> seen_nodes(nn),seen_leaves(nl),used(nb);
+  std::size_t visits=0;
   while (!stack.empty()) {
+    live(r.stop);
     const int node=stack.back();stack.pop_back();
     if (node>=0) {
       need(static_cast<std::size_t>(node)<nn,"BSP world node index");
@@ -95,11 +120,13 @@ void read_brushes(Reader& r, Map& out) {
       need(leaf<nl,"BSP world leaf index");if(seen_leaves[leaf])continue;seen_leaves[leaf]=true;
       const auto first=u16(leaves,leaf*leafstride+24), number=u16(leaves,leaf*leafstride+26);
       need(first<=nr && number<=nr-first,"BSP leaf brush range");
+      need(number<=kMaxLeafBrushVisits-visits,"BSP leaf brush reference work limit");visits+=number;
       for(unsigned j=0;j<number;++j) { const auto index=u16(refs,(first+j)*2);need(index<nb,"BSP brush index");used[index]=true; }
     }
   }
   std::size_t total=0, work=0;
   for(std::size_t b=0;b<nb;++b) {
+    live(r.stop);
     const auto contents=u32(brushes,b*12+8);
     const bool water=(contents&0x30)!=0 && !(contents&0x400b);
     if(!used[b] || (!(contents&0x400b) && !water))continue;
@@ -139,6 +166,7 @@ void read_displacements(Reader& r,Map& out) {
   const auto firstface=u32(models,40), numfaces=u32(models,44);
   need(firstface<=nf && numfaces<=nf-firstface,"BSP world face range");
   for(std::size_t i=0;i<ni;++i) {
+    live(r.stop);
     const auto at=i*176; if(!(u32(infos,at+32)&0x400b))continue;
     const auto face=u16(infos,at+36); if(face<firstface || face-firstface>=numfaces)continue;
     const auto power=u32(infos,at+20);need(power>=2 && power<=4,"unsupported displacement power");
@@ -184,7 +212,11 @@ void read_displacements(Reader& r,Map& out) {
 void read_props(Reader& r,Map& out) {
   const auto game=r.get(35);if(game.empty())return;
   const auto num=u32(game,0);need(num<=128 && 4+std::size_t(num)*16<=game.size(),"BSP game-lump directory");
+  // Real maps carry one 'sprp' entry. Up to 128 entries may alias one payload, so the record cap
+  // holds for all entries together, not for each (R19): at most 32,768 records reach Lua.
+  std::size_t records=0;
   for(unsigned i=0;i<num;++i) {
+    live(r.stop);
     const auto at=4+i*16; if(u32(game,at)!=0x73707270)continue; // 'sprp', Source's numeric fourcc.
     const auto flags=u16(game,at+4), version=u16(game,at+6);
     need(version>=4 && version<=11 && !(flags&~1u),"unsupported static-prop game lump");
@@ -195,7 +227,8 @@ void read_props(Reader& r,Map& out) {
       const auto packed=std::size_t(u32(header,8))+17;
       // Source variants store either packed or original length in the directory.
       need(length==packed || length==u32(header,4),"compressed static-prop directory size mismatch");
-      expanded=decompress(slice(r.file,offset,packed),0);data=expanded;
+      // Charged to the map's expansion budget like a collision lump (GL-01, R19).
+      expanded=r.inflate(slice(r.file,offset,packed),0);data=expanded;
     } else data=slice(r.file,offset,length);
     const auto models=u32(data,0);need(models<=4096,"static-prop model count");
     std::vector<std::string> names;
@@ -210,7 +243,8 @@ void read_props(Reader& r,Map& out) {
     auto cursor=4+std::size_t(models)*128;
     const auto leaves=u32(data,cursor);cursor+=4;need(leaves<=2097152,"static-prop leaf count");
     slice(data,cursor,std::size_t(leaves)*2);cursor+=std::size_t(leaves)*2;
-    const auto props=u32(data,cursor);cursor+=4;need(props<=kMaxStaticBodies,"static-prop count");
+    const auto props=u32(data,cursor);cursor+=4;need(props<=kMaxStaticBodies-records,"static-prop count");
+    records+=props;
     if(!props) { need(cursor==data.size(),"unexpected empty static-prop payload");continue; }
     const auto stride=(data.size()-cursor)/props;
     need((data.size()-cursor)%props==0 && stride>=56 && stride<=80 && stride%4==0 &&
@@ -280,8 +314,8 @@ Hull brush_hull(const std::vector<Plane>& planes) {
   for(auto p:vertices)hull.push_back({static_cast<float>(p.x),static_cast<float>(p.y),static_cast<float>(p.z)});
   return valid_hull(hull)?hull:Hull{};
 }
-Map read_bsp(std::span<const std::uint8_t> bytes) {
-  Reader reader(bytes);Map map;
+Map read_bsp(std::span<const std::uint8_t> bytes,std::stop_token stop) {
+  Reader reader(bytes,std::move(stop));Map map;
   read_brushes(reader,map);read_displacements(reader,map);read_props(reader,map);
   // Structural errors still refuse the map; individual shapes do not. Props may supply collision later.
   return map;

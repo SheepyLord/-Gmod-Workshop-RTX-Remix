@@ -375,6 +375,36 @@ class GmaPackTests(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "trailing data"):
                 self.run_main(["verify", "--file", str(trailing)])
 
+    def test_lzma_output_is_capped(self):
+        # Review R19, F-08: decoding spilled from the 8 MiB spool into a temporary file without any
+        # limit when the wrapper declared no size, or declared a huge one.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            archive = root / "plain.gma"
+            write_test_gma(archive, [("lua/test.lua", b"x" * 4096)])
+            raw_archive = archive.read_bytes()
+            limit = len(raw_archive) - 1
+            undeclared = root / "undeclared.gma"
+            undeclared.write_bytes(lzma.compress(raw_archive, format=lzma.FORMAT_ALONE))
+            declared = root / "declared.gma"
+            wrapper = bytearray(undeclared.read_bytes())
+            wrapper[5:13] = struct.pack("<Q", len(raw_archive))
+            declared.write_bytes(wrapper)
+            for path in (undeclared, declared):
+                with self.subTest(path=path.name):
+                    result, _, _ = self.run_main(["verify", "--file", str(path)])
+                    self.assertEqual(result, 0)  # under the limit
+            limit_patch = mock.patch.object(gmapack, "MAX_LZMA_OUTPUT_SIZE", limit)
+            with limit_patch, mock.patch("tempfile.SpooledTemporaryFile",
+                                         wraps=tempfile.SpooledTemporaryFile) as spool:
+                with self.assertRaisesRegex(SystemExit, "safety limit"):
+                    self.run_main(["verify", "--file", str(undeclared)])
+                self.assertEqual(spool.call_count, 1)
+                # A declared size over the limit stops before anything is decoded.
+                with self.assertRaisesRegex(SystemExit, "safety limit"):
+                    self.run_main(["verify", "--file", str(declared)])
+                self.assertEqual(spool.call_count, 1)
+
     def test_unsupported_version_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             archive = Path(temp_dir) / "future.gma"

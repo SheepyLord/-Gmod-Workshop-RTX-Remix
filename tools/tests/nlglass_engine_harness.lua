@@ -132,6 +132,8 @@ local function realm(server)
     end
     local function send(target) e.writing.target=target e.out[#e.out+1]=e.writing e.writing=nil end
     net.Send,net.Broadcast,net.SendToServer=send,send,send
+    -- As GMod: the size of the message being written (this double's bit counts, rounded up).
+    function net.BytesWritten() return math.ceil(e.writing.bits/8),e.writing.bits end
     net.Receive=function(name,f) e.receivers[name]=f end
     e.net=net
     function e.deliver(packet,ply,allowUnread)
@@ -397,7 +399,7 @@ elseif scenario=="network" then
     local late=realm(false) late.cvars=sv.cvars late.ents=sv.ents late.include("autorun/nlglass.lua")
     late.player=newEntity("player",{flags={player=true}})
     late.net.Start("nlglass_sync") late.net.WriteUInt(0,32) late.net.SendToServer()
-    sv.deliver(late.out[#late.out],late.player) late.deliver(sv.out[#sv.out])
+    sv.deliver(late.out[#late.out],late.player) sv.flush() late.deliver(sv.out[#sv.out])
     check(sv.out[#sv.out].target==late.player,"actual join hook targets the joining player")
     local lr=late.NLGlass.Client.records[r.id]
     check(lr.state.damage==360000 and #lr.state.impacts==1 and #late.debris==0,"late join receives accumulated history")
@@ -411,8 +413,8 @@ elseif scenario=="network" then
     end
     sv.time=sv.time+3
     late.net.Start("nlglass_sync") late.net.WriteUInt(r.id,32) late.net.SendToServer()
-    sv.deliver(late.out[#late.out],late.player) late.deliver(sv.out[#sv.out])
-    local sent=#sv.out sv.deliver(late.out[#late.out],late.player)
+    sv.deliver(late.out[#late.out],late.player) sv.flush() late.deliver(sv.out[#sv.out])
+    local sent=#sv.out sv.deliver(late.out[#late.out],late.player) sv.flush()
     check(#sv.out==sent,"read-only resync is rate limited")
     check(#late.debris==1 and #F.Remaining(late.NLGlass.Client.records[r.id].state)==#F.Remaining(r.state),"partial late-join snapshot does not replay old debris")
     local builds=late.meshBuilds
@@ -724,7 +726,12 @@ elseif scenario=="initial_sync" then
     remote.run("InitPostEntity") remote.run("InitPostEntity") remote.flush()
     check(#remote.out==1,"client readiness requests initial state once")
     sv.deliver(remote.out[1],remote.player)
+    check(#sv.out==before,"the initial push is paced, never written inside the request handler")
+    sv.flush()
     check(#sv.out-before==2,"one initial push contains both panes once")
+    -- R19 (glass F-02): one full initial sync per connection, however late the repeat.
+    sv.time=sv.time+60 sv.deliver(remote.out[1],remote.player) sv.flush()
+    check(#sv.out-before==2,"a repeated full sync is ignored for the rest of the connection")
 elseif scenario=="target_sync" then
     local a,r=pane() local b,r2=pane() network(cl,1)
     cl.player=newEntity("player",{flags={player=true}})
@@ -735,10 +742,86 @@ elseif scenario=="target_sync" then
     end
     mismatch(r) local request=cl.out[#cl.out]
     check(request.tokens[1] and request.tokens[1][2]==r.id,"revision mismatch names just the affected pane")
-    local before=#sv.out sv.deliver(request,cl.player)
+    local before=#sv.out sv.deliver(request,cl.player) sv.flush()
     check(#sv.out==before+1 and sv.out[#sv.out].tokens[1][2]==r.id,"server resync sends only that pane")
-    mismatch(r2) request=cl.out[#cl.out] before=#sv.out sv.deliver(request,cl.player)
+    mismatch(r2) request=cl.out[#cl.out] before=#sv.out sv.deliver(request,cl.player) sv.flush()
     check(#sv.out==before+1 and sv.out[#sv.out].tokens[1][2]==r2.id,"different panes can resync in the same frame")
+elseif scenario=="sync_pacing" then
+    -- R19 (glass F-02): a late join on a map with many near-cap cracked panes is paced per player.
+    local records={}
+    for i=1,12 do
+        local _,r=pane()
+        r.state=F.New(S.Definition({{-128,-64},{128,-64},{128,64},{-128,64}},1,"annealed",1))
+        for k=1,100 do F.Apply(r.state,{x=(k*37+i)%240-120,y=(k*19)%112-56,energy=80000,seed=900+k+i*131,kind="sharp",dx=0,dy=0,dz=1},false,true) end
+        records[i]=r
+    end
+    sv.flush()
+    local function player() return newEntity("player",{flags={player=true}}) end
+    local function request(ply,id)
+        cl.net.Start("nlglass_sync") cl.net.WriteUInt(id,32) cl.net.SendToServer()
+        sv.deliver(cl.out[#cl.out],ply)
+    end
+    -- One server tick: run the timers queued so far (sv.flush would run every later round too).
+    local function tick()
+        local start=#sv.out+1
+        local queue=sv.queue sv.queue={} for _,f in ipairs(queue) do f() end
+        local sent={} for i=start,#sv.out do sent[#sent+1]=sv.out[i] end
+        return sent
+    end
+    local function bytes(packet) return math.ceil(packet.bits/8) end
+    local joiner=player()
+    local before=#sv.out request(joiner,0)
+    check(#sv.out==before,"the full sync writes nothing inside the request handler")
+    local seen,ticks,largest={},0,0
+    repeat
+        local sent=tick() ticks=ticks+1
+        local spent=0
+        for k,packet in ipairs(sent) do
+            check(packet.target==joiner and packet.name=="nlglass_state","paced snapshots go to the joiner alone")
+            if k>1 then check(spent<S.SYNC_BYTES,"a tick sends another pane only while under the per-player budget") end
+            spent=spent+bytes(packet) largest=math.max(largest,bytes(packet))
+            local id=packet.tokens[1][2] seen[id]=(seen[id] or 0)+1
+        end
+        check(spent<S.SYNC_BYTES+largest,"a tick ends within the budget plus the one pane that crossed it")
+        if ticks==1 then
+            check(#sent>=1 and spent>=S.SYNC_BYTES,"the first tick fills the budget")
+            -- A targeted resync is served before the rest of the full sync.
+            local first=sent[1].tokens[1][2] request(joiner,first)
+            local following=tick() ticks=ticks+1
+            check(#following>=1 and following[1].tokens[1][2]==first,"a targeted resync goes first")
+            for _,packet in ipairs(following) do local id=packet.tokens[1][2] seen[id]=(seen[id] or 0)+1 end
+            seen[first]=seen[first]-1
+        end
+    until #sent==0 or ticks>100
+    check(ticks>3 and largest>4096,"twelve near-cap panes take several ticks: "..ticks.." ticks, largest "..largest.." bytes")
+    for _,r in ipairs(records) do check(seen[r.id]==1,"every pane arrives exactly once") end
+    sv.time=sv.time+60 request(joiner,0)
+    check(#tick()==0 and next(S.syncQueues)==nil,"one full initial sync per connection")
+    -- Two joiners at once: each has its own budget in every tick.
+    local a,b=player(),player()
+    request(a,0) request(b,0)
+    local sent=tick() local perPlayer={}
+    for _,packet in ipairs(sent) do perPlayer[packet.target]=(perPlayer[packet.target] or 0)+bytes(packet) end
+    check(perPlayer[a] and perPlayer[b] and perPlayer[a]>=S.SYNC_BYTES and perPlayer[b]>=S.SYNC_BYTES,"both joiners progress in the same tick")
+    -- A pane removed before its turn goes out as a removal, never as a stale snapshot.
+    local gone=records[12] S.Forget(gone)
+    local states,removals=0,0
+    repeat
+        sent=tick()
+        for _,packet in ipairs(sent) do
+            if packet.target==a and packet.name=="nlglass_state" and packet.tokens[1][2]==gone.id then states=states+1 end
+            if packet.target==a and packet.name=="nlglass_remove" then removals=removals+1 end
+        end
+    until #sent==0
+    check(states==0 and removals==1,"a pane removed while queued is sent as a removal")
+    -- A player who leaves mid-sync is dropped; cleanup clears every queue.
+    local leaver,stayer=player(),player()
+    request(leaver,0) request(stayer,0) leaver.valid=false
+    sent=tick()
+    for _,packet in ipairs(sent) do check(packet.target~=leaver,"nothing goes to a player who left") end
+    check(S.syncQueues[leaver]==nil,"the leaver's queue is dropped")
+    sv.run("PreCleanupMap")
+    check(next(S.syncQueues)==nil and #tick()==0,"cleanup clears the queues")
 elseif scenario=="lit_cracks" then
     local ent,r=pane() ent:OnTakeDamage(damage(sv.DMG_BULLET,15)) network(cl,1)
     local material=cl.materials.nlglass_frost_lit or cl.materials.nlglass_frost

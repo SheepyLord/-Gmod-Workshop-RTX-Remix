@@ -8,7 +8,8 @@ its inputs unchanged since the last upload stops at once; one whose build matche
 
 For a release a person starts GitHub's package workflow, which builds the package with every native
 binary (ADR 0106, 0107); --from-ci then waits for that run of a commit, checks its .gma against the run's
-hash report and uploads exactly that file. See publish_workshop.py.md.
+hash report and uploads exactly that file. While the item holds that release, a hook run whose commit
+has the release commit's packaging inputs uploads nothing (review R19, M1). See publish_workshop.py.md.
 """
 from __future__ import annotations
 
@@ -26,7 +27,8 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-CONFIG = REPO / 'tools' / 'workshop.json'
+CONFIG_IN_REPO = 'tools/workshop.json'
+CONFIG = REPO / CONFIG_IN_REPO
 # Git runs a hook with the repository it hooks in GIT_DIR, GIT_INDEX_FILE and the like (githooks(5)).
 # A part's source repository runs this script from its hooks, and every git call here would then read
 # that repository instead of this one, down to where the log goes. Without them, git finds this
@@ -356,22 +358,67 @@ def upload(config: dict, gma: Path, changes: str, log) -> str:
     return output
 
 
-def publish(config: dict, args, log) -> dict:
+def same_inputs(commit: str, repo: Path = REPO) -> bool | None:
+    """Whether `commit` has the packaging inputs (REPO_INPUTS) that HEAD has: True or False, or None when
+    git cannot tell (the commit is not in this clone)."""
+    done = subprocess.run(['git', 'diff', '--quiet', '--no-ext-diff', '--no-textconv', commit, 'HEAD', '--', *REPO_INPUTS],
+                          cwd=repo, capture_output=True, text=True, encoding='utf-8', errors='replace')
+    return {0: True, 1: False}.get(done.returncode)
+
+
+def holds_this_release(published: dict, config: dict, log, repo: Path = REPO) -> bool:
+    """Whether the item holds a release built on GitHub (--from-ci) from a commit whose packaging inputs
+    HEAD still has, with the configuration this run uses (review R19, M1). Then a build here would only
+    replace that release with a development build of the same sources: the stored binaries, where the
+    release's were built on GitHub (ADR 0106, 0108). The record names the release commit in full; one
+    written before R19 does not, and is never taken for this one."""
+    release = published.get('commit_sha')
+    if published.get('source') != 'github' or published.get('item') != str(config['item']) or not release:
+        return False
+    same = same_inputs(release, repo)
+    if same is None:
+        log(f'the item holds the release built on GitHub from {release[:8]}, which this clone does not have: '
+            'building here as usual')
+        return False
+    if not same:
+        return False
+    # The configuration is a packaging input (tools/workshop.json); --config may name another one.
+    released = subprocess.run(['git', 'show', f'{release}:{CONFIG_IN_REPO}'], cwd=repo,
+                              capture_output=True, text=True, encoding='utf-8', errors='replace')
+    try:
+        return released.returncode == 0 and json.loads(released.stdout) == config
+    except ValueError:
+        return False
+
+
+def publish(config: dict, args, log, repo: Path = REPO) -> dict:
+    """The development build (ADR 0108). `repo` is the checkout whose packaging inputs are compared and
+    fingerprinted: this one, except in tests."""
     STATE.mkdir(parents=True, exist_ok=True)
     published_file = STATE / 'published.json'
     published = read_json(published_file) or {}
     print_state = {'item': str(config['item'])}
     if getattr(args, 'commit', None):
-        want, have = git('rev-parse', '--verify', args.commit + '^{commit}'), git('rev-parse', 'HEAD')
+        want, have = git('rev-parse', '--verify', args.commit + '^{commit}', cwd=repo), git('rev-parse', 'HEAD', cwd=repo)
         if want != have:
             raise PublishError(f'this checkout is at {have[:8]}, not at {want[:8]} as asked: nothing published')
-    head = git('log', '-1', '--format=%h %s')
-    dirty = git('status', '--porcelain', '--', *REPO_INPUTS)
+    head, head_sha = git('log', '-1', '--format=%h %s', cwd=repo), git('rev-parse', 'HEAD', cwd=repo)
+    dirty = git('status', '--porcelain', '--', *REPO_INPUTS, cwd=repo)
     if dirty and not (args.dry_run or args.allow_dirty):
         raise PublishError('uncommitted changes in the packaging inputs would go into the item:\n' + dirty)
-    print_state['fingerprint'] = current = fingerprint(config)
+    print_state['fingerprint'] = current = fingerprint(config, repo)
     if not args.force and published.get('item') == str(config['item']) and published.get('fingerprint') == current:
         log('inputs unchanged since the last upload: nothing to do')
+        return {**print_state, 'result': 'unchanged-inputs', 'version': published.get('version')}
+    # Review R19, M1: after a release (--from-ci) the record had no fingerprint, so the next commit, merge
+    # or push of main built here and uploaded a development build over the release. While the release's
+    # commit has the packaging inputs HEAD has (and none has an uncommitted change), it stays; the
+    # fingerprint is recorded, so the next runs stop at the check above until an input changes.
+    if not args.force and not dirty and holds_this_release(published, config, log, repo):
+        log(f"the item holds the release built on GitHub from {published['commit_sha'][:8]}, whose packaging "
+            'inputs HEAD has: nothing to upload')
+        published['fingerprint'] = current
+        published_file.write_text(json.dumps(published, indent=1), encoding='utf-8')
         return {**print_state, 'result': 'unchanged-inputs', 'version': published.get('version')}
     version = f'0.0.0-dev.{stamp()}+{current[:8]}'
     work = STATE / 'work'
@@ -384,7 +431,8 @@ def publish(config: dict, args, log) -> dict:
     gma = Path(summary['gma'])
     record = {'item': str(config['item']), 'fingerprint': current, 'digest': summary['digest'], 'version': version,
               'gma': str(gma), 'gma_bytes': summary['gma_bytes'], 'gma_sha256': summary['gma_sha256'], 'commit': head,
-              'reason': args.reason, 'utc': _dt.datetime.now(_dt.timezone.utc).isoformat(timespec='seconds')}
+              'commit_sha': head_sha, 'reason': args.reason,
+              'utc': _dt.datetime.now(_dt.timezone.utc).isoformat(timespec='seconds')}
     (STATE / 'build.json').write_text(json.dumps(record, indent=1), encoding='utf-8')
     for old in STATE.glob(f'{config["package"]["id"]}-*.gma'):
         if old != gma:
@@ -406,7 +454,9 @@ def publish(config: dict, args, log) -> dict:
 # ---------------------------------------------------------------- the package GitHub built (ADR 0106)
 
 WORKFLOW = 'package.yml'
-RUN_APPEARS = 5 * 60      # a push's run exists within seconds; none after this means the push did not touch the package
+# A run a person started is listed within seconds. Only a person starts the workflow (ADR 0108), so none
+# after this is an error: there is no release package to upload (review R19).
+RUN_APPEARS = 5 * 60
 RUN_FINISHES = 6 * 60 * 60
 RUN_POLL = 60
 
@@ -471,23 +521,25 @@ def download_package(run_id: int, dest: Path, log) -> tuple[Path, dict, dict]:
     return gma, report, summary
 
 
-def publish_from_ci(config: dict, args, log) -> dict:
+def publish_from_ci(config: dict, args, log, repo: Path = REPO) -> dict:
     """Uploads the package the package workflow built for a commit (default HEAD): waits for that run,
     downloads its artifacts, checks the .gma's SHA-256 against the run's report, and uploads exactly that
-    file. A commit with no package run (its changes do not touch the package) uploads nothing."""
+    file. Without a successful run of the commit it uploads nothing and fails: only a person starts the
+    workflow (ADR 0108), so a missing or cancelled run means there is no release package. `repo` is the
+    checkout the commit is looked up in: this one, except in tests."""
     STATE.mkdir(parents=True, exist_ok=True)
     published_file = STATE / 'published.json'
     published = read_json(published_file) or {}
-    sha = git('rev-parse', '--verify', (getattr(args, 'commit', None) or 'HEAD') + '^{commit}')
+    sha = git('rev-parse', '--verify', (getattr(args, 'commit', None) or 'HEAD') + '^{commit}', cwd=repo)
     state = {'item': str(config['item']), 'commit': sha}
     run = wait_for_run(sha, log)
     if run is None:
-        log(f'no package run of {sha[:8]}: its changes do not touch the package, nothing to upload')
-        return {**state, 'result': 'no-run'}
+        # Review R19: this was a success ("no-run") while pushes started the workflow (ADR 0106); since
+        # ADR 0108 a missing run means nobody started it for this commit.
+        raise PublishError(f'no run of the package workflow for {sha[:8]} appeared within {RUN_APPEARS // 60} minutes: '
+                           'nothing uploaded. Start it for this commit (Actions > Build the RTX package > Run workflow), '
+                           'then run this again')
     state['run'] = run.get('html_url')
-    if run.get('conclusion') == 'cancelled':
-        log(f"{run.get('html_url')} was cancelled (a newer push's run replaces it): nothing uploaded")
-        return {**state, 'result': 'cancelled'}
     if run.get('conclusion') != 'success':
         raise PublishError(f"the package run {run.get('html_url')} ended {run.get('conclusion')}: nothing uploaded")
     if not args.force and published.get('item') == str(config['item']) and published.get('run_id') == run['id']:
@@ -499,13 +551,15 @@ def publish_from_ci(config: dict, args, log) -> dict:
     if args.dry_run:
         log(f'dry run: {gma.name} ({report["gma"]["bytes"]:,} bytes, SHA-256 {report["gma"]["sha256"]}) would be uploaded')
         return {**state, 'result': 'dry-run'}
-    subject = git('log', '-1', '--format=%h %s', sha)
+    subject = git('log', '-1', '--format=%h %s', sha, cwd=repo)
     changes = (f'{version} built on GitHub from {subject} ({run.get("html_url")}); .gma SHA-256 {report["gma"]["sha256"]}'
                + (f' ({args.reason})' if args.reason else ''))
     upload(config, gma, changes, log)
+    # commit_sha, the release commit in full: the hook runs compare HEAD's packaging inputs with it
+    # (holds_this_release; review R19, M1).
     record = {'item': str(config['item']), 'version': version, 'digest': summary.get('digest'), 'gma': str(gma),
               'gma_bytes': report['gma']['bytes'], 'gma_sha256': report['gma']['sha256'], 'commit': subject,
-              'source': 'github', 'run_id': run['id'], 'run_url': run.get('html_url'),
+              'commit_sha': sha, 'source': 'github', 'run_id': run['id'], 'run_url': run.get('html_url'),
               'native_binaries': {key: report.get(key) for key in ('binaries', 'compiled', 'fetched', 'from_packages')},
               'reason': args.reason, 'utc': _dt.datetime.now(_dt.timezone.utc).isoformat(timespec='seconds')}
     published_file.write_text(json.dumps(record, indent=1), encoding='utf-8')

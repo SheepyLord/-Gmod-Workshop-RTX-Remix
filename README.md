@@ -36,8 +36,8 @@ working. You can turn RTX off with a setting, or delete the one file to get plai
 - One file in the game folder. Everything else comes through the Steam Workshop and updates
   automatically.
 - Steam's files are never patched, so game updates and file verification keep working.
-- Easy to switch off: a setting turns RTX off, the `-nonativeloader` launch option skips it for one
-  session, and deleting the file removes it.
+- Easy to switch off: a setting turns RTX off, the `-nonativeloader` launch option skips the loader for
+  one start (for troubleshooting), and deleting the file removes it.
 - Your files are respected. Remix's `user.conf` is never touched, and anything the loader has to
   replace is backed up and put back when the package is removed.
 - It moves over an existing RTXLauncher setup in the same folder, backing up what it replaces.
@@ -175,7 +175,8 @@ folder: they take priority over the package's. The player guide bundled in the r
    including copies of package files you had edited (`native-loader\backup\edits`).
 
 To skip the loader for a single session without uninstalling, add `-nonativeloader` to the game's
-launch options.
+launch options. That is for troubleshooting: the package's add-ons stay in the game and run without
+Remix. To play without RTX, set `"remix": { "enabled": false }` in `native-loader\config.json`.
 
 ## Troubleshooting
 
@@ -185,7 +186,7 @@ launch options.
 | Low frame rate, stutter or running out of video memory | Set a lower performance tier in `config.json`, lower the resolution, or try frame generation. The guide's *Performance and memory* page covers 8 GB cards and PCs with 16 GB of RAM. |
 | The window shows "Not Responding" while a big map loads | The game is still working: mounting hundreds of add-ons or loading a large map can take minutes. Loader 0.12.1 and later keep Windows from marking the window during these loads. |
 | My ReShade presets don't appear with RTX | RTX Remix draws through Vulkan, so a Direct3D 9 ReShade has nothing to work on. The package brings its own ReShade for RTX sessions and copies your settings on the first RTX start. Press **Home** to open it. |
-| A package from the Workshop doesn't load | Content packages (Remix mods and Lua add-ons) load from any subscription. A package that contains native code is skipped until you add its Workshop ID to `"allow"`. Only do that for authors you trust. |
+| A package from the Workshop doesn't load | Content packages (Remix mods and Lua add-ons) load from any item you subscribed to (since loader 0.14.0, never from an item a server only downloaded). A package that contains native code is skipped until you add its Workshop ID to `"allow"`. Only do that for authors you trust. |
 
 **Reporting a problem:** include the newest folder in `native-loader\logs\sessions` and
 `native-loader\logs\loader.log`, your graphics card, and the steps that lead to the problem.
@@ -207,8 +208,9 @@ against its SHA-256 hash when it is installed.
 **Does it work in multiplayer?** Yes, including on servers that block client Lua
 (`sv_allowcslua 0`). Server-side tools still need the matching add-on on the server.
 
-**Can I go back to plain Garry's Mod?** Yes: turn RTX off in `config.json`, launch with
-`-nonativeloader`, or [uninstall](#uninstalling) the loader.
+**Can I go back to plain Garry's Mod?** Yes. To play without RTX, turn it off in `config.json`
+(`"remix": { "enabled": false }`); to go back for good, [uninstall](#uninstalling) the loader.
+`-nonativeloader` skips the loader for one start, for troubleshooting.
 
 ## How it works
 

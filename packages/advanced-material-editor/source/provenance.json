@@ -6,9 +6,9 @@
   "unchanged_up_to": "05435bd (origin/main, 2026-11-04)",
   "shipped_binary": {
     "file": "bin/gmcl_advmat_rtx_bridge_win64.dll",
-    "size": 316416,
-    "sha256": "aeb5de42edcf537e517d713100f455eeaa3916f8f148e41ce5266732d3cf87ff",
-    "note": "byte-identical to a local build of this commit (VS 2022 Build Tools, cl 19.44.35228)"
+    "size": 325120,
+    "sha256": "a22bdf4aee6f0a173d5edde263973f8d8585ab872dc1ca29af341364ece7ba67",
+    "note": "R19-E: built from this copy with tools/ci/build_modules.ps1 -Only advmat (VS 2022 Build Tools, MSVC 14.44, garrysmod_common a854f237), its tests passing. Before R19 the part shipped 316,416 bytes, SHA-256 aeb5de42edcf537e517d713100f455eeaa3916f8f148e41ce5266732d3cf87ff, byte-identical to a local build of the origin commit."
   },
   "build": {
     "generator": "Visual Studio 17 2022",
@@ -25,10 +25,23 @@
     },
     "output": "Release/gmcl_advmat_rtx_bridge_win64.dll"
   },
+  "r19_changes": {
+    "round": "R19-E (pre-release review findings BR-02 and BR-03)",
+    "note": "The copy is the origin commit above with these changes, made in this repository; the private origin does not have them.",
+    "files": {
+      "CMakeLists.txt": "adds the Lua binding test target (with ADVMAT_RTX_BUILD_GMOD_MODULE)",
+      "README.md": "describes the DDS layout check, the refused source spellings and the new tests",
+      "src/lua_bindings.cpp": "BR-02: request strings are refused by length before they are copied (hashes 18 bytes, paths 2048, names 64, others 4096, no NUL); every exported function catches C++ exceptions and returns false and a reason; a failed provider construction registers an unavailable provider",
+      "src/standalone_module.cpp": "BR-02: no C++ exception leaves the module entry point",
+      "src/texture_ingest.cpp": "BR-03: a DDS is checked against its file size (known format, mip count at most 16 and what the dimensions allow, faces and array layers, every described byte present); a cached copy gets the same check from its headers and size. The H3 class (found by R19-X): a texture source spelled as a network, device or drive-relative path (two leading separators, a root name other than a drive letter, a drive letter without a root directory) is refused before any filesystem call, so a caller cannot make Windows open an SMB session. Any source lexically outside every allowed root and outside rtx-remix/mods is refused with one code (texture_path_outside_allowed_roots) before canonical(), whether it exists or not, so the error cannot reveal a file on the player PC",
+      "tests/writer_tests.cpp": "BR-03: valid DDS fixtures, crafted headers refused, a cached copy cut to its header is not reused; UNC, device and drive-relative sources refused from their spelling, local spellings still accepted; a present and a missing file outside the roots give identical results, a game-folder file is still told apart",
+      "tests/lua_binding_tests.cpp": "new, BR-02: the Lua boundary against an in-memory ILuaBase"
+    }
+  },
   "files": {
     "CMakeLists.txt": {
-      "size": 2517,
-      "sha256": "401b2ff59a19f1607a72e80ec4ad67ef5a27e9e43f1707409a1f9cb304ec3cd5"
+      "size": 3196,
+      "sha256": "4491f9726fd4bb1c59d38545f619a48af40fca87ea40e3d6ffa5bbd5beda61bb"
     },
     "include/advmat_rtx_bridge/bridge.h": {
       "size": 8941,
@@ -39,8 +52,8 @@
       "sha256": "5a1f6cd3f04b99d96721458a6ac902787ea87c7775a907e0b2474b3e04ee8858"
     },
     "README.md": {
-      "size": 5421,
-      "sha256": "6d0a1d7e62332df8813210fdf258b815442b057b7cba874991262e60919579ff"
+      "size": 6667,
+      "sha256": "e4e7540e9224065aae44f6efcc08d29d6fb309607bb9f8d0a8e98d3d6b8d09dc"
     },
     "src/bridge.cpp": {
       "size": 53691,
@@ -55,24 +68,28 @@
       "sha256": "f87bc9c74d9c8d2523966a2b08b76bf238754832b0d46e6450a4591659ea6232"
     },
     "src/lua_bindings.cpp": {
-      "size": 39054,
-      "sha256": "fc6a7dd947155f849ec2ecfb28adbb6df5534eb488bfd0ea5f7e01b83badbf95"
+      "size": 42209,
+      "sha256": "47e9318ab74ebba54345269465b787e1e2dacbe9dba53ecb4c0de2dafa2cb36f"
     },
     "src/standalone_module.cpp": {
-      "size": 1335,
-      "sha256": "9354393abbb36a4a8da8c0afa57a9be8177bd83be4825cc36a272d81dfcbbb64"
+      "size": 1585,
+      "sha256": "164bd526eb74b954a7cb34bf63e7a906cc3247b1219b78948e66576f422ad6d1"
     },
     "src/texture_ingest.cpp": {
-      "size": 29817,
-      "sha256": "33bc95f09677db24bcf7da488462d1917a8962b82ea55eb3c4cfd6b04a43e071"
+      "size": 44745,
+      "sha256": "99572defa0e68a87871fc0dc14fe860bcdac3264c5401ffd8e33694ee386cd70"
     },
     "src/usda_writer.cpp": {
       "size": 16259,
       "sha256": "aad83a96b7f462f12fe40e99eb0b1620a56d5147e4790b9018e21f4448e4c2f7"
     },
+    "tests/lua_binding_tests.cpp": {
+      "size": 14137,
+      "sha256": "f97ae2ac614b687cb80079a8646209ccbba1cf1f829d1ca6586b348304bfd8af"
+    },
     "tests/writer_tests.cpp": {
-      "size": 85516,
-      "sha256": "934e65e776f0e462cac7aaf18c150ecdf92d75644df2618ce196bf1bed0e16ca"
+      "size": 101283,
+      "sha256": "65d9c0a548a9cd2086137717af9834fbc31b9d071a175cf1b55467d9e71e8432"
     }
   }
 }

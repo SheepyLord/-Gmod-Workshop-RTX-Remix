@@ -16,8 +16,10 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <utility>
@@ -291,6 +293,28 @@ bool through_link(const Run& run, std::string_view relative) {
   }
 }
 
+// True if nothing can be moved to `relative`, a place in the loader's own folders: something is there
+// already, a folder above it is a file, or the path passes through a link. Moves never replace
+// (fs.cpp), so a move there would fail; at a place without a transaction number, every later run too.
+bool occupied(const Run& run, std::string_view relative) {
+  if (through_link(run, relative)) return true;
+  for (const std::string& dir : ancestors(relative)) {
+    const fs::Stat s = fs::stat(run.at(dir));
+    if (s.exists && !s.directory) return true;
+  }
+  return fs::stat(run.at(relative)).exists;
+}
+
+// Where a file the loader displaces is kept as a changed copy (ADR 0035): backup/edits/<tx>/<path>,
+// or, if that place is taken (copies kept before an uninstall reset the journal's numbering), the
+// first free backup/edits/<tx>-<n>/<path>. The loader never deletes these copies.
+std::string free_edits_path(const Run& run, std::uint64_t tx, std::string_view path) {
+  const std::string base = std::string(journal::kEdits) + "/" + std::to_string(tx);
+  std::string kept = base + "/" + std::string(path);
+  for (unsigned n = 2; n < 1000 && occupied(run, kept); ++n) kept = base + "-" + std::to_string(n) + "/" + std::string(path);
+  return kept;
+}
+
 void make_parents(Run& run, std::string_view file);
 
 // Puts back the originals (ADR 0035) whose path no generation refers to any more: a package
@@ -473,10 +497,16 @@ bool begin(Run& run, Lock& lock) {
 
 // The legacy migration's moves (ADR 0042) are checked by SHA-256 just before they happen: a file
 // they archive is not the loader's, and a staged stock copy is what rule 2's exception rests on.
+// So are the files a deployment displaces into backup/originals and backup/edits (ADR 0035): they
+// were hashed when the run planned, possibly minutes of extraction earlier, and the journal records
+// that hash; a file someone changed meanwhile would be kept under a hash that no longer matches it,
+// so the loader could neither put it back nor undo its move. Such a run fails and undoes itself, and
+// the next one plans with the file as it is then (NLCORE-03).
 // Package files were hashed as they were staged; hashing the whole shipment again at every update
 // (about 1.7 GB for the RTX package) would buy nothing but time (docs/RESEARCH.md).
 bool checked_before_move(const Step& step, std::uint64_t tx) {
-  return paths::within(step.to, legacy::kBackups) ||
+  return paths::within(step.to, legacy::kBackups) || paths::within(step.to, journal::kOriginals) ||
+         paths::within(step.to, journal::kEdits) ||
          paths::within(step.from, std::string(kStaging) + "/" + std::to_string(tx) + "/legacy");
 }
 
@@ -774,6 +804,9 @@ struct RootPlan {
   manifest::FileInfo found;
   std::string kept_at;
   bool original = false;
+  // take_over: the original's place, when a file the journal does not list already holds it (an
+  // uninstall left it there to be put back by hand). It stays as it is.
+  std::string stray_original;
 };
 
 // The acts that put the package's copy in place.
@@ -790,8 +823,15 @@ void displace(const Run& run, RootPlan& rp, const Path& target, std::uint64_t tx
   const bool kept = std::any_of(run.journal.originals.begin(), run.journal.originals.end(),
                                 [&](const File& o) { return fold(o.path) == fold(rp.path); });
   rp.original = rp.act == Act::take_over && !kept;
-  rp.kept_at = rp.original ? std::string(journal::kOriginals) + "/" + rp.path
-                           : std::string(journal::kEdits) + "/" + std::to_string(tx) + "/" + rp.path;
+  const std::string original = std::string(journal::kOriginals) + "/" + rp.path;
+  if (rp.original && occupied(run, original)) {
+    // The original's place holds a file the journal does not list: an uninstall could not put it
+    // back and left it there, then deleted the journal. Never overwritten, and it must not fail this
+    // deployment and every later one: the file found now is kept as a changed copy instead (R19 M5).
+    rp.original = false;
+    rp.stray_original = original;
+  }
+  rp.kept_at = rp.original ? original : free_edits_path(run, tx, rp.path);
 }
 
 // What happens to one root file of the plan. Throws PackageProblem if its package cannot place it.
@@ -894,6 +934,10 @@ std::vector<std::string> notes_for(const std::vector<RootPlan>& roots) {
     } else if (r.act == Act::take_over && r.original) {
       notes.push_back(r.path + ": was there before the loader; kept at " + r.kept_at +
                       " and put back once the loader no longer manages this path (uninstall)");
+    } else if (r.act == Act::take_over && !r.stray_original.empty()) {
+      notes.push_back(r.path + ": was in the package's way; kept at " + r.kept_at + ", because " + r.stray_original +
+                      " already holds an older file the loader no longer tracks (it stays there: put it back by hand "
+                      "if you want it)");
     } else if (r.act == Act::take_over) {
       notes.push_back(r.path + ": was in the package's way; kept at " + r.kept_at +
                       " (the file the loader found here first stays the one it puts back)");
@@ -927,16 +971,31 @@ std::map<std::string, std::string> staging_targets(const Planned& p, std::size_t
   return targets;
 }
 
-void ensure_space(const Run& run, std::uint64_t needed) {
-  if (!needed) return;
+// Declared sizes are untrusted: a manifest and an archive index may each say up to 2^63 - 1 bytes per
+// file, so sums saturate instead of wrapping around to a size that passes the space check (NLCORE-05).
+std::uint64_t add_size(std::uint64_t a, std::uint64_t b) {
+  return a > std::numeric_limits<std::uint64_t>::max() - b ? std::numeric_limits<std::uint64_t>::max() : a + b;
+}
+
+struct Space {
+  std::uint64_t available = 0;  // free for this user
+  std::uint64_t total = 0;      // the whole volume
+};
+
+std::optional<Space> disk_space(const Run& run) {
   std::wstring dir = std::filesystem::absolute(run.root).native();
   if (dir.back() != L'\\') dir += L'\\';
-  ULARGE_INTEGER available{};
-  if (!GetDiskFreeSpaceExW(dir.c_str(), &available, nullptr, nullptr)) return;  // cannot tell: go ahead
-  if (available.QuadPart < needed + kSpareBytes) {
+  ULARGE_INTEGER available{}, total{};
+  if (!GetDiskFreeSpaceExW(dir.c_str(), &available, &total, nullptr)) return std::nullopt;  // cannot tell
+  return Space{available.QuadPart, total.QuadPart};
+}
+
+void ensure_space(const std::optional<Space>& space, std::uint64_t needed) {
+  if (!needed || !space) return;  // nothing new, or cannot tell: go ahead
+  if (space->available < needed || space->available - needed < kSpareBytes) {
     throw std::runtime_error("not enough free disk space: the new files need " + std::to_string(needed >> 20) + " MiB and " +
                              std::to_string(kSpareBytes >> 20) + " MiB should stay free, but only " +
-                             std::to_string(available.QuadPart >> 20) + " MiB are free");
+                             std::to_string(space->available >> 20) + " MiB are free");
   }
 }
 
@@ -1056,6 +1115,9 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       journal::save(run.disk, run.root, run.journal);
       run.note("the hold after the rollback has ended: the planned packages are no longer the ones it rolled back from");
     }
+    // An earlier pass of this run staged a package that then failed its checks and was planned
+    // without it, which left nothing to do: its bytes go now, not at the next run (NLCORE-02).
+    if (!staged.empty() && !run.dry_run) finish(run);
     return;
   }
 
@@ -1087,16 +1149,26 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
   // Extract everything new. Every check happens here, before anything in place changes.
   std::vector<std::map<std::string, std::string>> targets;
   std::uint64_t needed = 0;
+  const std::optional<Space> space = disk_space(run);
   for (std::size_t i = 0; i < planned.size(); ++i) {
     targets.push_back(staging_targets(planned[i], i, roots, tx));
     const StagedFiles& done = staged[planned[i].index];
+    std::uint64_t own = 0;
     for (const auto& file : planned[i].package->manifest.files) {
       const std::string key = fold(file.first);
-      if (targets.back().count(key) && !done.count(key)) needed += file.second.size;
+      if (targets.back().count(key) && !done.count(key)) own = add_size(own, file.second.size);
     }
+    // More than the whole volume holds: no amount of freed space lets it deploy, so it is the
+    // package that is wrong, and it must not stop the others. One that only needs more free space
+    // than there is stops the run below, as it always did.
+    if (space && space->total && own > space->total) {
+      throw Broken{planned[i].index, "its files declare " + std::to_string(own >> 20) + " MiB, more than this disk holds (" +
+                                         std::to_string(space->total >> 20) + " MiB)"};
+    }
+    needed = add_size(needed, own);
   }
-  for (const auto& file : migration.files) needed += file.stock.size;
-  ensure_space(run, needed);
+  for (const auto& file : migration.files) needed = add_size(needed, file.stock.size);
+  ensure_space(space, needed);
   for (std::size_t i = 0; i < planned.size(); ++i) {
     StagedFiles& done = staged[planned[i].index];
     std::set<std::string> missing;
@@ -1382,7 +1454,17 @@ void roll_back(Run& run) {
   // Previous root files that are not in place: brought back from where the current generation put them.
   for (const auto& [key, theirs] : prev_roots) {
     const auto mine = cur_roots.find(key);
-    if (mine != cur_roots.end() && mine->second->sha256 == theirs->sha256) continue;  // in place
+    if (mine != cur_roots.end() && mine->second->sha256 == theirs->sha256) {
+      // The same file in both generations stays where it is, and the restored generation records it
+      // as placed: it has to be there as placed. No copy of it is kept anywhere (NLCORE-04).
+      if (!theirs->adopted && !mine->second->adopted &&
+          (through_link(run, theirs->path) || !unchanged(run.at(theirs->path), *mine->second, false))) {
+        refuse(run, theirs->path + " is missing or changed, so the previous generation cannot be restored as it was; "
+                                   "apply puts the package's copy back, then roll back");
+        return;
+      }
+      continue;  // in place
+    }
     if (theirs->adopted) continue;  // not the loader's; checked below
     const std::string from = j.previous_backup.empty() ? std::string() : j.previous_backup + "/" + theirs->path;
     if (!from.empty() && (through_link(run, from) || through_link(run, theirs->path))) {
@@ -1467,6 +1549,13 @@ void remove_all(Run& run) {
   next.loader = std::string(nl::version());
   next.next = run.journal.next;
   for (const auto& entry : locations(run.journal)) next.retired.push_back(entry.second);
+  // So do the files an earlier run could not delete yet (read-only, or open in another program): the
+  // journal goes only once nothing it lists is left, else they would stay in the game (NLCORE-01).
+  for (const File& f : run.journal.retired) {
+    if (std::none_of(next.retired.begin(), next.retired.end(), [&](const File& r) { return fold(r.path) == fold(f.path); })) {
+      next.retired.push_back(f);
+    }
+  }
   next.originals = run.journal.originals;  // put back once the loader's copies are deleted (ADR 0035)
   next.dirs = run.journal.dirs;
   if (run.journal.current) {

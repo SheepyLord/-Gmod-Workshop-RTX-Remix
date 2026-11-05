@@ -22,9 +22,19 @@ Idle panes have no polling. All hits record the native pane's last impact before
 Deduplicated blast messages are deferred until after synchronous pane break messages.
 
 The blast deferral also waits for one-turn native-removal/physics breaks, then sends the impulse.
-Client readiness is the only initial push. nlglass_sync reads a uint32 pane ID (0 = initial list),
-deduplicates per ID and permits at most 16 different requests in two seconds. A targeted request
-sends only that snapshot, or removal for an absent ID. There is no PlayerInitialSpawn timer.
+Client readiness is the only initial push. nlglass_sync reads a uint32 pane ID (0 = initial list).
+There is no PlayerInitialSpawn timer.
+
+R19 (glass F-02): nothing is written inside the request handler. A player gets **one full initial
+sync per connection** (`ply.NLGlassFullSync`; the player entity lives exactly one connection, so a
+later 0 is ignored); it queues every current pane ID, sorted. Targeted requests keep their limit (at
+most 16 different IDs in two seconds, each once) and go to the front of the same per-player queue
+(`S.syncQueues`). A `timer.Simple(0)` chain, alive only while a queue holds something, sends each
+waiting player at least one pane per tick, then more while that tick's bytes for the player stay under
+`S.SYNC_BYTES` (16,000; `net.BytesWritten`, or one pane per tick without it). A near-cap snapshot is
+about 10 KiB in game, so a tick sends at most the budget plus the pane that crossed it. A pane gone by
+its turn is sent as `nlglass_remove`; a player who left is dropped; `PreCleanupMap` clears every queue
+(each pane registered after cleanup is broadcast). `S.Snapshot` returns the bytes it wrote.
 
 Captures map OnBreak keys via EntityKeyValue, mirrors their raw values to an unused OnUser1–4
 output of the original surface and fires its FireUser input once. It never sends engine Shatter

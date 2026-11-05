@@ -155,6 +155,9 @@ net.Receive('mmdhl_action',function(_,p)
  if action=='bonemap' then if mmdhl.boneMapper and mmdhl.boneMapper.HandleSave then mmdhl.boneMapper.HandleSave(p,id,value) end return end
  if action=='bonemap_pins' then if mmdhl.boneMapper and mmdhl.boneMapper.HandleQuery then mmdhl.boneMapper.HandleQuery(p,id) end return end
  if not mmdhl.CanEdit(p,ent,'bodygroups') then return end
+ -- Removing and replacing are checked as the remover property, and only the owner (or an
+ -- admin) may do them (R19, review L-02): Sandbox allows bodygroups on anyone's entity.
+ if (action=='remove' or action=='replace') and (not mmdhl.CanEdit(p,ent,'remover') or not mmdhl.OwnsEntity(p,ent)) then return end
  if IsValid(ent) and ent:GetClass()~='mmdhl_ragdoll' and mmdhl.IsMMD(ent) then
   local h=mmdhl.GetInstance(ent)
   if action=='freeze' and ent:GetClass()=='prop_ragdoll' then local motion=ent:GetPhysicsObjectNum(0):IsMotionEnabled() for i=0,17 do local b=ent:GetPhysicsObjectNum(i) b:EnableMotion(not motion) if not motion then b:Wake() end end

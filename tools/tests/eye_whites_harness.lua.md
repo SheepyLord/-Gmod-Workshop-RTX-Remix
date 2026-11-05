@@ -12,6 +12,11 @@ The missing-file size-0 regression models the measured GMod API result and must 
 Soft-copy cases cover immediate/late copies, a copy inheriting the proxy, foreign asset/slot rejection,
 user edits and pruning/restoration. Public and soft eye draws share one alias, while the face stays original.
 
+`cache_cap` (R19, companion F-03) names the cached proxies as the companion does (64 lowercase hex
+digits) and adds older, larger files under other names (`my_edit`, 64 uppercase hex digits, 63 and 65
+digits): the oldest digest-named proxy goes, and every other file stays. It fails on the controller
+before R19, which counted and deleted every `.vtf` in the folder.
+
 LuaJIT fixture executing the actual companion matcher, VTF validator/identity encoder and controller.
 Invoked by [test_eye_whites.py](test_eye_whites.py.md), or `luajit eye_whites_harness.lua <repo> <scenario>`.
 Exercises semantic positives/exclusions and English fallback, byte/alpha/mip preservation, shared-atlas

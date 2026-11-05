@@ -10,6 +10,7 @@
 #include <Windows.h>
 #endif
 
+#include <exception>
 #include <filesystem>
 #include <optional>
 
@@ -33,9 +34,15 @@ std::optional<std::filesystem::path> DiscoverExecutablePath() {
 } // namespace
 
 GMOD_MODULE_OPEN() {
-    const auto executable = DiscoverExecutablePath();
-    const auto gameRoot = executable ?
-        advmat::rtx_bridge::FindGameRootFromExecutable(*executable) : std::nullopt;
+    // No C++ exception leaves the module's entry point either: a failed
+    // discovery is a missing game root.
+    std::optional<std::filesystem::path> gameRoot;
+    try {
+        const auto executable = DiscoverExecutablePath();
+        if (executable) gameRoot = advmat::rtx_bridge::FindGameRootFromExecutable(*executable);
+    } catch (const std::exception&) {
+        gameRoot.reset();
+    }
     // Register an unavailable provider when discovery fails. Lua can inspect
     // capabilities and fall back safely, without trusting the process CWD.
     advmat::rtx_bridge::RegisterLua(LUA,

@@ -139,19 +139,39 @@ void simulateUnknownFinalPaths(bool unknown){unknownFinals=unknown;}
 DependencyScope::DependencyScope(path modelFolder,bool textureFolders,Reach r):root(std::move(modelFolder)),reach(r){
     trees={root};
     if(textureFolders)for(auto base:{root.parent_path(),root.parent_path().parent_path()})for(auto name:{L"tex",L"textures"})trees.push_back(base/name);
+    // A model in a Workshop item reads anywhere in that item (R19, review MH-01).
+    if(auto item=workshopItem(root);!item.empty()&&item!=root){itemTree=trees.size();trees.push_back(item);}
+}
+// <...>\workshop\content\<app id>\<item id>: the folder Steam keeps one Workshop item in.
+DependencyScope::path DependencyScope::workshopItem(const path& folder){
+    auto digits=[](const std::wstring& s){return !s.empty()&&std::all_of(s.begin(),s.end(),[](wchar_t c){return c>=L'0'&&c<=L'9';});};
+#ifdef _WIN32
+    auto named=[](const std::wstring& s,const wchar_t* name){return sameText(s,name);};
+#else
+    auto named=[](const std::wstring& s,const wchar_t* name){return s==name;};
+#endif
+    std::error_code error;auto full=fs::absolute(folder,error);if(error)return {};full=full.lexically_normal();
+    std::vector<path> chain;for(auto at=full;;at=at.parent_path()){chain.push_back(at);if(at==at.parent_path()||chain.size()>256)break;}
+    // chain[i] is the item when its parent is an app id under content under workshop.
+    for(size_t i=0;i+3<chain.size();i++){
+        auto item=chain[i].filename().wstring(),app=chain[i+1].filename().wstring();
+        if(digits(item)&&digits(app)&&named(chain[i+2].filename().wstring(),L"content")&&named(chain[i+3].filename().wstring(),L"workshop"))return chain[i];
+    }
+    return {};
 }
 #ifndef _WIN32
 const std::vector<std::wstring>& DependencyScope::finalTrees() const {
     if(resolved)return finals;resolved=true;
     for(size_t i=0;i<trees.size();i++){
         // A tex or textures folder near the model counts as itself, never where a link leads.
-        if(i&&!notLink(trees[i].wstring()))continue;
+        if(!linkMayLead(i)&&!notLink(trees[i].wstring()))continue;
         Handle h;h.fd=open(trees[i].c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC);if(h.fd<0)continue;
         auto real=finalPath(h.fd);if(!real.empty())finals.push_back(real);
     }
     return finals;
 }
-DependencyScope::path DependencyScope::locate(std::string_view reference) const {
+DependencyScope::path DependencyScope::find(std::string_view reference,bool& outsideRoot) const {
+    outsideRoot=false;
     if(reference.empty()||props::networkPath(reference))return {};
     // Model files come from Windows: '\\' separates as '/' does, and letter case may differ.
     std::wstring text;try{text=posix::wideFromUtf8(reference,true);}catch(...){return {};}
@@ -161,21 +181,22 @@ DependencyScope::path DependencyScope::locate(std::string_view reference) const 
     if(!plainParts(candidate))return {};
     candidate=posix::matchCase(candidate);
     auto full=absoluteText(candidate);if(full.empty())return {};
-    if(reach==Reach::Local)return candidate;
+    // Both reaches stay in the import root as written (R19, review MH-01).
     for(auto& tree:trees)if(within(full,absoluteText(tree)))return candidate;
-    return {};
+    outsideRoot=true;return {};
 }
 bool DependencyScope::allows(const path& file) const {
     if(!plainParts(file))return false;
     auto text=absoluteText(file);if(text.empty())return false;
     std::vector<size_t> holders;for(size_t i=0;i<trees.size();i++)if(within(text,absoluteText(trees[i])))holders.push_back(i);
-    if(holders.empty()&&reach==Reach::Confined)return false;
+    if(holders.empty())return false;
     Handle h;h.fd=open(fs::path(text).c_str(),O_RDONLY|O_CLOEXEC|O_NONBLOCK);if(h.fd<0)return false;
     struct stat st{};if(fstat(h.fd,&st)!=0||!S_ISREG(st.st_mode))return false;
-    // Links are followed: where the file really is decides.
+    // Links are followed: for a confined scope, where the file really is decides; a local
+    // one follows the player's own links inside the root.
     auto real=finalPath(h.fd);
     bool inside=reach==Reach::Local;if(!inside&&!real.empty())for(auto& tree:finalTrees())inside=inside||within(real,tree);
-    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,i>0);
+    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,!linkMayLead(i));
     if(!inside)return false;
     auto& denied=denylist();return !denied||!denied(path(real.empty()?text:real));
 }
@@ -184,16 +205,17 @@ const std::vector<std::wstring>& DependencyScope::finalTrees() const {
     if(resolved)return finals;resolved=true;
     for(size_t i=0;i<trees.size();i++){
         auto io=extended(trees[i]);if(io.empty())continue;
-        Handle h;h.h=CreateFileW(io.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|(i?FILE_FLAG_OPEN_REPARSE_POINT:0),nullptr);
+        Handle h;h.h=CreateFileW(io.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|(linkMayLead(i)?0:FILE_FLAG_OPEN_REPARSE_POINT),nullptr);
         if(h.h==INVALID_HANDLE_VALUE)continue;
         FILE_ATTRIBUTE_TAG_INFO tag{};if(!GetFileInformationByHandleEx(h.h,FileAttributeTagInfo,&tag,sizeof(tag))||!(tag.FileAttributes&FILE_ATTRIBUTE_DIRECTORY))continue;
         // A tex or textures folder near the model counts as itself, never where a link or junction leads.
-        if(i&&(tag.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT)&&IsReparseTagNameSurrogate(tag.ReparseTag))continue;
+        if(!linkMayLead(i)&&(tag.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT)&&IsReparseTagNameSurrogate(tag.ReparseTag))continue;
         auto real=finalPath(h.h);if(!real.empty())finals.push_back(real);
     }
     return finals;
 }
-DependencyScope::path DependencyScope::locate(std::string_view reference) const {
+DependencyScope::path DependencyScope::find(std::string_view reference,bool& outsideRoot) const {
+    outsideRoot=false;
     if(reference.empty()||props::networkPath(reference))return {};
     path ref;try{ref=path(fromUtf8(reference));}catch(...){return {};}
     path candidate;
@@ -202,26 +224,29 @@ DependencyScope::path DependencyScope::locate(std::string_view reference) const 
     else candidate=(root/ref).lexically_normal();
     if(!plainParts(candidate))return {};
     auto text=absoluteText(candidate);if(text.empty())return {};
-    if(reach==Reach::Local)return candidate;
+    // Both reaches stay in the import root as written (R19, review MH-01).
     for(auto& tree:trees)if(within(text,absoluteText(tree)))return candidate;
-    return {};
+    outsideRoot=true;return {};
 }
 bool DependencyScope::allows(const path& file) const {
     if(!plainParts(file))return false;
     auto text=absoluteText(file);if(text.empty())return false;
     std::vector<size_t> holders;for(size_t i=0;i<trees.size();i++)if(within(text,absoluteText(trees[i])))holders.push_back(i);
-    if(holders.empty()&&reach==Reach::Confined)return false;
+    if(holders.empty())return false;
     auto io=extended(file);if(io.empty())return false;
     Handle h;h.h=CreateFileW(io.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,nullptr);
     if(h.h==INVALID_HANDLE_VALUE)return false;
     BY_HANDLE_FILE_INFORMATION info{};if(!GetFileInformationByHandle(h.h,&info)||(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))return false;
-    // Links and junctions are followed by Windows: where the file really is decides.
+    // Links and junctions are followed by Windows: for a confined scope, where the file really
+    // is decides; a local one follows the player's own links inside the root.
     auto real=finalPath(h.h);
     bool inside=reach==Reach::Local;if(!inside&&!real.empty())for(auto& tree:finalTrees())inside=inside||within(real,tree);
     // Where Windows cannot say, the path as written counts when no link lies on the way.
-    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,i>0);
+    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,!linkMayLead(i));
     if(!inside)return false;
     auto& denied=denylist();return !denied||!denied(path(real.empty()?longName(text):real));
 }
 #endif
+DependencyScope::path DependencyScope::locate(std::string_view reference) const {bool outsideRoot=false;return find(reference,outsideRoot);}
+bool DependencyScope::outside(std::string_view reference) const {bool outsideRoot=false;find(reference,outsideRoot);return outsideRoot;}
 }

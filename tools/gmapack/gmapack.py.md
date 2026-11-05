@@ -14,7 +14,15 @@ user confirmed this on 2026-10-28 (R1-025), which is why it lives in `tools/` an
 | `extract --file FILE.gma --out DIR` | Extracts with path-traversal, duplicate and CRC checks |
 | `list` / `verify --file FILE.gma` | Lists entries / checks every CRC |
 
-It also reads the LZMA-wrapped form that `gmpublish.exe` uploads produce.
+It also reads the LZMA-wrapped form that `gmpublish.exe` uploads produce. It decodes that form into a
+spool that stays in memory up to 8 MiB and then spills to a temporary file (`TEMP`, which
+`tools\test.ps1` and `tools\build.ps1` point into `out\tmp`).
+
+**Changed here** (review R19, F-08): the decoded size is capped at 8 GiB (`MAX_LZMA_OUTPUT_SIZE`). A
+wrapper that declares more stops before decoding, and one that declares no size stops when its output
+passes the cap, so a small crafted wrapper can no longer fill the drive. Before, only a declared size
+bounded the output, and an undeclared one did not. The largest real archive these tools read, the RTX
+package, is about 1.8 GB.
 
 In this repo it is the reference implementation the C++ GMA reader (M2) is tested against, and the
 packer for building test packages and the Remix runtime package (M4).

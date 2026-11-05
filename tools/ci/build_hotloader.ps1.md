@@ -19,13 +19,17 @@ tools\ci\build_hotloader.ps1 -Source <a source tree> -Vendor <the add-on's boots
 | `-RunUrl` | Recorded with each file |
 | `-Jobs` | Parallel MSBuild projects (default 2) |
 
+Relative `-Out`, `-Work`, `-Source` and `-Vendor` folders are taken from where the script is started (R19: before,
+they broke the build once it changed into the source copy).
+
 ## What it does
 
 1. Writes the source to `<Work>\src`: `tools\inputs.py extract model-hotloader --prefix source/mmdhl/`
    (only those files are read), or a copy of `-Source`; then `-Vendor`, if given.
-2. The add-on's own recipe (its `scripts/build.ps1`): `scripts/bootstrap.py` (the pinned GitHub archives
-   of `dependencies.lock.json` from codeload.github.com, CoACD's wheel from PyPI, the add-on's patches of
-   Bullet and nanoem), `scripts/patch-bullet-threading.py`, then CMake with Visual Studio 17 2022, x64,
+2. The add-on's own recipe (its `scripts/build.ps1`): `scripts/bootstrap.py` (the locked commits of
+   `dependencies.lock.json`, each fetched with git from GitHub, which checks every object against the
+   commit's hash, since R19; CoACD's wheel from PyPI against its SHA-256; the add-on's patches of Bullet and
+   nanoem), `scripts/patch-bullet-threading.py`, then CMake with Visual Studio 17 2022, x64,
    and a Release build of the targets `mmdhl_client`, `mmdhl_server` and `mmdhl_worker` (with
    `mmd_runtime`). The test targets are not built.
 3. `mmdhl_worker.exe --version` must report the release `pins.json` names (2.3.1).

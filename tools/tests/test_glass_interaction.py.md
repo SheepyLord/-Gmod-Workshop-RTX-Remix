@@ -23,3 +23,6 @@ R8-G adds scene_flags and collision_settings LuaJIT scenarios; uses no game or i
 R8-G adds bullets_interest, bullets_client_interest, melee_stock and melee_swep scenarios. Together they check delayed two-client routing, lease expiry/renewal and real observed melee without modifying weapons.
 
 R8-G also runs load_queue, load_area and load_manager: bounded burst construction, area/near-detail preservation and the real-fracture 50-pane replay.
+
+R19 adds `bullets_visibility` (glass F-01): a client's claimed interest region forwards a shot only
+when the path is in that player's (or its camera's) PVS or within 1,024 units of its eyes.

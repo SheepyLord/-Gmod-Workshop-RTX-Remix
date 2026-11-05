@@ -12,6 +12,13 @@ the guard early only where its own cache file exists on the machine running it
 start. The cache file is therefore named from its inputs (generator format, stock initializer and
 guard hashes) rather than from its own bytes, which name it.
 
+R19 (proxy F-02): "this machine's active RTX start" means this start's. The guard reads
+`status.json`, which stays after the game exits and which a start through an off switch never rewrites,
+so with loader 0.14.0 or later it also requires the RTX session marker
+`garrysmod/data/native-loader/rtx-session.txt` that the bootstrap holds for the life of an RTX start
+(`nl::status::hold_session_marker`). `tests/guard_session_marker.lua` runs that decision on the
+production guard.
+
 Any preparation failure (unverified catalog, changed stock initializer after a GMod update, a link)
 throws, and start-up records a note and keeps RTX: the companion's guard then installs from its
 ordinary autorun, later ([ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md)).

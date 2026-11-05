@@ -1222,6 +1222,151 @@ TEST_CASE("deploy: an original stays kept while another file is at its path (ADR
   CHECK(g.read(kModDir + "mod.usda") == "#usda mine\n");  // a changed file is not the loader's to delete
   CHECK(mentions(removed.notes, "put it back by hand"));
   CHECK(g.read("native-loader/backup/originals/" + kModDir + "mod.usda") == "someone else's");
+
+  // R19 M5: the next deployment takes the path over again, with a fresh journal. The original's place
+  // holds that untracked file: never overwritten, and no reason to fail, now or at any later run. So is
+  // the first changed-copy place (a copy kept before the uninstall reset the transaction numbers).
+  write_file(g.root / "native-loader" / "backup" / "edits" / "1" / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "an older edit");
+  const auto again = apply_at(g.root);
+  REQUIRE(again.outcome == "deployed");
+  CHECK(has_change(again, "take-over", kModDir + "mod.usda"));
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");
+  CHECK(g.read("native-loader/backup/originals/" + kModDir + "mod.usda") == "someone else's");
+  CHECK(g.read("native-loader/backup/edits/1/" + kModDir + "mod.usda") == "an older edit");
+  CHECK(g.read("native-loader/backup/edits/1-2/" + kModDir + "mod.usda") == "#usda mine\n");
+  CHECK(mentions(again.notes, "already holds an older file the loader no longer tracks"));
+  CHECK(g.journal().originals.empty());
+  CHECK(apply_at(g.root).outcome == "unchanged");
+  REQUIRE(nl::deploy::uninstall(g.root).outcome == "removed");
+  CHECK(!g.has(kModDir + "mod.usda"));  // the kept copies stay where the notes said
+  CHECK(g.read("native-loader/backup/edits/1-2/" + kModDir + "mod.usda") == "#usda mine\n");
+  CHECK(g.read("native-loader/backup/originals/" + kModDir + "mod.usda") == "someone else's");
+}
+
+TEST_CASE("deploy: uninstall keeps listing a file it could not delete yet, until it is gone (NLCORE-01)") {
+  Game g("deploy_uninstall_readonly");
+  g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  g.allow({"garrysmod/addons/mods.gma"});
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  const auto locked = nl::fs::join(g.root, kModDir + "mod.usda");
+  REQUIRE(SetFileAttributesW(locked.c_str(), FILE_ATTRIBUTE_READONLY));
+  // The second run used to drop the record, and the journal with it, leaving the file in the game.
+  for (int run = 0; run < 2; ++run) {
+    const auto r = nl::deploy::uninstall(g.root);
+    CHECK(r.outcome == "removed");
+    CHECK(mentions(r.notes, "read-only"));
+    CHECK(mentions(r.notes, "run uninstall again"));
+    CHECK(g.has(kModDir + "mod.usda"));
+    REQUIRE(g.has("native-loader/state.json"));
+    const auto j = g.journal();
+    REQUIRE(j.retired.size() == 1);
+    CHECK(j.retired[0].path == kModDir + "mod.usda");
+  }
+  REQUIRE(SetFileAttributesW(locked.c_str(), FILE_ATTRIBUTE_NORMAL));
+  CHECK(nl::deploy::uninstall(g.root).outcome == "removed");
+  CHECK(!g.has(kModDir + "mod.usda"));
+  CHECK(!g.has("native-loader/state.json"));
+}
+
+TEST_CASE("deploy: a package that fails its checks leaves no staged bytes, also when nothing else changes (NLCORE-02)") {
+  Game g("deploy_failed_staging");
+  // A development copy whose file has the listed size but not the listed SHA-256, and nothing else.
+  const Pkg good = mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}});
+  const sfs::path dev = g.dir / "dev" / "mods";
+  write_file(dev / "native" / "manifest.json", manifest_of(good));
+  write_file(dev / "native" / "root" / "rtx-remix" / "mods" / "test_mod" / "mod.usda", "#usda XX\n");
+  g.allow({}, {dev.generic_string()});
+  const auto r = apply_at(g.root);
+  CHECK(r.outcome == "unchanged");
+  CHECK(skipped_because(r, "does not match its SHA-256"));
+  CHECK(!g.has("native-loader/staging"));
+  CHECK(!g.has(kModDir + "mod.usda"));
+}
+
+TEST_CASE("deploy: a file in a package's way that changes during extraction is not kept under its old hash (NLCORE-03)") {
+  Game g("deploy_original_changed");
+  const sfs::path target = g.root / "rtx-remix" / "mods" / "test_mod" / "mod.usda";
+  write_file(target, "someone else's");
+  g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  g.allow({"garrysmod/addons/mods.gma"});
+  // An editor saves the file while the package is extracted: after the plan hashed it, before its move.
+  bool saved = false;
+  nl::fs::Counting disk(nl::fs::win32(), [&](std::uint64_t, std::string_view what) {
+    if (!saved && what == "create_file") {
+      saved = true;
+      write_file(target, "saved meanwhile");
+    }
+  });
+  const auto r = apply_at(g.root, &disk);
+  CHECK(saved);
+  CHECK(r.outcome == "failed");
+  CHECK(r.error.find("changed before its move") != std::string::npos);
+  CHECK(r.error.find("undone") != std::string::npos);
+  CHECK(g.read(kModDir + "mod.usda") == "saved meanwhile");  // where it was, as it is now
+  CHECK(!g.has("native-loader/backup/originals"));
+  // The next run plans with the file as it is then, and keeps that.
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  CHECK(g.read("native-loader/backup/originals/" + kModDir + "mod.usda") == "saved meanwhile");
+  const auto j = g.journal();
+  REQUIRE(j.originals.size() == 1);
+  CHECK(j.originals[0].sha256 == nl::sha256::of("saved meanwhile"));
+  REQUIRE(nl::deploy::uninstall(g.root).outcome == "removed");
+  CHECK(g.read(kModDir + "mod.usda") == "saved meanwhile");
+}
+
+TEST_CASE("deploy: rollback refuses while a root file both generations share is missing or changed (NLCORE-04)") {
+  Game g("deploy_rollback_shared");
+  g.add("mods.gma", mods("1.0.0", {{kMod + "shared.dds", "S"}, {kMod + "mod.usda", "#usda v1\n"}}));
+  g.allow({"garrysmod/addons/mods.gma"});
+  REQUIRE(apply_at(g.root).ok());
+  g.add("mods.gma", mods("1.1.0", {{kMod + "shared.dds", "S"}, {kMod + "mod.usda", "#usda v2\n"}}));
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  const sfs::path shared = g.root / "rtx-remix" / "mods" / "test_mod" / "shared.dds";
+  for (const char* damage : {"missing", "changed"}) {
+    if (std::string(damage) == "missing") sfs::remove(shared);
+    else write_file(shared, "T");
+    const State before = snapshot(g.root);
+    const auto refused = nl::deploy::rollback(g.root);
+    CHECK(refused.outcome == "refused");
+    CHECK(refused.error.find(kModDir + "shared.dds is missing or changed") != std::string::npos);
+    CHECK(snapshot(g.root) == before);
+    CHECK(!g.journal().hold.has_value());
+  }
+  // apply puts the package's copy back (keeping the changed one aside); then the rollback works.
+  REQUIRE(apply_at(g.root).outcome == "deployed");
+  CHECK(g.read(kModDir + "shared.dds") == "S");
+  const auto back = nl::deploy::rollback(g.root);
+  CHECK(back.outcome == "rolled-back");
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");
+  CHECK(g.read(kModDir + "shared.dds") == "S");
+}
+
+TEST_CASE("deploy: declared sizes cannot wrap the free-space check (NLCORE-05)") {
+  Game g("deploy_huge_sizes");
+  // Two packages whose archives each declare a file of 2^63 - 1 bytes, and hold one byte of it.
+  const auto huge = [&](const std::string& id, const std::string& mod) {
+    const std::string path = "native/root/rtx-remix/mods/" + mod + "/huge.dds";
+    const std::string manifest = "{\"schema\": 1, \"id\": \"" + id + "\", \"version\": \"1.0.0\", \"kinds\": [\"root-files\"], "
+                                 "\"files\": {\"" + path + "\": {\"size\": 9223372036854775807, \"sha256\": \"" + std::string(64, 'a') +
+                                 "\"}}, \"root_files\": [{\"path\": \"rtx-remix/mods/" + mod + "\"}]}";
+    nl::test::FixtureArchive archive;
+    archive.files.push_back({"native/manifest.json", manifest});
+    archive.files.push_back({path, "x", std::nullopt, std::int64_t{9223372036854775807}});
+    write_file(g.root / "garrysmod" / "addons" / (id + ".gma"), nl::test::build_gma(archive));
+  };
+  huge("huge-one", "huge_one");
+  huge("huge-two", "huge_two");
+  g.add("mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  g.allow({"garrysmod/addons/huge-one.gma", "garrysmod/addons/huge-two.gma", "garrysmod/addons/mods.gma"});
+  const auto r = apply_at(g.root);
+  CHECK(r.outcome == "deployed");
+  CHECK(std::count_if(r.skipped.begin(), r.skipped.end(), [](const nl::deploy::Skipped& s) {
+          return s.reason.find("more than this disk holds") != std::string::npos;
+        }) == 2);
+  CHECK(g.read(kModDir + "mod.usda") == "#usda v1\n");
+  CHECK(!g.has("rtx-remix/mods/huge_one"));
+  CHECK(!g.has("rtx-remix/mods/huge_two"));
+  CHECK(!g.has("native-loader/staging"));
 }
 
 TEST_CASE("deploy: a retired file that cannot be deleted does not stop later commands") {
@@ -1485,8 +1630,9 @@ TEST_CASE("startup deployment: a subscription's content package needs no allowli
   sfs::create_directories(root / "garrysmod" / "cfg");
   write_file(config, R"({"schema": 1})");
   const std::string items = "\"700\" { \"size\" \"1\" } \"701\" { \"size\" \"1\" } ";
+  const std::string subscribed = "\"700\" { \"subscribedby\" \"12345678\" } \"701\" { \"subscribedby\" \"12345678\" } ";
   write_file(steamapps / "workshop" / "appworkshop_4000.acf",
-             "\"AppWorkshop\" { \"WorkshopItemsInstalled\" { " + items + "} \"WorkshopItemDetails\" { " + items + "} }");
+             "\"AppWorkshop\" { \"WorkshopItemsInstalled\" { " + items + "} \"WorkshopItemDetails\" { " + subscribed + "} }");
   write_gma(content / "700" / "mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}, {kMod + "a.dds", "A"}}));
   write_gma(content / "701" / "runtime.gma", runtime("1.0.0", "MZ-one"));
   const auto has = [&](const std::string& relative) { return nl::fs::stat(nl::fs::join(root, relative)).exists; };
@@ -1514,5 +1660,93 @@ TEST_CASE("startup deployment: a subscription's content package needs no allowli
   CHECK(third.deployment.packages.size() == 1);
   CHECK(!has(kModDir + "mod.usda"));
   CHECK(has("native-loader/packages/test-runtime/1.0.0_2/runtime/d3d9.dll"));
+  sfs::remove_all(dir);
+}
+
+TEST_CASE("startup deployment: content comes only from subscriptions, not from items a server downloaded (ADR 0111)") {
+  const auto dir = nl::test::scratch_dir("startup_downloaded");
+  const sfs::path steamapps = dir / "lib" / "steamapps";
+  const sfs::path root = steamapps / "common" / "game";
+  const sfs::path content = steamapps / "workshop" / "content" / "4000";
+  const sfs::path acf = steamapps / "workshop" / "appworkshop_4000.acf";
+  write_file(root / "bin" / "win64" / "gmod.exe", "");
+  sfs::create_directories(root / "garrysmod" / "cfg");
+  write_file(root / "native-loader" / "config.json", R"({"schema": 1})");
+  // Steam's record of items 800 and 801, each installed; `subscribed` lists those an account here
+  // subscribed to. A download through steamworks.DownloadUGC leaves details without subscribedby.
+  const auto record = [&](const std::vector<std::string>& subscribed) {
+    std::string details;
+    for (const char* id : {"800", "801"}) {
+      const bool yes = std::find(subscribed.begin(), subscribed.end(), id) != subscribed.end();
+      details += std::string("\"") + id + "\" { \"manifest\" \"1\" \"timetouched\" \"2\"" +
+                 (yes ? " \"subscribedby\" \"12345678\"" : "") + " } ";
+    }
+    write_file(acf, "\"AppWorkshop\" { \"appid\" \"4000\" \"WorkshopItemsInstalled\" { \"800\" { \"size\" \"1\" } "
+                    "\"801\" { \"size\" \"1\" } } \"WorkshopItemDetails\" { " + details + "} }");
+  };
+  write_gma(content / "800" / "mods.gma", mods("1.0.0", {{kMod + "mod.usda", "#usda v1\n"}}));
+  const Pkg second{"test-mods-2", "1.0.0", "[\"root-files\"]", ", \"root_files\": [{\"path\": \"rtx-remix/mods/test_mod_2\"}]",
+                   {{"native/root/rtx-remix/mods/test_mod_2/mod.usda", "#usda two\n"}}};
+  write_gma(content / "801" / "mods.gma", second);
+  const auto has = [&](const std::string& relative) { return nl::fs::stat(nl::fs::join(root, relative)).exists; };
+  const auto journal = [&] {
+    const auto j = nl::journal::load(root);
+    REQUIRE(j.has_value());
+    return *j;
+  };
+
+  // Installed by a server's download, never subscribed: nothing is deployed, nothing is listed.
+  record({});
+  const auto downloaded = nl::startup::prepare(root, GetCurrentProcessId());
+  CHECK(downloaded.deployment.outcome == "unchanged");
+  CHECK(downloaded.deployment.packages.empty());
+  CHECK(downloaded.deployment.skipped.empty());
+  CHECK(!has(kModDir + "mod.usda"));
+  CHECK(!has("rtx-remix"));
+
+  // Subscribed: deployed.
+  record({"800"});
+  const auto subscribed = nl::startup::prepare(root, GetCurrentProcessId());
+  REQUIRE(subscribed.deployment.outcome == "deployed");
+  REQUIRE(subscribed.deployment.packages.size() == 1);
+  CHECK(subscribed.deployment.packages[0].rfind("test-mods ", 0) == 0);
+  CHECK(has(kModDir + "mod.usda"));
+  CHECK(!has("rtx-remix/mods/test_mod_2"));
+
+  // Steam's record and folder still hold it, but no account here subscribes any more (an older
+  // loader's deployment of a downloaded item looks the same): removed like an unsubscribe, with no
+  // rollback copy, and the reason says why.
+  record({});
+  const auto gone = nl::startup::prepare(root, GetCurrentProcessId());
+  REQUIRE(gone.deployment.outcome == "deployed");
+  CHECK(gone.deployment.packages.empty());
+  CHECK(skipped_because(gone.deployment, "only because the game or a server downloaded it"));
+  CHECK(mentions(gone.deployment.notes, "its Workshop item was unsubscribed"));
+  CHECK(!has(kModDir + "mod.usda"));
+  CHECK(!has("native-loader/backup"));
+  CHECK(!journal().previous);
+  CHECK(sfs::exists(content / "800" / "mods.gma"));  // Steam's files are never touched
+
+  // Subscribed again, then Steam's record cannot be read: what is deployed stays, nothing new comes.
+  record({"800"});
+  REQUIRE(nl::startup::prepare(root, GetCurrentProcessId()).deployment.outcome == "deployed");
+  REQUIRE(has(kModDir + "mod.usda"));
+  const auto deployed_journal = nl::fs::read_file(nl::fs::join(root, "native-loader/state.json"), 1 << 20);
+  for (const std::string unreadable : {std::string(), std::string("\"AppWorkshop\" { \"WorkshopItemDetails\" { broken")}) {
+    if (unreadable.empty()) sfs::remove(acf);
+    else write_file(acf, unreadable);
+    const auto blind = nl::startup::prepare(root, GetCurrentProcessId());
+    CHECK(blind.deployment.outcome == "unchanged");
+    CHECK(blind.deployment.packages.size() == 1);
+    CHECK(has(kModDir + "mod.usda"));
+    CHECK(!has("rtx-remix/mods/test_mod_2"));  // 801 would be new: not without the record
+    CHECK(nl::fs::read_file(nl::fs::join(root, "native-loader/state.json"), 1 << 20) == deployed_journal);
+  }
+  // Readable again with both subscribed: 801 comes too.
+  record({"800", "801"});
+  const auto both = nl::startup::prepare(root, GetCurrentProcessId());
+  REQUIRE(both.deployment.outcome == "deployed");
+  CHECK(both.deployment.packages.size() == 2);
+  CHECK(has("rtx-remix/mods/test_mod_2/mod.usda"));
   sfs::remove_all(dir);
 }

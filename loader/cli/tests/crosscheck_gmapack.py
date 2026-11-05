@@ -162,6 +162,26 @@ def main():
     check(failed == ['not_an_archive.gma', 'truncated.gma'], f'scan bad: {failed}')
     check(summary['with_trailing_data'] == 1, f'scan bad trailing: {summary}')
 
+    # R19 (proxy F-07): a folder the scan cannot list is a failure, never a silent skip, and the walk
+    # goes on past it. Listing is denied to Everyone on this test's own scratch folder, then restored.
+    locked_dir = scratch / 'locked'
+    denied = locked_dir / 'denied'
+    denied.mkdir(parents=True)
+    shutil.copy2(archives['basic_crc.gma'], denied / 'hidden.gma')
+    shutil.copy2(archives['basic_crc.gma'], locked_dir / 'visible.gma')
+    deny = subprocess.run(['icacls', str(denied), '/deny', '*S-1-1-0:(RD)'], capture_output=True, text=True)
+    if deny.returncode != 0:
+        print('crosscheck: the unreadable-folder case is skipped (icacls refused: ' + (deny.stdout + deny.stderr).strip() + ')')
+    else:
+        try:
+            summary = json.loads(run([a.nlctl, 'scan', '--json', str(locked_dir)], expect=1).stdout)
+            failed = [(Path(f['file']).name, f['error']) for f in summary['failures']]
+            check(len(failed) == 1 and failed[0][0] == 'denied' and failed[0][1].startswith('folder not scanned'),
+                  f'scan of an unreadable folder: {failed}')
+            check(summary['total'] == 1 and summary['parsed'] == 1, f'scan past an unreadable folder: {summary}')
+        finally:
+            subprocess.run(['icacls', str(denied), '/remove:d', '*S-1-1-0'], capture_output=True)
+
     shutil.rmtree(scratch, ignore_errors=True)
     print(f'crosscheck OK: {len(archives)} archives ({lzma_count} LZMA-wrapped) match gmapack; damage detected')
 

@@ -58,6 +58,8 @@ Install
      the guard then starts with the add-ons instead, and a note in native-loader\logs says why.
      A listen server you host no longer passes the guard to friends without RTX, and the RTX
      scripts no longer run twice on servers that already send them.
+   - Loader 0.14.0 starts the guard only in a start that runs RTX. A start with -nonativeloader
+     right after an RTX session used to get it from that session's old report.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.
@@ -68,8 +70,9 @@ Graphics cards
 --------------
 
 - RTX Remix needs a GPU with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or
-  newer, Intel Arc. An older card cannot start an RTX session; turn RTX off ("remix": { "enabled":
-  false } below) or start with -nonativeloader.
+  newer, Intel Arc. An older card cannot start an RTX session: turn RTX off with
+  "remix": { "enabled": false } (Settings, below). The loader then keeps the package's RTX-only
+  add-ons out of the game and puts back the console settings that RTX sessions changed.
 - Loader 0.11.0 matches Remix's settings to your NVIDIA card (performance tiers). "high" keeps the
   package's settings, tuned on an RTX 5090. "medium" (for example an RTX 4070, or a card with 10 to
   12 GB) and "low" (an RTX 4060, 3060 or 2060, or any card with 8 GB) use fewer light bounces, a
@@ -124,8 +127,15 @@ Settings (native-loader\config.json)
   (0.6.0 or later). Change your own dxvk.conf, rtx.conf and user.conf in the Garry's Mod folder
   instead: they win over the package's.
 - RTX off, without uninstalling:  { "schema": 1, "allow": { "workshop": ["3829070317"] }, "remix": { "enabled": false } }
+  This is how to play without RTX: the loader keeps the package's RTX-only add-ons out of the game
+  and puts back the console settings RTX sessions changed.
 - The loader off:                  add "enabled": false
 - Nothing else in the file is needed. Native code comes only from what "allow" lists.
+- -nonativeloader in the launch options (or the environment variable NATIVE_LOADER_DISABLE=1, or a
+  file named native-loader\disable) skips the loader for that start, for troubleshooting. It is not
+  a way to play without RTX: the loader then deploys, hides and puts back nothing. The package's
+  add-ons stay in the game and run without Remix, console settings an RTX session changed stay as
+  they are, and a Workshop update waits for the next start with the loader. It uninstalls nothing.
 - Loader 0.11.0 also reads these, all optional. An older loader rejects them and starts without
   RTX, so replace bin\win64\winmm.dll first.
   - "remix": { "performance_tier": "low" } picks the tier yourself: "high", "medium" or "low";
@@ -178,6 +188,10 @@ RTX content from other Workshop items
 
 - Subscribe to an RTX content package (Remix materials and mods, such as a character's PBR textures)
   and it loads at your next start, with loader 0.4.0 or later. No change to config.json is needed.
+- Loader 0.14.0 takes such packages only from items you subscribed to. A server you join can make
+  the game download Workshop items without a subscription; those are never deployed, and a content
+  package an older loader deployed from one is removed at the next start. If Steam's list of your
+  Workshop items cannot be read, nothing new is deployed and what is deployed stays.
 - Such a package may only hold Remix mods and Lua add-ons. A package that also carries native code
   is skipped until you add its Workshop id to "workshop" under "allow".
 - To use only what "allow" lists: add "subscribed_content": false under "allow".

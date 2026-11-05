@@ -1,0 +1,194 @@
+From 586ad381dd96e1370c68cdbc846badd24200b929 Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 15:19:13 -0700
+Subject: [PATCH] RTX Water: check what RTXWaterNative takes from Lua (R19)
+
+Any server's client Lua reaches RTXWaterNative.
+
+- SetSurface skipped only polygons shorter than six floats and read the coordinates in pairs, so
+  a seven-float polygon read an eighth past its array (the pre-release review's F-01). A polygon
+  is now an even count of at least six finite numbers; a non-finite one has no extent to tile.
+- SetMaterial's texture paths were joined to the game folder as they were, so ".." left it. A path
+  with a root, a drive, ':', "..", a shortened or device segment keeps the current material.
+- lua_input.h holds both checks in standard C++; test/lua_input_test.cpp compiles it alone.
+
+This is Version 4 of the native core, as the RTX package ships it (b5c194e); it applies after
+source/rtx_water is restored from that commit.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ source/rtx_water/README.md               |  8 +++-
+ source/rtx_water/lua_input.h             | 58 ++++++++++++++++++++++++
+ source/rtx_water/rtxwater.cpp            | 13 +++++-
+ source/rtx_water/test/lua_input_test.cpp | 37 +++++++++++++++
+ 4 files changed, 113 insertions(+), 3 deletions(-)
+ create mode 100644 source/rtx_water/lua_input.h
+ create mode 100644 source/rtx_water/test/lua_input_test.cpp
+
+diff --git a/source/rtx_water/README.md b/source/rtx_water/README.md
+index 5f57243..c094790 100644
+--- a/source/rtx_water/README.md
++++ b/source/rtx_water/README.md
+@@ -6,8 +6,12 @@ the parts that are built rather than shipped as they are:
+ 
+ - `rtxwater.cpp`, `wavesim.h`, `wavesim.cpp`: the native core, `gmcl_rtxwater_win64.dll`. The
+   repository's premake workspace builds it (`premake_project.lua`); `build.bat` builds it alone.
+-- `test/`: offline wave scenarios (`build_test.bat`, `wavetest.cpp`, `view.py`) and scripted
+-  in-game tests on gm_poolrooms' canal (`test/ingame/`).
++- `lua_input.h`: what `RTXWaterNative` takes from Lua, which any server's client Lua reaches:
++  `SetSurface` skips a polygon that is not an even count of at least six finite numbers, and
++  `SetMaterial` keeps the current material when a texture path would leave the game folder.
++- `test/`: offline wave scenarios (`build_test.bat`, `wavetest.cpp`, `view.py`), the Lua input
++  check (`lua_input_test.cpp`, standard C++ only) and scripted in-game tests on gm_poolrooms'
++  canal (`test/ingame/`).
+ - `tools/`: `build_water.py` builds the Remix mod, tag textures and `cl_data.lua` from
+   `presets.json` into `garrysmod/`; `fit_wave_kernel.py` fits the simulation's kernel.
+ 
+diff --git a/source/rtx_water/lua_input.h b/source/rtx_water/lua_input.h
+new file mode 100644
+index 0000000..9fc56c1
+--- /dev/null
++++ b/source/rtx_water/lua_input.h
+@@ -0,0 +1,58 @@
++// GPL-2.0, like the rest of the RTX fixes. R19 (the native loader's ADR 0112): what RTXWaterNative
++// takes from Lua, which any server's client Lua reaches. Standard C++ only, so
++// test/lua_input_test.cpp compiles it alone.
++#pragma once
++
++#include <cctype>
++#include <cmath>
++#include <string>
++#include <vector>
++
++namespace rtxwater_input {
++
++// A surface polygon is flat {x1, y1, x2, y2, ...}: an even count of at least six finite numbers.
++// SetSurface reads the coordinates in pairs, and a non-finite one has no extent to tile.
++inline bool UsablePolygon(const std::vector<float>& poly) {
++    if (poly.size() < 6 || poly.size() % 2 != 0) return false;
++    for (float value : poly)
++        if (!std::isfinite(value)) return false;
++    return true;
++}
++
++// A segment that Win32 reads as a device whatever its folder or extension.
++inline bool DeviceName(const std::string& segment) {
++    std::string base;
++    for (char c : segment) {
++        if (c == '.') break;
++        base += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++    }
++    while (!base.empty() && base.back() == ' ') base.pop_back();
++    if (base == "con" || base == "prn" || base == "aux" || base == "nul" || base == "conin$" || base == "conout$")
++        return true;
++    return base.size() == 4 && (base.compare(0, 3, "com") == 0 || base.compare(0, 3, "lpt") == 0) &&
++           std::isdigit(static_cast<unsigned char>(base[3]));
++}
++
++// A texture path that SetMaterial puts below the game folder: no root, drive, UNC or "\\?\" path,
++// no ':', no ".." segment, no shortened or device segment, no control character.
++inline bool GameRelativePath(const std::string& path) {
++    if (path.empty() || path.size() > 1024 || path.front() == '/' || path.front() == '\\') return false;
++    for (char c : path) {
++        const auto byte = static_cast<unsigned char>(c);
++        if (byte < 0x20 || byte == 0x7F || c == ':') return false;
++    }
++    size_t start = 0;
++    while (start <= path.size()) {
++        const size_t end = path.find_first_of("/\\", start);
++        const std::string segment = path.substr(start, end == std::string::npos ? std::string::npos : end - start);
++        if (segment == "..") return false;
++        if (!segment.empty() && segment != "." &&
++            (segment.back() == '.' || segment.back() == ' ' || DeviceName(segment)))
++            return false;
++        if (end == std::string::npos) break;
++        start = end + 1;
++    }
++    return true;
++}
++
++}  // namespace rtxwater_input
+diff --git a/source/rtx_water/rtxwater.cpp b/source/rtx_water/rtxwater.cpp
+index e11e302..398a3f2 100644
+--- a/source/rtx_water/rtxwater.cpp
++++ b/source/rtx_water/rtxwater.cpp
+@@ -39,6 +39,7 @@
+ #include <remix/remix_c.h>
+ 
+ #include "wavesim.h"
++#include "lua_input.h"
+ 
+ #include <algorithm>
+ #include <atomic>
+@@ -935,6 +936,14 @@ LUA_FUNCTION(Native_SetMaterial) {
+ 	float ior = static_cast<float>(field(LUA, 1, "ior", 1.333));
+ 	std::wstring root = gameRoot() + L"\\";
+ 	std::string normalRel = fieldStr(LUA, 1, "normal"), diffuseRel = fieldStr(LUA, 1, "diffuse");
++	// R19 (the native loader's ADR 0112): any server's client Lua reaches this, and Remix opens
++	// these files. A path that would leave the game folder ("..", a drive, a network path) keeps
++	// the current material.
++	if ((!normalRel.empty() && !rtxwater_input::GameRelativePath(normalRel)) ||
++		(!diffuseRel.empty() && !rtxwater_input::GameRelativePath(diffuseRel))) {
++		LUA->PushBool(false);
++		return 1;
++	}
+ 	std::wstring normal = normalRel.empty() ? L"" : root + widen(normalRel);
+ 	std::wstring diffuse = diffuseRel.empty() ? L"" : root + widen(diffuseRel);
+ 	bool animated = fieldBool(LUA, 1, "animated", false);
+@@ -1021,7 +1030,9 @@ LUA_FUNCTION(Native_SetSurface) {
+ 				LUA->Pop();
+ 			}
+ 			LUA->Pop();
+-			if (poly.size() < 6) continue;
++			// R19 (F-01): coordinates are read in pairs, so an odd length read past the array
++			// (any server's client Lua reaches this); a non-finite one has no extent to tile.
++			if (!rtxwater_input::UsablePolygon(poly)) continue;
+ 			float x0 = 1e30f, y0 = 1e30f, x1 = -1e30f, y1 = -1e30f;
+ 			for (size_t q = 0; q < poly.size(); q += 2) {
+ 				x0 = std::min(x0, poly[q]); x1 = std::max(x1, poly[q]);
+diff --git a/source/rtx_water/test/lua_input_test.cpp b/source/rtx_water/test/lua_input_test.cpp
+new file mode 100644
+index 0000000..2584077
+--- /dev/null
++++ b/source/rtx_water/test/lua_input_test.cpp
+@@ -0,0 +1,37 @@
++// GPL-2.0. R19 regression for source/rtx_water/lua_input.h: the polygons and texture paths
++// RTXWaterNative accepts from Lua. Standard C++ only:
++//   cl /EHsc /std:c++17 /W4 /WX /UNDEBUG source/rtx_water/test/lua_input_test.cpp
++#include <cassert>
++#include <iostream>
++#include <limits>
++#include "../lua_input.h"
++
++using rtxwater_input::GameRelativePath;
++using rtxwater_input::UsablePolygon;
++
++int main() {
++    // F-01: SetSurface read poly[n] past a polygon of odd length (seven floats read an eighth).
++    assert(UsablePolygon({0, 0, 1, 0, 1, 1}));
++    assert(UsablePolygon({0, 0, 64, 0, 64, 64, 0, 64}));
++    assert(!UsablePolygon({}));
++    assert(!UsablePolygon({0, 0, 1, 0}));
++    assert(!UsablePolygon({0, 0, 1, 0, 1, 1, 0}));
++    assert(!UsablePolygon({0, 0, 1, 0, 1, 1, 0, 1, 5}));
++    assert(!UsablePolygon({0, 0, 1, 0, std::numeric_limits<float>::quiet_NaN(), 1}));
++    assert(!UsablePolygon({0, 0, std::numeric_limits<float>::infinity(), 0, 1, 1}));
++    assert(!UsablePolygon({0, 0, 1, -std::numeric_limits<float>::infinity(), 1, 1}));
++
++    // SetMaterial's textures stay below the game folder, as the shipped presets name them.
++    for (const char* good : {"rtx-remix/mods/rtx_water/textures/murky_diffuse_cccc36ad44.t.rtex.dds",
++                             "rtx-remix\\mods\\rtx_water\\textures\\ripple_normal_def6fb397e.n.rtex.dds", "x.dds", "a/./b.dds"})
++        assert(GameRelativePath(good));
++    for (const char* bad : {"", "\\\\host\\share\\x.dds", "//host/share/x.dds", "\\\\?\\C:\\x.dds", "C:\\x.dds", "C:x.dds",
++                            "/x.dds", "\\x.dds", "../x.dds", "a/../../x.dds", "x.dds:stream", "a/b./x.dds", "a/b /x.dds",
++                            "a/nul/x.dds", "COM1.dds", "a\tb.dds"})
++        assert(!GameRelativePath(bad));
++    assert(!GameRelativePath(std::string(1025, 'a')));
++
++    std::cout << "PASS rtxwater lua input: polygons of an even length of at least six finite numbers, texture paths below "
++                 "the game folder\n";
++    return 0;
++}
+-- 
+2.56.0.windows.1
+

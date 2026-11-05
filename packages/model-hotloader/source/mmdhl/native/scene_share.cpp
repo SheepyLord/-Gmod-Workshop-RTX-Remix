@@ -1,5 +1,7 @@
 #include "scene_share.hpp"
 #include "rig_writer.hpp"
+#include <algorithm>
+#include <iterator>
 namespace mmd {
 namespace {
 Json xyz(const btVector3& v){return {v.x(),v.y(),v.z()};}
@@ -23,18 +25,39 @@ Bytes SceneShare::chunk(const std::string& key,size_t offset,size_t count)const{
  for(auto& [_,entry]:exported)if(entry.key==key){if(offset>entry.bytes.size()||count>32768)throw std::runtime_error("Invalid scene chunk request");auto end=std::min(entry.bytes.size(),offset+count);return Bytes(entry.bytes.begin()+offset,entry.bytes.begin()+end);}
  throw std::runtime_error("Collision shape expired");
 }
+double SceneShare::now() const {
+ if(clock)return clock();
+ return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+void SceneShare::drop(std::map<std::string,Imported>::iterator it){importedBytes-=it->second.bytes;dropped.push_back(it->first);imported.erase(it);}
+void SceneShare::clear(){imported.clear();importedBytes=0;dropped.clear();}
 void SceneShare::accept(const std::string& key,std::span<const unsigned char> b){
+ if(b.size()>ImportBudget)throw std::runtime_error("Remote collision shape exceeds the memory budget");
  if(!validId(key)||hash(b)!=key||at<uint32_t>(b,0)!=0x43534d4d||at<uint32_t>(b,4)!=1)throw std::runtime_error("Invalid collision shape or checksum");
+ if(auto known=imported.find(key);known!=imported.end()){known->second.used=now();return;}
  auto kind=at<int>(b,8),n=at<int>(b,16),h=at<int>(b,20);if(kind<0||kind>2||n<0||h<0||48ull+uint64_t(n)*12+uint64_t(h)*4!=b.size())throw std::runtime_error("Malformed remote collision shape");
  auto g=std::make_shared<SceneGeometry>();g->kind=SceneGeometry::Kind(kind);g->radius=at<float>(b,12);if(!std::isfinite(g->radius)||g->radius<0)throw std::runtime_error("Invalid remote sphere");g->minimum={BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT};g->maximum=-g->minimum;
  for(int i=0;i<n;i++){size_t p=48+size_t(i)*12;btVector3 v(at<float>(b,p),at<float>(b,p+4),at<float>(b,p+8));for(int j=0;j<3;j++)if(!std::isfinite(v[j]))throw std::runtime_error("Invalid remote collision vertex");g->vertices.push_back(v);g->minimum.setMin(v);g->maximum.setMax(v);}
  if(kind==SceneGeometry::Sphere){if(n||h||g->radius<=0)throw std::runtime_error("Malformed remote sphere");g->minimum={-g->radius,-g->radius,-g->radius};g->maximum=-g->minimum;}
  size_t sum=0;for(int i=0;i<h;i++){int count=at<int>(b,48+size_t(n)*12+i*4);if(count<3)throw std::runtime_error("Invalid remote convex");sum+=count;g->hullCounts.push_back(count);}
- if((kind==SceneGeometry::Triangles&&(n%3||h))||(kind==SceneGeometry::Convexes&&sum!=size_t(n)))throw std::runtime_error("Invalid remote collision topology");imported[key]=g;
+ if((kind==SceneGeometry::Triangles&&(n%3||h))||(kind==SceneGeometry::Convexes&&sum!=size_t(n)))throw std::runtime_error("Invalid remote collision topology");
+ // Room for it: the shapes unused the longest go (R19, review MH-05).
+ while(!imported.empty()&&(importedBytes+b.size()>ImportBudget||imported.size()>=ImportLimit)){
+  auto oldest=imported.begin();for(auto it=imported.begin();it!=imported.end();++it)if(it->second.used<oldest->second.used)oldest=it;
+  drop(oldest);
+ }
+ imported[key]=Imported{g,b.size(),now()};importedBytes+=b.size();
 }
-void SceneShare::publish(World& host,const Json& description){
+std::vector<std::string> SceneShare::publish(World& host,const Json& description){
  auto frame=std::make_shared<SceneFrame>();frame->sequence=description.at("sequence");frame->timestamp=description.at("timestamp");if(!std::isfinite(frame->timestamp))throw std::runtime_error("Invalid scene clock");
- for(auto& item:description.at("objects")){auto g=imported.find(item.at("shape").get<std::string>());if(g==imported.end())continue;SceneObject o;o.id=item.at("id");o.owner=item.at("owner");o.physicsBone=item.value("bone",0);o.geometry=g->second;o.isStatic=item.at("static");auto actor=item.value("actor",0);if(actor<0||actor>2)throw std::runtime_error("Invalid remote collision actor");o.actor=uint8_t(actor);auto q=item.at("rotation");btQuaternion r(q.at(0),q.at(1),q.at(2),q.at(3));if(!std::isfinite(r.length2())||r.length2()<.5||r.length2()>1.5)throw std::runtime_error("Invalid remote collision rotation");o.transform=btTransform(r.normalized(),vec(item.at("position")));o.velocity=vec(item.at("velocity"));o.angular=vec(item.at("angular"));frame->objects.push_back(std::move(o));}
+ auto time=now();std::vector<std::string> missing;
+ for(auto& item:description.at("objects")){auto key=item.at("shape").get<std::string>();auto g=imported.find(key);if(g==imported.end()){missing.push_back(key);continue;}g->second.used=time;SceneObject o;o.id=item.at("id");o.owner=item.at("owner");o.physicsBone=item.value("bone",0);o.geometry=g->second.geometry;o.isStatic=item.at("static");auto actor=item.value("actor",0);if(actor<0||actor>2)throw std::runtime_error("Invalid remote collision actor");o.actor=uint8_t(actor);auto q=item.at("rotation");btQuaternion r(q.at(0),q.at(1),q.at(2),q.at(3));if(!std::isfinite(r.length2())||r.length2()<.5||r.length2()>1.5)throw std::runtime_error("Invalid remote collision rotation");o.transform=btTransform(r.normalized(),vec(item.at("position")));o.velocity=vec(item.at("velocity"));o.angular=vec(item.at("angular"));frame->objects.push_back(std::move(o));}
  host.externalScene.store(frame);
+ // Shapes no frame named for a while: their entity went away or out of reach (the frame just
+ // stored holds its own references, so nothing it uses goes from under it).
+ for(auto it=imported.begin();it!=imported.end();){auto next=std::next(it);if(time-it->second.used>IdleSeconds)drop(it);it=next;}
+ auto forget=std::move(dropped);dropped.clear();
+ for(auto& key:missing)if(std::find(forget.begin(),forget.end(),key)==forget.end())forget.push_back(key);
+ return forget;
 }
 }

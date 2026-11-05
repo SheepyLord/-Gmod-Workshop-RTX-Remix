@@ -200,7 +200,9 @@ int cmd_verify(const fs::path& file, bool json) {
 }
 
 // Read-only parse of every .gma / .bin below `folder`: header and file index only. LZMA-wrapped
-// archives are decoded just far enough to read the index.
+// archives are decoded just far enough to read the index. A folder it cannot open, or an entry whose
+// attributes cannot be read, is a failure too: an inventory that skipped them silently would pass
+// while missing archives (R19, proxy F-07).
 int cmd_scan(const fs::path& folder, bool json) {
   struct Failure {
     std::string file;
@@ -209,18 +211,42 @@ int cmd_scan(const fs::path& folder, bool json) {
   std::size_t total = 0, parsed = 0, lzma = 0, without_crc_trailer = 0, with_trailing_data = 0, entries = 0;
   std::vector<Failure> failures;
   std::error_code ec;
-  fs::recursive_directory_iterator it(folder, fs::directory_options::skip_permission_denied, ec), end;
+  fs::recursive_directory_iterator it(folder, fs::directory_options::none, ec), end;
   if (ec) throw fs::filesystem_error("cannot scan folder", folder, ec);
   for (; it != end; it.increment(ec)) {
     if (ec) {
-      failures.push_back({utf8(folder), "directory walk: " + ec.message()});
+      failures.push_back({utf8(folder), "directory walk stopped: " + ec.message()});
       break;
+    }
+    // A folder the walk would enter but cannot list is reported and left out, so the walk goes on.
+    // Links and junctions are not entered (the walk does not follow them), so they are not probed.
+    std::error_code type;
+    const fs::file_status own = it->symlink_status(type);
+    if (type) {
+      failures.push_back({utf8(it->path()), "not scanned: its attributes cannot be read: " + type.message()});
+      it.disable_recursion_pending();
+      continue;
+    }
+    if (fs::is_directory(own)) {
+      std::error_code open;
+      fs::directory_iterator probe(it->path(), open);
+      if (open) {
+        failures.push_back({utf8(it->path()), "folder not scanned: " + open.message()});
+        it.disable_recursion_pending();
+      }
+      continue;
     }
     std::wstring extension = it->path().extension().wstring();
     std::transform(extension.begin(), extension.end(), extension.begin(),
                    [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
     // Workshop items are <name>.gma (plain) or, for older uploads, <hash>_legacy.bin (LZMA-wrapped).
-    if ((extension != L".gma" && extension != L".bin") || !it->is_regular_file(ec)) continue;
+    if (extension != L".gma" && extension != L".bin") continue;
+    const bool regular = it->is_regular_file(type);
+    if (type) {
+      failures.push_back({utf8(it->path()), "not scanned: its attributes cannot be read: " + type.message()});
+      continue;
+    }
+    if (!regular) continue;
     ++total;
     try {
       const Opened o = open_and_index(it->path());

@@ -1,5 +1,14 @@
 # Roadmap
 
+R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
+publish a new release on Github and workshop") is **in integration** on `r19-int`
+([plan](handover/R19-plan.md), [review](handover/R19-review.md), [report](handover/R19-report.md)):
+every real finding of the review fixed by seven parallel parts, among them content packages only from
+subscribed Workshop items ([ADR 0111](decisions/0111-content-packages-only-from-subscribed-items.md)),
+bounded DDS readers (runtime patch 0033), the RTX fixes' Lua paths kept in the game
+([ADR 0112](decisions/0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md)) and the dance
+tool limited to the player themself; then release v0.14.0 with loader 0.14.0.
+
 R18 (the user's request of 2026-11-05 to address R17's limits) is **done**, merged into `main` from
 `r18`, published as 0.0.0-dev.20261105202808+39480017 and checked in the field
 ([report](handover/R18-report.md)): thin overcast, drizzle and fog decks that close at real

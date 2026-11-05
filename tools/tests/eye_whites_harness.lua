@@ -120,8 +120,11 @@ file = {
     Delete = function(path) disk[path], sizes[path], times[path] = nil, nil, nil end
 }
 if scenario == "cache_cap" then
-    -- 1.2 GiB of older proxies: the oldest goes until the new one fits under 1 GiB.
-    for name, entry in pairs({old1 = {600, 1}, old2 = {500, 2}, new3 = {100, 3}}) do
+    -- 1.2 GiB of older proxies: the oldest goes until the new one fits under 1 GiB. Files a player put
+    -- there under any other name (older and larger) are neither counted nor deleted (R19, F-03).
+    for name, entry in pairs({[string.rep("1", 64)] = {600, 1}, [string.rep("2", 64)] = {500, 2},
+        [string.rep("3", 64)] = {100, 3}, my_edit = {900, 0}, [string.rep("A", 64)] = {900, 0},
+        [string.rep("4", 63)] = {900, 0}, [string.rep("5", 65)] = {900, 0}}) do
         local path = "nativeloader/eye_whites/" .. name .. ".vtf"
         disk[path], sizes[path], times[path] = "cached", entry[1] * 1024 * 1024, entry[2]
     end
@@ -361,9 +364,13 @@ else
         hooks.ShutDown() assert(eye.texture == original)
     elseif scenario == "cache_cap" then
         local dir = "nativeloader/eye_whites/"
-        assert(disk[dir .. "old1.vtf"] == nil, "the oldest proxy must go first")
-        assert(disk[dir .. "old2.vtf"] and disk[dir .. "new3.vtf"], "only what the limit needs may go")
+        assert(disk[dir .. string.rep("1", 64) .. ".vtf"] == nil, "the oldest proxy must go first")
+        assert(disk[dir .. string.rep("2", 64) .. ".vtf"] and disk[dir .. string.rep("3", 64) .. ".vtf"],
+            "only what the limit needs may go")
         assert(disk[dir .. "digest.vtf"], "the new proxy must be written")
+        for _, name in ipairs({"my_edit", string.rep("A", 64), string.rep("4", 63), string.rep("5", 65)}) do
+            assert(disk[dir .. name .. ".vtf"], "a file not named like the companion's own entries stays: " .. name)
+        end
     end
 end
 print("PASS " .. scenario)

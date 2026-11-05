@@ -452,18 +452,22 @@ World::World(unsigned budget,float gravity) {
 }
 World::~World() {
   // Only lifecycle teardown may wait. Normal polling and a busy mutation never wait on a worker.
+  // A running import is cancelled first and ends at its next bounded unit of work (R19); a finish
+  // or a step is short and always completes.
+  stop_.request_stop();
   if(loading_.valid())loading_.wait();if(finishing_.valid())finishing_.wait();if(stepping_.valid())stepping_.wait();
 }
 bool World::busy() const { return loading_.valid() || finishing_.valid() || stepping_.valid(); }
 World::Impl& World::idle() const { need(!busy(),"world worker is busy; poll before access");return *impl_; }
 std::vector<StaticProp> World::load_map(std::span<const std::uint8_t> bytes) {
-  (void)idle();return load_impl(bytes);
+  (void)idle();return load_impl(bytes,stop_.get_token());
 }
 void World::begin_load(std::vector<std::uint8_t> bytes) {
   (void)idle();need(bytes.size()<=kMaxMapBytes,"BSP input size limit");snapshot_=stats();
-  loading_=std::async(std::launch::async,[this,bytes=std::move(bytes)]() mutable {
+  // The token is taken here, on the caller's thread: the worker never touches stop_ itself.
+  loading_=std::async(std::launch::async,[this,stop=stop_.get_token(),bytes=std::move(bytes)]() mutable {
     // Release the large byte buffer on this worker, before publishing readiness to the client.
-    auto owned=std::move(bytes);return load_impl(owned);
+    auto owned=std::move(bytes);return load_impl(owned,std::move(stop));
   });
 }
 bool World::poll_load(std::vector<StaticProp>& props) {
@@ -471,11 +475,13 @@ bool World::poll_load(std::vector<StaticProp>& props) {
   if(loading_.wait_for(std::chrono::seconds(0))!=std::future_status::ready)return false;
   props=loading_.get();return true;
 }
-std::vector<StaticProp> World::load_impl(std::span<const std::uint8_t> bytes) {
+std::vector<StaticProp> World::load_impl(std::span<const std::uint8_t> bytes,std::stop_token stop) {
   auto& w=*impl_;w.clear_all();
   w.brushes=w.skipped_brushes=w.refused_brushes=w.refused_convexes=w.refused_meshes=w.skipped_props=0;
+  // Cooking is checked between shapes and batches, as read_bsp is between its own units.
+  auto live=[&stop] { need(!stop.stop_requested(),"BSP import cancelled"); };
   try {
-    auto map=read_bsp(bytes);
+    auto map=read_bsp(bytes,stop);
     w.water=std::move(map.water);w.water_tree.clear();
     if(!w.water.empty()) {
       std::vector<unsigned> order(w.water.size());for(unsigned i=0;i<order.size();++i)order[i]=i;
@@ -483,11 +489,13 @@ std::vector<StaticProp> World::load_impl(std::span<const std::uint8_t> bytes) {
     }
     w.brushes=map.considered_brushes;w.skipped_brushes=map.skipped_brushes;
     for(const auto& hull:map.brushes) {
+      live();
       const auto shape=hull_shape(hull,false);
       if(shape)w.add_static(shape);else ++w.refused_brushes;
     }
     // Split displacement meshes into bounded batches. Make both sides solid for cosmetic debris.
     for(std::size_t first=0;first<map.triangles.size();first+=8192) {
+      live();
       JPH::TriangleList triangles;
       const auto end=std::min(first+8192,map.triangles.size());triangles.reserve((end-first)*2);
       for(std::size_t i=first;i<end;++i) {

@@ -39,7 +39,15 @@ ABT.ModelLayoutCache = ABT.ModelLayoutCache or {}
 ABT.SourceMaterialCache = ABT.SourceMaterialCache or {}
 ABT.VTFMetadataCache = ABT.VTFMetadataCache or {}
 ABT.MaterialTemplateCache = {}
+-- A region analysis holds every triangle of one model variant (model,
+-- bodygroups and skin). Only the most recently used analyses are kept, within
+-- a count and a triangle budget, so cycling bodygroups or skins on a detailed
+-- model does not grow client memory for the rest of the map. The analysis in
+-- use is never evicted, even when it alone is over the budget.
 ABT.RegionAnalysisCache = {}
+ABT.MaxRegionAnalyses = 8
+ABT.MaxRegionAnalysisTriangles = 300000
+local regionAnalysisClock = 0
 -- Variant entries are cheap identity lookups and intentionally start clean on
 -- auto-refresh. Render targets live in the bounded per-entity pool instead.
 ABT.ResourceVariantCache = setmetatable( {}, { __mode = "k" } )
@@ -411,11 +419,42 @@ local function RegionAnalysisIdentity( entity )
 		.. selection .. "|" .. tostring( entity:GetSkin() or 0 )
 end
 
+local function TouchRegionAnalysis( analysis )
+	regionAnalysisClock = regionAnalysisClock + 1
+	analysis.lastUse = regionAnalysisClock
+end
+
+-- Least recently used first, until both the count and the triangles fit.
+local function TrimRegionAnalyses( keep )
+	local count, triangles = 0, 0
+	for _, analysis in pairs( ABT.RegionAnalysisCache ) do
+		count = count + 1
+		triangles = triangles + #( analysis.triangles or {} )
+	end
+	while count > ABT.MaxRegionAnalyses
+	or triangles > ABT.MaxRegionAnalysisTriangles do
+		local oldestIdentity, oldest
+		for identity, analysis in pairs( ABT.RegionAnalysisCache ) do
+			if analysis ~= keep and ( not oldest
+			or ( analysis.lastUse or 0 ) < ( oldest.lastUse or 0 ) ) then
+				oldestIdentity, oldest = identity, analysis
+			end
+		end
+		if not oldest then break end
+		ABT.RegionAnalysisCache[ oldestIdentity ] = nil
+		count = count - 1
+		triangles = triangles - #( oldest.triangles or {} )
+	end
+end
+
 local function GetRegionAnalysis( entity )
 	if not IsValid( entity ) then return nil, "entity is invalid" end
 	local identity = RegionAnalysisIdentity( entity )
 	local cached = ABT.RegionAnalysisCache[ identity ]
-	if cached then return cached end
+	if cached then
+		TouchRegionAnalysis( cached )
+		return cached
+	end
 	local layout, layoutError = ReadModelLayout( entity:GetModel() )
 	if not layout then return nil, layoutError end
 	local selection = BodygroupSelection( entity )
@@ -445,7 +484,9 @@ local function GetRegionAnalysis( entity )
 		table.Add( analysis.groups[ group ], regions )
 		table.Add( analysis.triangles, triangles )
 	end
+	TouchRegionAnalysis( analysis )
 	ABT.RegionAnalysisCache[ identity ] = analysis
+	TrimRegionAnalyses( analysis )
 	return analysis
 end
 

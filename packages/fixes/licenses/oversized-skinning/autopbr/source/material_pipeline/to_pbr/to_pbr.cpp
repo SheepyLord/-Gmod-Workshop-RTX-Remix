@@ -12,7 +12,9 @@
 #include <filesystem>
 #include <iomanip>
 #include "../material_filter.h"
+#include "../../lua_path_policy.h"
 #include <tier0/dbg.h>
+#include <tier1/convar.h>
 #include <materialsystem/imaterialsystem.h>
 #include <materialsystem/imaterial.h>
 #include <materialsystem/imaterialvar.h>
@@ -20,6 +22,7 @@
 #include <filesystem.h>
 #include <d3d9.h>
 #include <Windows.h>
+#include <GarrysMod/FactoryLoader.hpp>
 #include "../../d3d9_texture_tracker.h"
 
 #include <algorithm>
@@ -115,6 +118,51 @@ static IFileSystem* GetFileSystemInterface() {
     return s_pFileSystem;
 }
 
+// The converter's own folder: <game root>\rtx-remix\mods\~gmod_topbr\textures, the game root being
+// three levels above bin\win64\gmod.exe. Empty when the executable's path is unusual.
+static std::string ShippedOutputDirectory() {
+    char gamePath[MAX_PATH];
+    const DWORD length = GetModuleFileNameA(NULL, gamePath, MAX_PATH);
+    if (!length || length >= MAX_PATH) return {};
+    std::string gameDir(gamePath, length);
+    for (int level = 0; level < 3; ++level) {  // gmod.exe, win64, bin
+        const size_t lastSlash = gameDir.find_last_of("\\/");
+        if (lastSlash == std::string::npos) return {};
+        gameDir.resize(lastSlash);
+    }
+    return gameDir + "\\rtx-remix\\mods\\~gmod_topbr\\textures";
+}
+
+// R19 (the native loader's ADR 0112): the player's own switches, the convars the shipped driver
+// creates (rtx_topbr_enabled, rtx_topbr_game_maps). Any server's client Lua reaches this module's
+// bindings, so only these turn work on. They are read from the engine's convar list, on the game
+// thread: a Lua global could be replaced by that same Lua. A missing convar counts as off.
+static bool PlayerSetting(const char* name) {
+    static ICvar* engineCvars = nullptr;
+    if (!engineCvars) {
+        engineCvars = cvar;
+        if (!engineCvars) {
+            static SourceSDK::FactoryLoader vstdlib("vstdlib");
+            engineCvars = vstdlib.GetInterface<ICvar>(CVAR_INTERFACE_VERSION);
+        }
+    }
+    const ConVar* setting = engineCvars ? engineCvars->FindVar(name) : nullptr;
+    return setting && setting->GetBool();
+}
+
+// Whether a folder between root and folder (root excluded) is a link or a junction: the output
+// folder is checked where it really is, not where its name points.
+static bool LinkBelow(const std::filesystem::path& root, const std::filesystem::path& folder) {
+    auto cursor = root.lexically_normal();
+    for (const auto& part : folder.lexically_normal().lexically_relative(cursor)) {
+        if (part.empty() || part == ".") continue;
+        cursor /= part;
+        const DWORD attributes = GetFileAttributesW(cursor.c_str());
+        if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT)) return true;
+    }
+    return false;
+}
+
 //=============================================================================
 // TextureProcessor Implementation
 //=============================================================================
@@ -169,27 +217,11 @@ bool TextureProcessor::Initialize(remix::Interface* remixInterface) {
     // Set default output directory for generated textures
     // The executable is at bin/win64/gmod.exe, we need to go up to the game root
     // Output should be: GarrysModWithRTXAgain/rtx-remix/mods/~gmod_topbr/textures/
-    char gamePath[MAX_PATH];
-    if (GetModuleFileNameA(NULL, gamePath, MAX_PATH)) {
-        std::string gameDir(gamePath);
-        // Remove executable name (gmod.exe)
-        size_t lastSlash = gameDir.find_last_of("\\/");
-        if (lastSlash != std::string::npos) {
-            gameDir = gameDir.substr(0, lastSlash);
-            // Remove "win64" directory
-            lastSlash = gameDir.find_last_of("\\/");
-            if (lastSlash != std::string::npos) {
-                gameDir = gameDir.substr(0, lastSlash);
-                // Remove "bin" directory to get to game root
-                lastSlash = gameDir.find_last_of("\\/");
-                if (lastSlash != std::string::npos) {
-                    gameDir = gameDir.substr(0, lastSlash);
-                }
-            }
-            m_outputDirectory = gameDir + "\\rtx-remix\\mods\\~gmod_topbr\\textures";
-        }
+    const std::string shipped = ShippedOutputDirectory();
+    if (!shipped.empty()) {
+        m_outputDirectory = shipped;
     }
-    
+
     // Registrations are rebuilt from live identities each session. The worker may
     // restore validated game records only after seeing a matching hotloader texture.
     EnsureOutputDirectory();
@@ -336,12 +368,41 @@ void TextureProcessor::SaveIneligibleCache(bool force) {
     }
 }
 
-void TextureProcessor::SetOutputDirectory(const std::string& path) {
-    CancelPendingWork();
-    m_outputDirectory = path;
-    if (m_debugOutput) {
-        Msg("[MaterialPipeline::ToPBR] Output directory set to: %s\n", path.c_str());
+// R19 (the native loader's ADR 0112): any server's client Lua reaches this. The folder is the
+// converter's own or one below it, never another place on the disk or a network path: Windows would
+// connect to that host and offer the player's Windows login. The shipped Lua never calls it.
+bool TextureProcessor::SetOutputDirectory(const std::string& path) {
+    const std::string shipped = ShippedOutputDirectory();
+    std::string reason = "the game folder is unknown";
+    std::optional<std::filesystem::path> folder;
+    try {
+        if (!shipped.empty()) {
+            const auto root = std::filesystem::u8path(shipped);
+            folder = LuaPathPolicy::Inside(root, path, &reason);
+            if (folder && LinkBelow(root, *folder)) {
+                folder.reset();
+                reason = "a folder on the way is a link or junction";
+            }
+        }
+    } catch (const std::exception&) {
+        folder.reset();
+        reason = "the path is not valid UTF-8";
     }
+    if (!folder) {
+        Warning("[MaterialPipeline::ToPBR] Output directory refused (%s); it stays %s. "
+                "SetOutputDirectory takes a folder relative to the converter's own.\n",
+                reason.c_str(), m_outputDirectory.c_str());
+        return false;
+    }
+    const std::string resolved = folder->u8string();
+    if (resolved != m_outputDirectory) {
+        CancelPendingWork();
+        m_outputDirectory = resolved;
+    }
+    if (m_debugOutput) {
+        Msg("[MaterialPipeline::ToPBR] Output directory set to: %s\n", resolved.c_str());
+    }
+    return true;
 }
 
 IFileSystem* TextureProcessor::GetFileSystem() {
@@ -1736,7 +1797,11 @@ static bool ParseVMTFile(IFileSystem* fileSystem, const std::string& materialNam
         return s_preparedSnapshot->valid;
     }
     if (!fileSystem) return false;
-    
+    // R19 (ADR 0112): names come from Lua (InspectMaterial, ProcessSingleMaterial) and from map
+    // content (a patch VMT's "include"), and the game's file system opens an absolute or network path
+    // as it is. Only a path inside the game's own folders is read.
+    if (!LuaPathPolicy::RelativePath(materialName)) return false;
+
     // Guard against include cycles in patch VMT chains
     if (depth > 4) {
         return false;
@@ -4506,17 +4571,29 @@ void TextureProcessor::ClearCache() {
 
 bool TextureProcessor::ProcessSingleMaterial(const std::string& materialName) {
     if (!m_initialized || !IsEnabled() || MaterialFilter::IsNonSceneMaterialName(materialName)) return false;
+    // R19 (ADR 0112): work starts only while the player's setting is on; a material name is a path
+    // inside the game's folders.
+    if (!PlayerSetting("rtx_topbr_enabled")) { SetEnabled(false); return false; }
+    if (!LuaPathPolicy::RelativePath(materialName)) return false;
     std::lock_guard<std::mutex> lock(m_queueMutex);
     if (m_queuedMaterials.size() >= 8192) return false;
     if (m_queuedMaterials.insert(materialName).second) m_materialQueue.push(materialName);
     return true;
 }
 
+// R19 (ADR 0112): only the player's rtx_topbr_enabled turns conversion on. Turning it off is always
+// allowed. The setting is read on a change only, so a caller that repeats its value costs nothing.
 void TextureProcessor::SetEnabled(bool enabled) {
+    if (enabled && !m_enabled.load() && !PlayerSetting("rtx_topbr_enabled")) {
+        if (m_debugOutput) Msg("[MaterialPipeline::ToPBR] Conversion stays off: rtx_topbr_enabled is 0\n");
+        return;
+    }
     if (m_enabled.exchange(enabled) != enabled) m_publishRequested.store(true);
 }
 
+// R19 (ADR 0112): imported game maps likewise follow the player's rtx_topbr_game_maps.
 void TextureProcessor::SetGameEnabled(bool enabled) {
+    if (enabled && !m_gameEnabled.load() && !PlayerSetting("rtx_topbr_game_maps")) return;
     if (m_gameEnabled.exchange(enabled) != enabled) m_publishRequested.store(true);
 }
 
@@ -4546,12 +4623,18 @@ bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::str
         return texture?texture->GetName():std::string{};
     });
     if (identity.empty()) return false; // A model/material name is not a texture identity.
+    // R19 (ADR 0112): any server's client Lua reaches this. The source is a PMX file on a local drive
+    // and the other paths lie below its folder; anything else (a network share, "\\?\", a device,
+    // "..") counts as absent, so nothing is opened elsewhere. Recorded maps still restore by the live
+    // texture identity, which needs no source.
+    auto below = [](const std::string& path) { return LuaPathPolicy::RelativePath(path) ? path : std::string(); };
+    const std::string localSource = LuaPathPolicy::LocalDrivePath(source) ? source : std::string();
     std::lock_guard<std::mutex> lock(m_queueMutex);
     if (action.empty() && m_gameSubmitted.count(name)) return true;
     if(m_gameViews.size()>=4096 && !m_gameViews.count(name))return false;
     if (m_gameSubmitted.size() >= 4096 || m_gameQueue.size() >= 128) return false;
     if(action.empty())m_gameSubmitted.insert(name);
-    m_gameQueue.push({name,source,base,identity,std::move(hashes),action,normal,packed,emission,layout});
+    m_gameQueue.push({name,localSource,below(base),identity,std::move(hashes),action,below(normal),below(packed),below(emission),layout});
     if(m_gameViews.size()<4096)m_gameViews[name].identity=identity;
     m_queueCondition.notify_one();
     return true;
@@ -4559,6 +4642,16 @@ bool TextureProcessor::QueueGameMaterial(const std::string& name, const std::str
 
 void TextureProcessor::PumpSnapshots() {
     if (!m_initialized) return;
+    // R19 (ADR 0112): the player's settings win over any Lua that kept the native switches on (a
+    // removed change callback, for one). The driver calls this every frame on the game thread; the
+    // settings are read four times a second. World conversion cannot get past this snapshot step
+    // without it.
+    const auto now = std::chrono::steady_clock::now();
+    if (now - m_lastSettingCheck >= std::chrono::milliseconds(250)) {
+        m_lastSettingCheck = now;
+        if (IsEnabled() && !PlayerSetting("rtx_topbr_enabled")) SetEnabled(false);
+        if (m_gameEnabled.load() && !PlayerSetting("rtx_topbr_game_maps")) SetGameEnabled(false);
+    }
     StartWorkerThread();
     if (!IsEnabled()) return;
     std::shared_ptr<PreparedSnapshot> prepared;
@@ -5157,8 +5250,19 @@ LUA_FUNCTION(ToPBR_IsInitialized) {
     return 1;
 }
 
+// R19 (ADR 0112): the bindings that queue world conversion check the player's rtx_topbr_enabled here,
+// on the game thread (the pipeline's worker also queues, and relies on the native switch, which only
+// that setting turns on).
+static bool PlayerAllowsConversion() {
+    auto& processor = MaterialPipeline::ToPBR::TextureProcessor::Instance();
+    if (!processor.IsEnabled()) return false;
+    if (MaterialPipeline::ToPBR::PlayerSetting("rtx_topbr_enabled")) return true;
+    processor.SetEnabled(false);
+    return false;
+}
+
 LUA_FUNCTION(ToPBR_ProcessAllMaterials) {
-    int count = MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessAllTrackedMaterials();
+    int count = PlayerAllowsConversion() ? MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessAllTrackedMaterials() : 0;
     LUA->PushNumber(count);
     return 1;
 }
@@ -5168,8 +5272,8 @@ LUA_FUNCTION(ToPBR_ProcessMaterialsBatch) {
     if (LUA->IsType(1, GarrysMod::Lua::Type::Number)) {
         maxBatch = (int)LUA->GetNumber(1);
     }
-    
-    int count = MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessTrackedMaterialsBatch(maxBatch);
+
+    int count = PlayerAllowsConversion() ? MaterialPipeline::ToPBR::TextureProcessor::Instance().ProcessTrackedMaterialsBatch(maxBatch) : 0;
     LUA->PushNumber(count);
     return 1;
 }
@@ -5182,11 +5286,11 @@ LUA_FUNCTION(ToPBR_SetEnabled) {
     
     bool enabled = LUA->GetBool(1);
     auto& processor = MaterialPipeline::ToPBR::TextureProcessor::Instance();
-    const bool changed = processor.IsEnabled() != enabled;
+    const bool was = processor.IsEnabled();
+    // R19 (ADR 0112): true takes effect only while the player's rtx_topbr_enabled is on.
     processor.SetEnabled(enabled);
-    // Addons may temporarily enable conversion for one explicit operation.
-    if (changed && processor.IsDebugOutputEnabled()) {
-        Msg("[MaterialPipeline::ToPBR] ToPBR conversion %s\n", enabled ? "ENABLED" : "DISABLED");
+    if (was != processor.IsEnabled() && processor.IsDebugOutputEnabled()) {
+        Msg("[MaterialPipeline::ToPBR] ToPBR conversion %s\n", processor.IsEnabled() ? "ENABLED" : "DISABLED");
     }
     return 0;
 }
@@ -5337,8 +5441,15 @@ LUA_FUNCTION(ToPBR_ConvertTexture) {
     
     const char* path = LUA->GetString(1);
     bool isNormalMap = LUA->IsType(2, GarrysMod::Lua::Type::Bool) ? LUA->GetBool(2) : false;
-    
-    uint64_t hash = MaterialPipeline::ToPBR::TextureProcessor::Instance().ConvertAndUploadTexture(path, isNormalMap);
+
+    // R19 (ADR 0112): a conversion, so only while the player's rtx_topbr_enabled is on; the texture
+    // path is checked where the file is read (VTFParser::ReadVTFFile).
+    auto& processor = MaterialPipeline::ToPBR::TextureProcessor::Instance();
+    if (!processor.IsEnabled() || !MaterialPipeline::ToPBR::PlayerSetting("rtx_topbr_enabled")) {
+        LUA->PushString("0x0");
+        return 1;
+    }
+    uint64_t hash = processor.ConvertAndUploadTexture(path, isNormalMap);
     
     // Return hash as string to preserve precision
     char hashStr[32];
@@ -5645,9 +5756,10 @@ LUA_FUNCTION(ToPBR_SetOutputDirectory) {
         return 0;
     }
     
+    // R19 (ADR 0112): a folder relative to the converter's own; true when it was taken.
     const char* path = LUA->GetString(1);
-    MaterialPipeline::ToPBR::TextureProcessor::Instance().SetOutputDirectory(path);
-    return 0;
+    LUA->PushBool(MaterialPipeline::ToPBR::TextureProcessor::Instance().SetOutputDirectory(path));
+    return 1;
 }
 
 LUA_FUNCTION(ToPBR_GetOutputDirectory) {
@@ -5682,7 +5794,7 @@ LUA_FUNCTION(ToPBR_NeedsUSDAUpdate) {
 // =========================================================================
 
 LUA_FUNCTION(ToPBR_QueueMaterialsForProcessing) {
-    int count = MaterialPipeline::ToPBR::TextureProcessor::Instance().QueueMaterialsForProcessing();
+    int count = PlayerAllowsConversion() ? MaterialPipeline::ToPBR::TextureProcessor::Instance().QueueMaterialsForProcessing() : 0;
     LUA->PushNumber(count);
     return 1;
 }

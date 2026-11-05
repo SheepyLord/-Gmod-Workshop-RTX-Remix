@@ -3,24 +3,24 @@
  "part": "glass",
  "origins": {
   "bin/gmcl_nlglass_win64.dll": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r9-glass\\out\\build\\win64-release\\glass\\native\\gmcl_nlglass_win64.dll",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-glass\\out\\build\\win64-release\\glass\\native\\gmcl_nlglass_win64.dll",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r9-glass",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-glass",
     "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
-    "commit": "9bae32064b293b00b80cf1079504c89afdf6469e",
+    "commit": "baba026d55b1ff12fe4dbaba5cf00753dd2f8271",
     "dirty": false
    },
-   "imported": "2026-11-02T02:15:37+00:00"
+   "imported": "2026-11-05T22:13:55+00:00"
   }
  },
  "files": {
   "bin/gmcl_nlglass_win64.dll": {
-   "size": 1536512,
-   "sha256": "327ddf260d437e13ffa12d63442f3699c27af9b8af7029e19208e818116059e4",
-   "mtime_ns": 1793581981600885900,
+   "size": 1539584,
+   "sha256": "10cefd574ff470a7b456d29e48d9a07325b89810529285b9df7518af35ef56cc",
+   "mtime_ns": 1793916100928437300,
    "stored": "xz",
-   "stored_size": 556268,
-   "stored_sha256": "a10a936aa7726b3af84fec6c51bac2bc2b941c4af13dcd4c6ffd1ec5868487b4"
+   "stored_size": 557744,
+   "stored_sha256": "e008145092f23f28f935017b3b84430a710ccb97d8e44d6af5aaf7dc885dc43a"
   }
  }
 }

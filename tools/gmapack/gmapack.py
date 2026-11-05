@@ -54,6 +54,10 @@ TAG_LIMIT = 2
 COPY_BUFFER_SIZE = 1 << 20
 DECOMPRESS_BUFFER_SIZE = 4 << 20
 MAX_LZMA_DICTIONARY_SIZE = 256 << 20
+# The most an LZMA-wrapped archive may decode to, declared or not. A small crafted wrapper can expand
+# almost without end, and what passes the in-memory spool's 8 MiB goes to a temporary file. The largest
+# real archive these tools read, the combined RTX package, is about 1.8 GB.
+MAX_LZMA_OUTPUT_SIZE = 8 << 30
 MAX_STRING_SIZE = 16 << 20
 
 ADDON_TYPES = [
@@ -568,6 +572,16 @@ def _open_gma(path):
         sys.exit("error: LZMA dictionary exceeds the %d MiB safety limit"
                  % (MAX_LZMA_DICTIONARY_SIZE >> 20))
     expected_size = struct.unpack("<Q", header[5:13])[0]
+    unknown_size = 0xFFFFFFFFFFFFFFFF
+    over_limit = ("error: LZMA output exceeds the %d GiB safety limit"
+                  % (MAX_LZMA_OUTPUT_SIZE >> 30))
+    if expected_size != unknown_size and expected_size > MAX_LZMA_OUTPUT_SIZE:
+        fh.close()
+        sys.exit(over_limit)
+    # The spool never holds more than the declared size, or the safety
+    # limit when the size is not declared.
+    output_limit = (MAX_LZMA_OUTPUT_SIZE if expected_size == unknown_size
+                    else expected_size)
     filters = [{
         "id": lzma.FILTER_LZMA1,
         "dict_size": dictionary_size,
@@ -576,7 +590,6 @@ def _open_gma(path):
         "pb": pb,
     }]
     output = tempfile.SpooledTemporaryFile(max_size=8 << 20, mode="w+b")
-    unknown_size = 0xFFFFFFFFFFFFFFFF
     total = 0
     try:
         dec = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
@@ -586,14 +599,13 @@ def _open_gma(path):
             if not compressed:
                 break
             while True:
-                limit = DECOMPRESS_BUFFER_SIZE
-                if expected_size != unknown_size:
-                    limit = min(limit, expected_size - total + 1)
+                limit = min(DECOMPRESS_BUFFER_SIZE, output_limit - total + 1)
                 block = dec.decompress(compressed, max_length=max(1, limit))
                 compressed = b""
                 total += len(block)
-                if expected_size != unknown_size and total > expected_size:
-                    sys.exit("error: LZMA output exceeds its declared size")
+                if total > output_limit:
+                    sys.exit("error: LZMA output exceeds its declared size"
+                             if expected_size != unknown_size else over_limit)
                 output.write(block)
                 if dec.eof:
                     if dec.unused_data or fh.read(1):

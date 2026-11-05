@@ -97,11 +97,29 @@ hook.Add( "EntityTakeDamage", "BBS.CaptureModelBulletHit", function( entity, dam
 	net.Broadcast()
 end )
 
+-- A client may send these settings packets as fast as it likes. A refusal is
+-- worth one console line per player every few seconds, not one per packet;
+-- the line says how many were refused in between.
+local DENIED_LOG_INTERVAL = 10
+
 local function CanChangeServerSetting( player, name )
 	if not IsValid( player ) then return false end
 	if game.SinglePlayer() or player:IsAdmin() then return true end
-	BBS.Log( "%s tried to change %s without admin access",
-		tostring( player ), tostring( name ) )
+	local now = CurTime()
+	if now < ( player.BBSDeniedLogUntil or 0 ) then
+		player.BBSDeniedQuiet = ( player.BBSDeniedQuiet or 0 ) + 1
+		return false
+	end
+	local quiet = player.BBSDeniedQuiet or 0
+	player.BBSDeniedLogUntil = now + DENIED_LOG_INTERVAL
+	player.BBSDeniedQuiet = 0
+	if quiet > 0 then
+		BBS.Log( "%s tried to change %s without admin access (%d other refused requests since the last line)",
+			tostring( player ), tostring( name ), quiet )
+	else
+		BBS.Log( "%s tried to change %s without admin access",
+			tostring( player ), tostring( name ) )
+	end
 	return false
 end
 

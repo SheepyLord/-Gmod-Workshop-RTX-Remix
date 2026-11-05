@@ -10,6 +10,37 @@ The [R12-A report](handover/R12-A-report.md) records the exact baseline error on
 two successful corrected delete/reimport cycles, changed carriers, positive client instances and
 stock-file verification; evidence is in the R12-A worktree's `out/r12-a/`.
 
+## R19: the pre-release review's fixes
+
+New tests, each failing against the code before its fix:
+- **Loader (CTest):**
+  - `test_discovery.cpp`: subscribed, unsubscribed, `"0"` and record-less content items;
+  - `test_deploy.cpp`: the left-over original and NLCORE-01 to 05;
+  - `test_status.cpp`: the RTX session marker;
+  - `nl_guard_session_marker`: the guard's decision, run under LuaJIT, registered only with LuaJIT.
+- **Runtime:** `test_dds_reader` in the fork's unit tests runs 34 crafted DDS files through both readers,
+  with nothing written outside the reader.
+- **Glass:** `glass/native/tests/test_r19.cpp`, six cases: budgets, `sprp`, the leaf walk and cancellation.
+  The Lua harness cases `sync_pacing` and `bullets_visibility`, and the extended `initial_sync` and
+  `cache_cap`.
+- **Editors:**
+  - [test_editors.py](../tools/tests/test_editors.py.md) runs the material editor, bodygroup tool and
+    destruction Lua under LuaJIT;
+  - the bridge's writer and Lua-binding tests (`build_modules.ps1 -Only advmat`) cover crafted DDS
+    headers and network, device and drive-relative sources.
+- **Hotloader and motion:** [test_motion_server.py](../tools/tests/test_motion_server.py.md),
+  [test_hotloader_server.py](../tools/tests/test_hotloader_server.py.md) and
+  [test_hotloader_bootstrap.py](../tools/tests/test_hotloader_bootstrap.py.md).
+- **RTX fixes:**
+  - [test_fixes_native_inputs.py](../tools/tests/test_fixes_native_inputs.py.md) (MSVC);
+  - [test_flashlight.py](../tools/tests/test_flashlight.py.md) (LuaJIT);
+  - `test_ci_tools.py`'s tree replay, which needs a local fixes clone and is skipped otherwise.
+- **Tooling:** the release guard in both directions in
+  [test_publish_workshop.py](../tools/tests/test_publish_workshop.py.md), the path aliases in
+  `test_inputs.py`, the LZMA cap in `test_gmapack.py`, unhashed depot files in `test_install_tools.py`.
+
+The in-game checks and their results are in [the R19 report](handover/R19-report.md).
+
 ## R13-F: material preloads at their first draw
 
 - **Unit:** `test_texture_budget_pressure` (runtime, meson, `_CompRelease_x64`) checks

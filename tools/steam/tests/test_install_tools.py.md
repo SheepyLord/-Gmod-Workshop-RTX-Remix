@@ -16,6 +16,9 @@ kind: vanilla, edited in place, resized, missing, a customised user-config file,
 - `clone` copies only verified files (keeping mtimes, creating listed empty folders, leaving no
   `.partial` files), takes rejected files from a fallback folder when one verifies, and refuses a
   non-empty destination or one inside the source.
+- `clone` leaves out a non-empty depot file without a hash, from the source and from a fallback, and
+  lists it as `unverified`; the CLI exits 1. An empty file and a user-config file without a hash are
+  copied (review R19, F-05).
 - The fixture folder is created under the repo's `out\tmp` whatever `TEMP` says (AGENTS.md rule 9;
   R1-028). A test points `tempfile` at a folder that does not exist and checks the fixture still
   starts there.

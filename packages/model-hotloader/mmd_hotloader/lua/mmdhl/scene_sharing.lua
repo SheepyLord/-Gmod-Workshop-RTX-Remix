@@ -65,6 +65,9 @@ if SERVER then
  hook.Add('PlayerDisconnected','MMDHL.SharedScene',function(p) subscribers[p]=nil end)
 else
  local latest,previous,assembling,transfer local known,pending={},{} local queue={} local active=false
+ -- Shapes the module turned down (malformed, or past its memory budget) wait ten seconds
+ -- before they are asked for again.
+ local refused={}
  -- A frame's objects are checked into clean records before anything uses them: one malformed
  -- object (a mismatched or modified server) drops the frame instead of erroring here. A shape
  -- is at most what the server's capture writes (12,000,000 vertices).
@@ -110,7 +113,8 @@ else
      local clean={objects=objects,timestamp=frame.timestamp,sequence=frame.sequence,networkSequence=sequence,received=RealTime(),byId={}}
      for _,o in ipairs(objects) do
       clean.byId[o.id]=o
-      if not known[o.shape] and not pending[o.shape] and #queue<2048 then pending[o.shape]=true queue[#queue+1]={id=o.shape,size=o.bytes} end
+      if refused[o.shape] and refused[o.shape]<=RealTime() then refused[o.shape]=nil end
+      if not known[o.shape] and not pending[o.shape] and not refused[o.shape] and #queue<2048 then pending[o.shape]=true queue[#queue+1]={id=o.shape,size=o.bytes} end
      end
      previous=latest latest=clean request()
     end assembling=nil
@@ -125,7 +129,8 @@ else
    if offset~=transfer.offset or size>32768 or offset+size>transfer.size or (size==0 and offset<transfer.size) then mmdhl.sceneError='Invalid collision shape transfer' pending[id]=nil transfer=nil request() return end
    transfer.bytes[#transfer.bytes+1]=bytes transfer.offset=offset+size transfer.time=RealTime()
    if transfer.offset==transfer.size then
-    local accepted,err=native.AcceptSceneGeometry(id,table.concat(transfer.bytes)) known[id]=accepted or nil mmdhl.sceneError=err pending[id]=nil transfer=nil request()
+    local accepted,err=native.AcceptSceneGeometry(id,table.concat(transfer.bytes)) known[id]=accepted or nil mmdhl.sceneError=err pending[id]=nil transfer=nil
+    if not accepted then refused[id]=RealTime()+10 end request()
    else net.Start('mmdhl_scene') net.WriteUInt(1,2) net.WriteString(id) net.WriteUInt(transfer.offset,32) net.SendToServer() end
   end
  end)
@@ -154,8 +159,12 @@ else
    end
    out.objects[#out.objects+1]=copy
   end end
-  local ok,err=native.PublishRemoteScene(util.TableToJSON(out)) if not ok then mmdhl.sceneError=err end
+  -- The module keeps a shape while frames name it, within a memory budget (R19, review MH-05):
+  -- it answers with the shapes it no longer holds, which are asked for again when a frame names them.
+  local ok,forget=native.PublishRemoteScene(util.TableToJSON(out))
+  if not ok then mmdhl.sceneError=forget
+  elseif isstring(forget) then for _,key in ipairs(util.JSONToTable(forget) or {}) do if isstring(key) then known[key]=nil end end end
   mmdhl.remoteSceneDiagnostics={objects=#out.objects,pending=#queue+(transfer and 1 or 0),age=RealTime()-latest.received}
  end
- hook.Add('PostCleanupMap','MMDHL.RemoteSceneCleanup',function() native.ClearRemoteScene() latest=nil previous=nil assembling=nil transfer=nil known={} pending={} queue={} end)
+ hook.Add('PostCleanupMap','MMDHL.RemoteSceneCleanup',function() native.ClearRemoteScene() latest=nil previous=nil assembling=nil transfer=nil known={} pending={} queue={} refused={} end)
 end

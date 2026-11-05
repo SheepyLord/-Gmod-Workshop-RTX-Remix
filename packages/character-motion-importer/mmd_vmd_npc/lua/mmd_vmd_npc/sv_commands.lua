@@ -33,6 +33,26 @@ local BUILD_STALL_SECONDS = 8
 local BUILD_MAX_RETRIES = 3
 local BUILD_FRAMES_PER_BATCH = 64
 
+-- R19 (the pre-release review): who may act on whom, the other add-ons' cvars and
+-- the build budgets. One table, because this file's main chunk is near Lua's
+-- 200-local limit (the build helpers below live in do-blocks for the same reason).
+local guard = {
+    -- The frames limit above does not bound bytes (review L-09, M8): a build also
+    -- stops past this much built-cache JSON (a 6,300-frame dance on 58 bones is
+    -- about 22 MB; this allows dances of about half an hour at 30 fps).
+    MaxBuildJsonBytes = 128 * 1048576,
+    -- Builds waiting behind a player's running one, and the built files one player
+    -- may add while this map runs (admins, single player and a listen host are not
+    -- limited). Each file can be tens of MB.
+    MaxQueuedBuilds = 16,
+    MaxBuiltFilesPerPlayer = 32,
+    -- Decoded built animations kept in memory besides the ones playing, by the
+    -- size of their JSON (the decoded tables take about twice that).
+    BuiltCacheMaxBytes = 128 * 1048576,
+}
+-- A server owner (or a test) may lower these limits from Lua.
+MMDVMDNPC.Guard = guard
+
 -- Replace NaN/Inf coming off the wire with 0 so a malformed client cannot write
 -- non-finite numbers into the built-cache JSON (which util.JSONToTable then
 -- refuses to parse, permanently bricking the cache).
@@ -46,10 +66,13 @@ end
 
 -- BuiltCache holds the fully decoded per-frame tables of every built animation.
 -- Each entry can be tens of MB, and the JSON always stays on disk, so keep only
--- a bounded MRU set in memory. Entries referenced by an active playback are
--- never evicted (playback also holds its own reference, so eviction is safe —
--- a later playback just re-reads from disk).
+-- a bounded MRU set in memory: at most BUILT_CACHE_MAX_ENTRIES entries and, by
+-- the size of their JSON, guard.BuiltCacheMaxBytes (review M8: the count alone
+-- let 16 entries of tens of MB pile up). Entries referenced by an active
+-- playback are never evicted (playback also holds its own reference, so eviction
+-- is safe — a later playback just re-reads from disk).
 MMDVMDNPC.BuiltCacheOrder = MMDVMDNPC.BuiltCacheOrder or {}
+MMDVMDNPC.BuiltCacheBytes = MMDVMDNPC.BuiltCacheBytes or {}
 local BUILT_CACHE_MAX_ENTRIES = 16
 
 local function built_cache_path_in_use(path)
@@ -59,9 +82,11 @@ local function built_cache_path_in_use(path)
     return false
 end
 
-local function store_built_cache(path, built)
+-- bytes: the size of the entry's JSON (file.Size when the caller does not know it).
+local function store_built_cache(path, built, bytes)
     if not path or path == "" then return end
     MMDVMDNPC.BuiltCache[path] = built
+    MMDVMDNPC.BuiltCacheBytes[path] = tonumber(bytes) or math.max(0, file.Size(path, "DATA") or 0)
     -- Record the tiny header so clears/deletes can match this file without
     -- re-parsing its multi-MB body (the file is already on disk by here).
     if MMDVMDNPC.NoteBuiltHeader then MMDVMDNPC.NoteBuiltHeader(path, built) end
@@ -72,11 +97,23 @@ local function store_built_cache(path, built)
     end
     order[#order + 1] = path
 
+    local total = 0
+    for i = #order, 1, -1 do
+        -- Entries cleared elsewhere (a delete, a clear) leave the order here.
+        if MMDVMDNPC.BuiltCache[order[i]] == nil then
+            MMDVMDNPC.BuiltCacheBytes[order[i]] = nil
+            table.remove(order, i)
+        else
+            total = total + (MMDVMDNPC.BuiltCacheBytes[order[i]] or 0)
+        end
+    end
     local index = 1
-    while #order > BUILT_CACHE_MAX_ENTRIES and index <= #order do
+    while (#order > BUILT_CACHE_MAX_ENTRIES or total > guard.BuiltCacheMaxBytes) and index <= #order do
         local candidate = order[index]
         if candidate ~= path and not built_cache_path_in_use(candidate) then
+            total = total - (MMDVMDNPC.BuiltCacheBytes[candidate] or 0)
             MMDVMDNPC.BuiltCache[candidate] = nil
+            MMDVMDNPC.BuiltCacheBytes[candidate] = nil
             table.remove(order, index)
         else
             index = index + 1
@@ -195,8 +232,70 @@ local function deny_edit_permission(ply)
     end
 end
 
+-- Single player, a listen server's host (Sandbox makes both superadmin) and the
+-- server console count as admins.
+function guard.is_admin(ply)
+    if not IsValid(ply) then return true end
+    if game.SinglePlayer() then return true end
+    return ply.IsAdmin ~= nil and ply:IsAdmin() == true
+end
+
+-- A dance hides its player, pulls them out of a vehicle and locks their movement
+-- and buttons; the debug window writes lasting poses. A player may do that to
+-- themself, and to another player only as an admin (review H4, L-01). NPCs are
+-- left to the tool gun's CanTool (prop protection), as before.
+function guard.may_target(ply, ent)
+    if not (IsValid(ent) and ent.IsPlayer and ent:IsPlayer()) then return true end
+    return ent == ply or guard.is_admin(ply)
+end
+
+function guard.other_player_message()
+    return L("mmd_vmd_npc.status.other_player_admin_only", "only admins may select or dance another player; press R to select yourself")
+end
+
+-- The built files each player added while this map runs, by SteamID (a reconnect
+-- keeps the count). Admins are not counted.
+MMDVMDNPC.BuiltFilesBy = MMDVMDNPC.BuiltFilesBy or {}
+function guard.player_key(ply)
+    if not IsValid(ply) then return "console" end
+    local id = ply.SteamID64 and ply:SteamID64() or nil
+    return tostring(id or ("entity" .. tostring(ply:EntIndex())))
+end
+
+function guard.count_built_file(ply)
+    if guard.is_admin(ply) then return end
+    local key = guard.player_key(ply)
+    MMDVMDNPC.BuiltFilesBy[key] = (MMDVMDNPC.BuiltFilesBy[key] or 0) + 1
+end
+
+-- Why this player may not start (or queue) another build; nil when they may.
+-- queued: the builds already waiting behind their running one.
+function guard.build_refusal(ply, queued)
+    if guard.is_admin(ply) then return nil end
+    if (MMDVMDNPC.BuiltFilesBy[guard.player_key(ply)] or 0) >= guard.MaxBuiltFilesPerPlayer then
+        return string.format(L("mmd_vmd_npc.status.build_file_limit_fmt", "build limit reached: you have built %d animations on this map; ask an admin to build more"), guard.MaxBuiltFilesPerPlayer)
+    end
+    if queued and queued >= guard.MaxQueuedBuilds then
+        return string.format(L("mmd_vmd_npc.status.build_queue_limit_fmt", "%d builds are already waiting; let them finish first"), guard.MaxQueuedBuilds)
+    end
+    return nil
+end
+
 hook.Add("PlayerDisconnected", "MMDVMDNPCDebugTargetCleanup", function(ply)
     if cleanup_self_proxy_for_player then cleanup_self_proxy_for_player(ply) end
+    -- The leaver's NPC dances end with them (review L-05): looping, they would play
+    -- on for good, with their music and the other add-ons' cvars held off.
+    local owned = {}
+    for ent, state in pairs(MMDVMDNPC.Playbacks or {}) do
+        if state and (state.ply == ply or state.initiator == ply) and not state.selfProxy then
+            owned[#owned + 1] = ent
+        end
+    end
+    for _, ent in ipairs(owned) do
+        if MMDVMDNPC.StopPlayback then MMDVMDNPC.StopPlayback(ent, true) end
+    end
+    if MMDVMDNPC.FrozenByAddon then MMDVMDNPC.FrozenByAddon[ply] = nil end
+    if IsValid(ply) then timer.Remove("MMDVMDNPCDebug" .. ply:EntIndex()) end
     local debugTarget = MMDVMDNPC.DebugTargets[ply]
     if IsValid(debugTarget) and MMDVMDNPC.DebugFlexHolds then
         MMDVMDNPC.DebugFlexHolds[debugTarget] = nil
@@ -394,9 +493,90 @@ end
 -- stop->replay) — it would still read the suppressed "0" and pin the cvar off
 -- permanently. Instead the true original is remembered in CVarOriginals and only
 -- forgotten a frame after the last release, once the restore has actually run.
+-- The suppressed cvars outlive this Lua state: a map change or a quit during a
+-- dance never reached the release below, the next dance took the "0" left behind
+-- for the original, and the RPE and skirt add-ons stayed off (review M9). So each
+-- original is also kept in a small record in data/ while its cvar is off: ShutDown
+-- puts it back, and the next start finishes what ShutDown could not (a crash, or a
+-- console command that never ran). Our own "0" is never taken for an original, and
+-- a value someone else set meanwhile is kept (review L-04).
+MMDVMDNPC.CVarRestorePath = (MMDVMDNPC.SettingsRoot or "mmd_vmd_npc/settings") .. "/cvar_restore.json"
+MMDVMDNPC.CVarPending = MMDVMDNPC.CVarPending or {}
+do
+    -- Only these names are read back from data/, which other scripts can write:
+    -- the record never names what to run.
+    local restorable = { [RPE_BODY_CVAR] = true, [SKIRT_VRD_AUTO_APPLY_CVAR] = true }
+    for _, name in ipairs(PLAYBACK_SUPPRESSED_CVARS) do restorable[name] = true end
+
+    function guard.is_off(value)
+        return tonumber(value) == 0
+    end
+
+    function guard.read_cvar_records()
+        local raw = file.Read(MMDVMDNPC.CVarRestorePath, "DATA")
+        local records = raw and util.JSONToTable(raw) or nil
+        local out = {}
+        for name, original in pairs(istable(records) and records or {}) do
+            original = tostring(original)
+            if restorable[name] and #original <= 32 and tonumber(original) ~= nil then out[name] = original end
+        end
+        return out
+    end
+
+    local function write_records(records)
+        if next(records) == nil then
+            if file.Exists(MMDVMDNPC.CVarRestorePath, "DATA") then file.Delete(MMDVMDNPC.CVarRestorePath) end
+            return
+        end
+        file.CreateDir(MMDVMDNPC.DataRoot or "mmd_vmd_npc")
+        file.CreateDir(MMDVMDNPC.SettingsRoot or "mmd_vmd_npc/settings")
+        file.Write(MMDVMDNPC.CVarRestorePath, util.TableToJSON(records, false))
+    end
+
+    function guard.record_cvar(name, original)
+        if not restorable[name] or original == nil then return end
+        local records = guard.read_cvar_records()
+        if records[name] == tostring(original) then return end
+        records[name] = tostring(original)
+        write_records(records)
+    end
+
+    function guard.forget_cvar_record(name)
+        local records = guard.read_cvar_records()
+        if records[name] == nil then return end
+        records[name] = nil
+        write_records(records)
+    end
+
+    -- RunConsoleCommand applies at the end of the frame: until then the cvar still
+    -- shows its old value, and that "0" is ours although it does not show yet.
+    function guard.set_cvar_off(name)
+        MMDVMDNPC.CVarPending[name] = true
+        RunConsoleCommand(name, "0")
+        timer.Simple(0, function() MMDVMDNPC.CVarPending[name] = nil end)
+    end
+
+    -- Puts the original back while the cvar still holds our "0" (or our "0" has not
+    -- applied yet); a value an admin set in the meantime stays.
+    function guard.restore_cvar(name, original, now)
+        local cvar = optional_convar(name)
+        if not cvar or original == nil then return false end
+        if not MMDVMDNPC.CVarPending[name] and not guard.is_off(cvar:GetString()) then return false end
+        if now then
+            -- A cvar made by Lua takes the value at once (ShutDown may be too late
+            -- for a console command); the others throw here and get the command.
+            local ok = pcall(cvar.SetString, cvar, tostring(original))
+            if ok and cvar:GetString() == tostring(original) then return true end
+        end
+        RunConsoleCommand(name, tostring(original))
+        return true
+    end
+end
+
 local function forget_cvar_original(name)
     if not MMDVMDNPC.CVarSuppressions[name] then
         MMDVMDNPC.CVarOriginals[name] = nil
+        guard.forget_cvar_record(name)
     end
 end
 
@@ -408,11 +588,17 @@ local function begin_scoped_cvar_suppression(names)
             local state = MMDVMDNPC.CVarSuppressions[name]
             if not state then
                 if MMDVMDNPC.CVarOriginals[name] == nil then
-                    MMDVMDNPC.CVarOriginals[name] = cvar:GetString()
+                    local current = cvar:GetString()
+                    -- A "0" left behind by an earlier session is ours: its record
+                    -- holds the original.
+                    local recorded = guard.read_cvar_records()[name]
+                    if recorded ~= nil and guard.is_off(current) then current = recorded end
+                    MMDVMDNPC.CVarOriginals[name] = current
                 end
+                guard.record_cvar(name, MMDVMDNPC.CVarOriginals[name])
                 state = { count = 0 }
                 MMDVMDNPC.CVarSuppressions[name] = state
-                RunConsoleCommand(name, "0")
+                guard.set_cvar_off(name)
             end
             state.count = (state.count or 0) + 1
             token[#token + 1] = name
@@ -428,10 +614,7 @@ local function end_scoped_cvar_suppression(token)
             state.count = math.max(0, (state.count or 1) - 1)
             if state.count <= 0 then
                 MMDVMDNPC.CVarSuppressions[name] = nil
-                if optional_convar(name) then
-                    local original = MMDVMDNPC.CVarOriginals[name]
-                    RunConsoleCommand(name, tostring(original ~= nil and original or "0"))
-                end
+                guard.restore_cvar(name, MMDVMDNPC.CVarOriginals[name])
                 -- Forget next frame, once the restore has applied and unless a
                 -- re-acquire re-suppressed the cvar in the meantime.
                 timer.Simple(0, function() forget_cvar_original(name) end)
@@ -439,6 +622,29 @@ local function end_scoped_cvar_suppression(token)
         end
     end
 end
+
+-- A map change or a quit during a dance or a build: the originals go back now.
+-- The record stays until the next start has seen them back.
+hook.Add("ShutDown", "MMDVMDNPCRestoreCVars", function()
+    for name in pairs(MMDVMDNPC.CVarSuppressions or {}) do
+        guard.restore_cvar(name, MMDVMDNPC.CVarOriginals[name], true)
+    end
+end)
+
+-- The next start: what an earlier session left off (it crashed, or ShutDown's
+-- command never ran) goes back, then the record goes. The other add-ons have
+-- created their cvars by InitPostEntity.
+hook.Add("InitPostEntity", "MMDVMDNPCRestoreCVars", function()
+    for name, original in pairs(guard.read_cvar_records()) do
+        if not MMDVMDNPC.CVarSuppressions[name] then
+            local cvar = optional_convar(name)
+            if cvar and guard.is_off(cvar:GetString()) and not guard.is_off(original) then
+                RunConsoleCommand(name, original)
+            end
+            timer.Simple(0, function() forget_cvar_original(name) end)
+        end
+    end
+end)
 
 local function has_active_animation_playback()
     for ent, state in pairs(MMDVMDNPC.Playbacks or {}) do
@@ -1142,6 +1348,11 @@ function MMDVMDNPC.SelectTargetForPlayer(ply, ent)
         send_target_status(ply, message)
         return false, message
     end
+    if not guard.may_target(ply, ent) then
+        local message = guard.other_player_message()
+        send_target_status(ply, message)
+        return false, message
+    end
     if not ai_disabled_enabled() then
         local ok, message = fail_ai_disabled_required(ply, false)
         send_target_status(ply, message)
@@ -1382,9 +1593,19 @@ clear_all_flex_weights = function(ent)
     end
 end
 
+-- Only a freeze this add-on made is undone by it: Force Reset and every death
+-- used to unfreeze (and unhide) a player an admin tool had frozen (review).
+MMDVMDNPC.FrozenByAddon = MMDVMDNPC.FrozenByAddon or {}
 local function freeze_player_target(ent, frozen)
-    if is_playable_player(ent) and ent.Freeze then
-        ent:Freeze(frozen == true)
+    if not (is_playable_player(ent) and ent.Freeze) then return end
+    if frozen == true then
+        if not MMDVMDNPC.FrozenByAddon[ent] and not (ent.IsFrozen and ent:IsFrozen()) then
+            MMDVMDNPC.FrozenByAddon[ent] = true
+            ent:Freeze(true)
+        end
+    elseif MMDVMDNPC.FrozenByAddon[ent] then
+        MMDVMDNPC.FrozenByAddon[ent] = nil
+        ent:Freeze(false)
     end
 end
 
@@ -1498,10 +1719,8 @@ local function set_self_player_hidden(ply, hidden)
     end
 
     local visual = MMDVMDNPC.SelfPlaybackVisuals[ply]
-    if not visual then
-        if ply.SetNoDraw then ply:SetNoDraw(false) end
-        return
-    end
+    -- Nothing recorded: this add-on did not hide them, so it does not show them.
+    if not visual then return end
 
     if ply.SetNoDraw then ply:SetNoDraw(visual.playerNoDraw == true) end
     for weapon, oldNoDraw in pairs(visual.weapons or {}) do
@@ -2419,9 +2638,12 @@ local function finalize_build(ply, job)
     }
 
     file.CreateDir(MMDVMDNPC.BuiltRoot)
-    file.Write(path, built_json(built, job.jsonChunks or {}))
+    local text = built_json(built, job.jsonChunks or {})
+    file.Write(path, text)
+    job.jsonChunks = nil
     built.frames = job.frames
-    store_built_cache(path, built)
+    store_built_cache(path, built, #text)
+    guard.count_built_file(ply)
     clear_build_job(ply)
     send_assignment_status(ply)
 
@@ -2454,7 +2676,7 @@ local function load_built_animation(motionID, ent, options)
         return nil, "built animation model does not match selected actor"
     end
 
-    store_built_cache(path, parsed)
+    store_built_cache(path, parsed, #raw)
     return parsed, path
 end
 
@@ -3187,12 +3409,18 @@ function MMDVMDNPC.StopAllPlaybacksForPlayer(ply)
         targets[#targets + 1] = ent
     end
 
+    -- "Stop all" stops the dances this player started; an admin's stops everyone's
+    -- (review L-03: one player could end every other player's dances).
+    local everyone = guard.is_admin(ply)
     local stopped = 0
     for _, ent in ipairs(targets) do
         local state = MMDVMDNPC.Playbacks[ent]
+        local own = everyone or (state ~= nil and (state.ply == ply or state.initiator == ply))
         if is_playable_npc(ent) and not is_self_playback_proxy(ent) and not (state and state.selfProxy) then
-            MMDVMDNPC.StopPlayback(ent, true)
-            stopped = stopped + 1
+            if own then
+                MMDVMDNPC.StopPlayback(ent, true)
+                stopped = stopped + 1
+            end
         elseif not is_usable_npc(ent) then
             -- Tear the state down the same way update_playback_state does for an
             -- invalidated entity: otherwise a self-proxy whose realPlayer is
@@ -3221,6 +3449,13 @@ end
 local function start_playback_on_entity(ply, ent, motionID, options, playbackSettings, sharedStart, sharedDelayUntil, suppressMusic, preparedBuilt, preparedPath, preparedMotion, suppressCamera)
     if not is_usable_npc(ent) then
         local message = actor_select_prompt()
+        send_play_status(ply, "error", message)
+        return false, message
+    end
+    -- Checked again where the dance starts: a selection made while the player was
+    -- an admin does not outlive that.
+    if not guard.may_target(ply, ent) then
+        local message = guard.other_player_message()
         send_play_status(ply, "error", message)
         return false, message
     end
@@ -4059,6 +4294,12 @@ end)
 
 function MMDVMDNPC.OpenDebugForPlayer(ply, ent, motionID, vmdFrame)
     if not IsValid(ply) then return false, L("mmd_vmd_npc.status.invalid_player", "invalid player") end
+    -- The debug window poses its target: another player only for an admin (review H4).
+    if not guard.may_target(ply, ent) then
+        local message = guard.other_player_message()
+        send_target_status(ply, message)
+        return false, message
+    end
 
     if is_usable_npc(ent) then
         -- Selection can now be DENIED (NPC AI enabled): opening the debug
@@ -4116,12 +4357,32 @@ end)
 
 MMDVMDNPC.LastDebugFrame = MMDVMDNPC.LastDebugFrame or {}
 
+-- Each debug frame loads the motion, re-poses the selected actor and sends every
+-- bone and flex row. At most DebugFrameInterval apart per player (review L-06); a
+-- request inside the interval is answered when it ends, with the latest frame
+-- asked for, so a scrubbed slider still lands on its frame.
+guard.DebugFrameInterval = 0.1
 net.Receive("mmdvmd_debug_request", function(_, ply)
     local motionID = net.ReadString()
     local frame = net.ReadInt(32)
     -- Remembered so a flex-mapping change can push a refreshed frame back
     -- immediately (no race against the client's blind re-request timer).
     MMDVMDNPC.LastDebugFrame[ply] = { motionID = motionID, frame = frame }
+    if not IsValid(ply) then return end
+    local target = MMDVMDNPC.DebugTargets[ply]
+    if IsValid(target) and not guard.may_target(ply, target) then MMDVMDNPC.DebugTargets[ply] = nil end
+    local now = CurTime()
+    local nextAllowed = tonumber(ply.MMDVMDNPCDebugNext) or 0
+    if now < nextAllowed then
+        timer.Create("MMDVMDNPCDebug" .. ply:EntIndex(), nextAllowed - now, 1, function()
+            local last = IsValid(ply) and MMDVMDNPC.LastDebugFrame[ply] or nil
+            if not last then return end
+            ply.MMDVMDNPCDebugNext = CurTime() + guard.DebugFrameInterval
+            send_debug_frame(ply, last.motionID, last.frame)
+        end)
+        return
+    end
+    ply.MMDVMDNPCDebugNext = now + guard.DebugFrameInterval
     send_debug_frame(ply, motionID, frame)
 end)
 
@@ -4136,6 +4397,7 @@ net.Receive("mmdvmd_debug_apply", function(_, ply)
     local ent = net.ReadEntity()
     local count = math.Clamp(net.ReadUInt(16), 0, 4096)
     if not is_usable_npc(ent) or MMDVMDNPC.DebugTargets[ply] ~= ent then return end
+    if not guard.may_target(ply, ent) then return end
 
     force_reference_pose(ent)
     clear_all_bone_manipulations(ent)
@@ -4324,8 +4586,12 @@ net.Receive("mmdvmd_flex_override_unassign", function(_, ply)
     push_debug_frame_refresh(ply)
 end)
 
+-- The menu's "select myself" (cl_menu.lua RequestSelectSelf, the only sender) names
+-- the local player. Anything else is chosen in the world with the tool gun, where
+-- CanTool and the tool's own checks apply.
 net.Receive("mmdvmd_select_target", function(_, ply)
     local ent = net.ReadEntity()
+    if ent ~= ply then return end
     local ok, err = MMDVMDNPC.SelectTargetForPlayer(ply, ent)
     if not ok and err then MMDVMDNPC.Chat(ply, err) end
 end)
@@ -4359,6 +4625,9 @@ local function start_build_for_entity(ply, ent, motionID, options, playbackSetti
     if not is_usable_npc(ent) then
         return false, "selected actor is no longer valid"
     end
+    if not guard.may_target(ply, ent) then return false, guard.other_player_message() end
+    local refusal = guard.build_refusal(ply)
+    if refusal then return false, refusal end
     local referenceOK, referenceErr = require_reference_sequence_for_actor(ply, ent, true)
     if not referenceOK then return false, referenceErr end
     if not ai_disabled_enabled() then
@@ -4459,6 +4728,11 @@ local function queue_build_for_player(ply, ent, motionID, options, path, playbac
         send_build_progress(ply, "building", active or {}, message)
         send_play_status(ply, "building", message)
         return true, message
+    end
+    local refusal = guard.build_refusal(ply, #MMDVMDNPC.BuildQueues[ply])
+    if refusal then
+        send_play_status(ply, "error", refusal)
+        return false, refusal
     end
 
     local request = {
@@ -4825,8 +5099,19 @@ net.Receive("mmdvmd_build_frame_result", function(_, ply)
             end
         end
     end
+    local chunkText = table.concat(chunk, ",")
+    job.jsonBytes = (tonumber(job.jsonBytes) or 0) + #chunkText + 1
+    if job.jsonBytes > guard.MaxBuildJsonBytes then
+        local abortedID = job.id
+        local message = string.format(L("mmd_vmd_npc.status.build_too_large_fmt", "build stopped: the built animation would exceed %d MB"), math.floor(guard.MaxBuildJsonBytes / 1048576))
+        clear_build_job(ply)
+        send_build_done(ply, false, "", message, abortedID)
+        send_play_status(ply, "error", message, job.ent)
+        if start_next_queued_build then start_next_queued_build(ply) end
+        return
+    end
     job.jsonChunks = job.jsonChunks or {}
-    job.jsonChunks[#job.jsonChunks + 1] = table.concat(chunk, ",")
+    job.jsonChunks[#job.jsonChunks + 1] = chunkText
 
     job.currentFrame = firstFrame + resultCount
     local inflight = job.inflight or {}

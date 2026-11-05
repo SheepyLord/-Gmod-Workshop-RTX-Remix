@@ -174,14 +174,21 @@ local function hashes(name, procedural)
     return #values == 1 and values[1] or nil -- never guess between variants
 end
 -- The cache stays under CACHE_LIMIT: the oldest proxies go first (one is rebuilt when needed again);
--- a proxy this session bound is never deleted.
+-- a proxy this session bound is never deleted. Only the companion's own entries, named by the
+-- SHA-256 of their bytes (64 lowercase hex digits), are counted or deleted: any other file a player
+-- puts in the folder stays (R19, companion F-03).
+local function digestName(name)
+    return type(name) == "string" and #name == 68 and name:match("^[0-9a-f]+%.vtf$") ~= nil
+end
 local function makeRoom(size)
     local entries, total = {}, size
     for _, name in ipairs(file.Find(CACHE .. "*.vtf", "DATA") or {}) do
-        local path = CACHE .. name
-        local bytes = math.max(file.Size(path, "DATA") or 0, 0)
-        total = total + bytes
-        if not owned[path] then entries[#entries + 1] = {path = path, bytes = bytes, time = file.Time(path, "DATA") or 0} end
+        if digestName(name) then
+            local path = CACHE .. name
+            local bytes = math.max(file.Size(path, "DATA") or 0, 0)
+            total = total + bytes
+            if not owned[path] then entries[#entries + 1] = {path = path, bytes = bytes, time = file.Time(path, "DATA") or 0} end
+        end
     end
     table.sort(entries, function(a, b) return a.time < b.time end)
     for _, entry in ipairs(entries) do

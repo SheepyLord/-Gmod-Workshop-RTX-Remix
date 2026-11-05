@@ -9,12 +9,47 @@ local early = __NATIVELOADER_RTX_GUARD_EARLY == true
 local verifiedMultiplayer = environment ~= _G and rawget(environment, "NATIVELOADER_VERIFIED_MULTIPLAYER") == true
 if NativeLoaderRenderGuard and NativeLoaderRenderGuard.version == 2 then return end
 -- A listen host serves this file and its generated initializer to remote clients too. Outside the
--- private multiplayer environment, install only where this machine's own loader reported an active
--- RTX start: it rewrites status.json at every start, before any Lua runs.
+-- private multiplayer environment, install only where this machine's own loader activated RTX in
+-- this start. It rewrites status.json at every start, before any Lua runs, but that file stays after
+-- the game exits, and a start through an off switch (-nonativeloader, NATIVE_LOADER_DISABLE=1, the
+-- native-loader/disable file) never runs the loader: its "active" can be an earlier start's. Loader
+-- 0.14.0 and later therefore also hold native-loader/rtx-session.txt open for the life of an RTX
+-- start; Windows deletes it when the game exits, however it exits (R19, proxy F-02). An older
+-- loader holds none, and its report alone decides, as before.
+local sessionMarker, markingLoader = "native-loader/rtx-session.txt", {0, 14, 0}
+local function markerHeld()
+    if not file then return false end
+    if file.Exists then
+        local ok, found = pcall(file.Exists, sessionMarker, "DATA")
+        if ok and found == true then return true end
+    end
+    -- A directory listing never opens the file, whatever the engine's existence check does.
+    if file.Find then
+        local ok, found = pcall(file.Find, sessionMarker, "DATA")
+        if ok and type(found) == "table" then
+            for _, name in ipairs(found) do
+                if type(name) == "string" and name:lower() == "rtx-session.txt" then return true end
+            end
+        end
+    end
+    return false
+end
+local function marks(text)
+    local version = {text:match('"loader_version":"(%d+)%.(%d+)%.(%d+)')}
+    if #version ~= 3 then return false end
+    for i = 1, 3 do
+        local part = tonumber(version[i])
+        if part ~= markingLoader[i] then return part > markingLoader[i] end
+    end
+    return true
+end
 local function localRTXStart()
     if not (file and file.Read) then return false end
     local ok, text = pcall(file.Read, "native-loader/status.json", "DATA")
-    return ok and type(text) == "string" and text:find('\n"activation":{"outcome":"active"', 1, true) ~= nil
+    -- No report (it is written last, and can fail): the marker alone shows this start's RTX.
+    if not ok or type(text) ~= "string" or text:find('"schema":1', 1, true) == nil then return markerHeld() end
+    if text:find('\n"activation":{"outcome":"active"', 1, true) == nil then return false end
+    return not marks(text) or markerHeld()
 end
 local installation
 if verifiedMultiplayer then installation = "verified multiplayer bootstrap"

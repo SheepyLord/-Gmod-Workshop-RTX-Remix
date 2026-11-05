@@ -3,8 +3,8 @@ sources that build reads, so a cached build is reused only for the same sources.
 
   python tools/ci/cache_key.py runtime     # runtime/ (patches, base.json, the build script), the collector,
                                            # and which files the runtime part ships
-  python tools/ci/cache_key.py modules     # tools/ci/build_modules.ps1, its pins, the fixes' patches and the
-                                           # debug module's and the bridge's sources in packages/
+  python tools/ci/cache_key.py modules     # tools/ci/build_modules.ps1, its pins, the fixes' and RTX Water's
+                                           # patches, and the debug module's and the bridge's sources in packages/
   python tools/ci/cache_key.py hotloader   # the Model Hotloader's source copy, its build script and policy
 
 Prints the key (64 hex digits). Exit codes: 0 printed; 2 an unknown build name."""
@@ -51,6 +51,7 @@ def modules() -> str:
     pins = json.loads(PINS.read_text(encoding='utf-8'))
     used = {key: pins[key] for key in ('garrysmod_common', 'premake', 'fixes', 'rtxdebug', 'advmat_bridge')}
     sources = ['tools/ci/build_modules.ps1', 'tools/lib/VsDevEnv.psm1', *pins['fixes']['patches'],
+               *pins['fixes'].get('rtxwater_patches', []),  # R19: RTX Water's own patches
                pins['rtxdebug']['source'], pins['advmat_bridge']['source']]
     return digest(files_under(*sources), used)
 

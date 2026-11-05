@@ -6,9 +6,12 @@ BBS = BBS or {}
 local TWO_PI = math.pi * 2
 local RANDOM_MODULUS = 2147483647
 
+-- The fallback is only for a setting that does not exist: "convar and
+-- convar:GetBool() or fallback" would turn a setting of 0 into the fallback.
 local function GetBool( name, fallback )
 	local convar = GetConVar( name )
-	return convar and convar:GetBool() or fallback
+	if not convar then return fallback end
+	return convar:GetBool()
 end
 
 local function GetFloat( name, fallback )

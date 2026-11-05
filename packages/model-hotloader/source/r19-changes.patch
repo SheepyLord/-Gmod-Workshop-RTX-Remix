@@ -1,0 +1,1128 @@
+diff --git a/mmdhl/THIRD_PARTY.md b/mmdhl/THIRD_PARTY.md
+--- a/mmdhl/THIRD_PARTY.md
++++ b/mmdhl/THIRD_PARTY.md
+@@ -1,6 +1,6 @@
+ # Third-party components
+ 
+-Exact source revisions are recorded in `dependencies.lock.json`; bootstrap records each downloaded archive's SHA-256 under `vendor/`. Source archives are fetched from the original GitHub repositories. Release ZIPs carry the applicable notices in `licenses/`; the drop-in packages carry them in `GarrysMod/bin/win64/LICENSES` (DXVK's in `DXVK-LICENSES` beside it), the Linux packages in `GarrysMod/garrysmod/lua/bin/LICENSES` with those of `licenses/linux` (the `-linux64-vulkan` package's renderer notices in `GarrysMod/bin/linux64/DXVK-LICENSES`). The source of every release is this repository.
++Exact source revisions are recorded in `dependencies.lock.json`; bootstrap fetches each of them with git from the original GitHub repositories, which checks every object it receives against the locked commit's hash. Release ZIPs carry the applicable notices in `licenses/`; the drop-in packages carry them in `GarrysMod/bin/win64/LICENSES` (DXVK's in `DXVK-LICENSES` beside it), the Linux packages in `GarrysMod/garrysmod/lua/bin/LICENSES` with those of `licenses/linux` (the `-linux64-vulkan` package's renderer notices in `GarrysMod/bin/linux64/DXVK-LICENSES`). The source of every release is this repository.
+ 
+ | Component | Use | License |
+ |---|---|---|
+diff --git a/mmdhl/native/assets.cpp b/mmdhl/native/assets.cpp
+--- a/mmdhl/native/assets.cpp
++++ b/mmdhl/native/assets.cpp
+@@ -147,12 +147,14 @@
+     if(!stbir_resize_uint8_srgb(pixels,width,height,0,scaled.data(),w,h,0,STBIR_RGBA))throw std::runtime_error("Cannot scale down a large texture");
+     width=w;height=h;return true;
+ }
+-// A PMX or PMD texture: a path relative to the model. It may climb out of the model's
+-// folder as in 2.2 (artists' working folders keep textures beside it), but is `refused`
+-// when it is drive- or root-relative, an alternate data stream or, through any link, a
+-// denied place (dependency_scope.hpp, Reach::Local). The sentences are part of the
+-// asset's identity: an absolute path keeps 2.2's.
+-static fs::path resolveTexture(const DependencyScope& scope,std::string path,bool& refused){
++// A PMX or PMD texture: a path relative to the model. It is `refused` when it is drive- or
++// root-relative, an alternate data stream or, through any link, a denied place, and (since
++// R19, review MH-01) when it leaves the model's import root: its folder, the tex and
++// textures folders near it, or the Workshop item it came in (dependency_scope.hpp,
++// Reach::Local); `elsewhere` says it was only that. ".." inside the root still works, as
++// in 2.2. The sentences are part of the asset's identity: an absolute path keeps 2.2's.
++static fs::path resolveTexture(const DependencyScope& scope,std::string path,bool& refused,bool& elsewhere){
++    elsewhere=false;
+     std::replace(path.begin(),path.end(),'\\','/');auto p=fs::path(wide(path));
+ #ifdef _WIN32
+     if(p.is_absolute())throw std::runtime_error("Texture uses an absolute path: "+path);
+@@ -168,10 +170,14 @@
+ #ifndef _WIN32
+     file=posix::matchCase(file);  // the model's letter case, as Windows ignores it
+ #endif
+-    refused=scope.locate(path).empty()||(fs::is_regular_file(ioPath(file),error)&&!scope.allows(file));
++    elsewhere=scope.outside(path);
++    refused=elsewhere||scope.locate(path).empty()||(fs::is_regular_file(ioPath(file),error)&&!scope.allows(file));
+     return file;
+ }
+ static std::string outsideTexture(std::string path){std::replace(path.begin(),path.end(),'\\','/');return "Texture in a protected location: "+path;}
++// A downloaded model must not pull an unrelated picture from the computer into the cache,
++// where sharing the model would send it along (review MH-01).
++static std::string elsewhereTexture(std::string path){std::replace(path.begin(),path.end(),'\\','/');return "Texture outside the model's folder was not read: "+path;}
+ // full: keep textures past 4096 (the fullTextures option); `large` is set when one is kept.
+ static std::string normalizeTexture(const Bytes& bytes,const std::string& name,const fs::path& cache,bool& alpha,std::vector<std::string>& warnings,bool full,bool& large){
+     int width=0,height=0,channels=0;
+@@ -331,7 +337,7 @@
+                 if(embeddedSource){auto found=embedded.find(entry.second);if(found==embedded.end())throw std::runtime_error("Missing embedded VRM texture "+entry.second);
+                     auto key=L"vrm:"+wide(entry.second);auto existing=prepared.find(key);if(existing!=prepared.end()){id=existing->second.first;localAlpha=existing->second.second;}else{id=normalizeTexture(found->second,entry.second,cache,localAlpha,model->warnings,full,largeKept);prepared[key]={id,localAlpha};}
+                     textures[entry.first]=id;if(std::string(entry.first)=="base")alpha=localAlpha;continue;}
+-                bool refused=false;auto file=resolveTexture(scope,entry.second,refused);
++                bool refused=false,elsewhere=false;auto file=resolveTexture(scope,entry.second,refused,elsewhere);
+                 if((refused||!fs::exists(file))&&std::string(entry.first)=="toon"){
+                     // MMD's shared ramps normally live beside the executable in Data: only a
+                     // file of that name there, never a link out of it or a denied place.
+@@ -339,7 +345,7 @@
+                     if(DependencyScope(data,false).allows(candidate)){file=candidate;refused=false;}
+                     else if(entry.second.starts_with("toon")){textures[entry.first]="";continue;}
+                 }
+-                if(refused)throw std::runtime_error(outsideTexture(entry.second));
++                if(refused)throw std::runtime_error(elsewhere?elsewhereTexture(entry.second):outsideTexture(entry.second));
+                 auto key=file.wstring();auto existing=prepared.find(key);if(existing!=prepared.end()){id=existing->second.first;localAlpha=existing->second.second;}else{id=normalizeTexture(readFile(file),utf8(file.filename().wstring()),cache,localAlpha,model->warnings,full,largeKept);prepared[key]={id,localAlpha};}
+             }catch(const std::exception& e){model->warnings.push_back(e.what());}
+             textures[entry.first]=id;if(std::string(entry.first)=="base")alpha=localAlpha;
+@@ -375,11 +381,40 @@
+     return result;
+ }
+ Json importConverted(const fs::path& source,const fs::path& cache,const Json& options,const fs::path& progress,CharacterConversion&& converted){return importAsset(source,cache,options,progress,&converted);}
+-std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id){
++// ---- the memory a load in this process may take (runtime.hpp LoadBudget; R19, review MH-04) ----
++namespace {
++std::mutex loadBudgetLock;uint64_t loadBudgetHeld=0;std::atomic<uint64_t> loadBudgetLimit{0};
++uint64_t freeMemory(){
++#ifdef _WIN32
++ MEMORYSTATUSEX status{};status.dwLength=sizeof(status);if(!GlobalMemoryStatusEx(&status))return 0;return std::min<uint64_t>(status.ullAvailPhys,status.ullAvailVirtual);
++#else
++ long pages=sysconf(_SC_AVPHYS_PAGES),size=sysconf(_SC_PAGE_SIZE);return pages>0&&size>0?uint64_t(pages)*uint64_t(size):0;
++#endif
++}
++uint64_t fileBytes(const fs::path& path){std::error_code error;auto size=fs::file_size(ioPath(path),error);return error?0:uint64_t(size);}
++uint64_t times(uint64_t bytes,uint64_t factor){return bytes>UINT64_MAX/factor?UINT64_MAX:bytes*factor;}
++}
++LoadBudget::LoadBudget(uint64_t bytes,const std::string& what){
++ std::lock_guard lock(loadBudgetLock);
++ auto simulated=loadBudgetLimit.load();auto limit=simulated?simulated:freeMemory()/2;
++ // Where the free memory cannot be read nothing is refused, as before.
++ if(limit&&(bytes>limit||loadBudgetHeld>limit-bytes))
++  throw std::runtime_error(what+" needs about "+thousands((bytes>>20)+1)+" MB of memory to load, more than this computer has free for loading now ("+thousands(limit>>20)+" MB); close other programs or remove other models first");
++ loadBudgetHeld+=bytes;held=bytes;
++}
++LoadBudget::~LoadBudget(){std::lock_guard lock(loadBudgetLock);loadBudgetHeld-=held;}
++void LoadBudget::simulateLimit(uint64_t bytes){loadBudgetLimit=bytes;}
++std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id,const std::atomic_bool* stop){
++    // The module is closing (a map change, the game quitting): the load ends at its next
++    // step, so the close waits only for the step already running (R19, review MH-06).
++    auto stopped=[stop]{if(stop&&stop->load())throw std::runtime_error("Model loading stopped: the map is changing");};
+     if(!validId(id))throw std::runtime_error("Invalid asset ID");auto directory=cache/L"assets"/wide(id);auto manifest=readJson(directory/L"manifest.json");if((manifest.value("version",0)!=1&&manifest.value("version",0)!=2)||manifest.value("id",std::string())!=id)throw std::runtime_error("Cache version or ID mismatch");
+     auto identity=manifest;identity["id"]=manifest.at("sourceHash");auto encoded=identity.dump();if(hash(std::span(reinterpret_cast<const unsigned char*>(encoded.data()),encoded.size()))!=id)throw std::runtime_error("Cached manifest checksum mismatch");
+     if(manifest.contains("fullTextures")&&manifest["fullTextures"]!=true)throw std::runtime_error("Cached texture size option is invalid");
+-    auto raw=readFile(directory/L"model.bin");if(hash(raw)!=manifest.at("sourceHash"))throw std::runtime_error("Cached model checksum mismatch");auto model=parse(raw);model->id=id;for(auto& warning:manifest.value("warnings",std::vector<std::string>{}))if(std::find(model->warnings.begin(),model->warnings.end(),warning)==model->warnings.end())model->warnings.push_back(warning);
++    stopped();
++    // The file, nanoem's objects and the model's own copies are all held at once: checked before any of it is read.
++    LoadBudget budget(times(fileBytes(directory/L"model.bin"),LoadBudget::LoadExpansion),"This model");
++    auto raw=readFile(directory/L"model.bin");stopped();if(hash(raw)!=manifest.at("sourceHash"))throw std::runtime_error("Cached model checksum mismatch");auto model=parse(raw);stopped();model->id=id;for(auto& warning:manifest.value("warnings",std::vector<std::string>{}))if(std::find(model->warnings.begin(),model->warnings.end(),warning)==model->warnings.end())model->warnings.push_back(warning);
+     if(manifest.contains("vrm"))model->springs=SpringSetup::fromManifest(manifest["vrm"],*model);
+     else if(manifest.contains("conversion")){
+         auto& conversion=manifest["conversion"];model->springs=SpringSetup::fromManifest(conversion,*model);
+@@ -390,7 +425,7 @@
+     if(manifest.at("textures").size()!=model->materials.size())throw std::runtime_error("Cached material count mismatch");
+     std::set<std::string> verified;
+     std::map<std::string,std::vector<size_t>> alphaParts;
+-    for(size_t i=0;i<model->materials.size();i++){auto& t=manifest["textures"][i];auto& m=model->materials[i];auto resolve=[&](const char* key){std::string h=t.value(key,std::string());if(h.empty())return h;if(!validId(h))throw std::runtime_error("Invalid cached texture reference");if(verified.insert(h).second){auto p=cache/L"textures"/wide(h+".png");if(hash(readFile(p))!=h)throw std::runtime_error("Cached texture checksum mismatch");}return h;};m.base=resolve("base");m.sphere=resolve("sphere");m.toon=resolve("toon");m.alphaTexture=t.value("alpha",false);}
++    for(size_t i=0;i<model->materials.size();i++){auto& t=manifest["textures"][i];auto& m=model->materials[i];auto resolve=[&](const char* key){std::string h=t.value(key,std::string());if(h.empty())return h;if(!validId(h))throw std::runtime_error("Invalid cached texture reference");if(verified.insert(h).second){auto p=cache/L"textures"/wide(h+".png");stopped();LoadBudget file(fileBytes(p),"A texture of this model");if(hash(readFile(p))!=h)throw std::runtime_error("Cached texture checksum mismatch");}return h;};m.base=resolve("base");m.sphere=resolve("sphere");m.toon=resolve("toon");m.alphaTexture=t.value("alpha",false);}
+     // Cached manifests remain immutable. Classify their decoded base alpha at
+     // load time so cutout hair writes depth, while authored sheer fabric/glass
+     // still blends. Count meaningful coverage rather than empty atlas space.
+@@ -429,7 +464,11 @@
+         if(!offsets.empty())uvMorphs.push_back(std::move(offsets));}
+     std::vector<std::array<float,2>> offset;
+     for(auto& [base,parts]:alphaParts){
+-        auto png=readFile(cache/L"textures"/wide(base+".png"));int w=0,h=0,c=0;
++        stopped();auto pngPath=cache/L"textures"/wide(base+".png");LoadBudget file(fileBytes(pngPath),"A texture of this model");
++        auto png=readFile(pngPath);int w=0,h=0,c=0;
++        if(png.size()>INT_MAX||!stbi_info_from_memory(png.data(),int(png.size()),&w,&h,&c)||w<1||h<1)throw std::runtime_error("Cannot inspect cached texture alpha");
++        // The decoded pixels and the masks made from them.
++        LoadBudget decoded(times(uint64_t(w)*uint64_t(h),8),"A texture of this model");
+         std::unique_ptr<unsigned char,decltype(&stbi_image_free)> pixels(stbi_load_from_memory(png.data(),int(png.size()),&w,&h,&c,4),stbi_image_free);
+         if(!pixels||w<1||h<1)throw std::runtime_error("Cannot inspect cached texture alpha");
+         size_t visible=0,soft=0;for(size_t k=3;k<size_t(w)*h*4;k+=4){auto a=pixels.get()[k];visible+=a>8;soft+=a>8&&a<247;}
+@@ -469,7 +508,7 @@
+     std::sort(model->uvCutoutTriangles.begin(),model->uvCutoutTriangles.end());
+     groupSoftTriangles(*model);
+     for(auto soft:model->softTriangles)model->firmTriangles.push_back(soft?0:1);
+-    prepareSourceMaterials(cache,id);prepareModelFit(*model,cache);return model;
++    stopped();prepareSourceMaterials(cache,id);stopped();prepareModelFit(*model,cache);return model;
+ }
+ #ifdef _WIN32
+ static bool plainDirectory(const fs::path& path){auto attributes=GetFileAttributesW(path.c_str());return attributes!=INVALID_FILE_ATTRIBUTES&&(attributes&FILE_ATTRIBUTE_DIRECTORY)&&!(attributes&FILE_ATTRIBUTE_REPARSE_POINT);}
+diff --git a/mmdhl/native/dependency_scope.cpp b/mmdhl/native/dependency_scope.cpp
+--- a/mmdhl/native/dependency_scope.cpp
++++ b/mmdhl/native/dependency_scope.cpp
+@@ -139,19 +139,39 @@
+ DependencyScope::DependencyScope(path modelFolder,bool textureFolders,Reach r):root(std::move(modelFolder)),reach(r){
+     trees={root};
+     if(textureFolders)for(auto base:{root.parent_path(),root.parent_path().parent_path()})for(auto name:{L"tex",L"textures"})trees.push_back(base/name);
++    // A model in a Workshop item reads anywhere in that item (R19, review MH-01).
++    if(auto item=workshopItem(root);!item.empty()&&item!=root){itemTree=trees.size();trees.push_back(item);}
++}
++// <...>\workshop\content\<app id>\<item id>: the folder Steam keeps one Workshop item in.
++DependencyScope::path DependencyScope::workshopItem(const path& folder){
++    auto digits=[](const std::wstring& s){return !s.empty()&&std::all_of(s.begin(),s.end(),[](wchar_t c){return c>=L'0'&&c<=L'9';});};
++#ifdef _WIN32
++    auto named=[](const std::wstring& s,const wchar_t* name){return sameText(s,name);};
++#else
++    auto named=[](const std::wstring& s,const wchar_t* name){return s==name;};
++#endif
++    std::error_code error;auto full=fs::absolute(folder,error);if(error)return {};full=full.lexically_normal();
++    std::vector<path> chain;for(auto at=full;;at=at.parent_path()){chain.push_back(at);if(at==at.parent_path()||chain.size()>256)break;}
++    // chain[i] is the item when its parent is an app id under content under workshop.
++    for(size_t i=0;i+3<chain.size();i++){
++        auto item=chain[i].filename().wstring(),app=chain[i+1].filename().wstring();
++        if(digits(item)&&digits(app)&&named(chain[i+2].filename().wstring(),L"content")&&named(chain[i+3].filename().wstring(),L"workshop"))return chain[i];
++    }
++    return {};
+ }
+ #ifndef _WIN32
+ const std::vector<std::wstring>& DependencyScope::finalTrees() const {
+     if(resolved)return finals;resolved=true;
+     for(size_t i=0;i<trees.size();i++){
+         // A tex or textures folder near the model counts as itself, never where a link leads.
+-        if(i&&!notLink(trees[i].wstring()))continue;
++        if(!linkMayLead(i)&&!notLink(trees[i].wstring()))continue;
+         Handle h;h.fd=open(trees[i].c_str(),O_RDONLY|O_DIRECTORY|O_CLOEXEC);if(h.fd<0)continue;
+         auto real=finalPath(h.fd);if(!real.empty())finals.push_back(real);
+     }
+     return finals;
+ }
+-DependencyScope::path DependencyScope::locate(std::string_view reference) const {
++DependencyScope::path DependencyScope::find(std::string_view reference,bool& outsideRoot) const {
++    outsideRoot=false;
+     if(reference.empty()||props::networkPath(reference))return {};
+     // Model files come from Windows: '\\' separates as '/' does, and letter case may differ.
+     std::wstring text;try{text=posix::wideFromUtf8(reference,true);}catch(...){return {};}
+@@ -161,21 +181,22 @@
+     if(!plainParts(candidate))return {};
+     candidate=posix::matchCase(candidate);
+     auto full=absoluteText(candidate);if(full.empty())return {};
+-    if(reach==Reach::Local)return candidate;
++    // Both reaches stay in the import root as written (R19, review MH-01).
+     for(auto& tree:trees)if(within(full,absoluteText(tree)))return candidate;
+-    return {};
++    outsideRoot=true;return {};
+ }
+ bool DependencyScope::allows(const path& file) const {
+     if(!plainParts(file))return false;
+     auto text=absoluteText(file);if(text.empty())return false;
+     std::vector<size_t> holders;for(size_t i=0;i<trees.size();i++)if(within(text,absoluteText(trees[i])))holders.push_back(i);
+-    if(holders.empty()&&reach==Reach::Confined)return false;
++    if(holders.empty())return false;
+     Handle h;h.fd=open(fs::path(text).c_str(),O_RDONLY|O_CLOEXEC|O_NONBLOCK);if(h.fd<0)return false;
+     struct stat st{};if(fstat(h.fd,&st)!=0||!S_ISREG(st.st_mode))return false;
+-    // Links are followed: where the file really is decides.
++    // Links are followed: for a confined scope, where the file really is decides; a local
++    // one follows the player's own links inside the root.
+     auto real=finalPath(h.fd);
+     bool inside=reach==Reach::Local;if(!inside&&!real.empty())for(auto& tree:finalTrees())inside=inside||within(real,tree);
+-    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,i>0);
++    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,!linkMayLead(i));
+     if(!inside)return false;
+     auto& denied=denylist();return !denied||!denied(path(real.empty()?text:real));
+ }
+@@ -184,16 +205,17 @@
+     if(resolved)return finals;resolved=true;
+     for(size_t i=0;i<trees.size();i++){
+         auto io=extended(trees[i]);if(io.empty())continue;
+-        Handle h;h.h=CreateFileW(io.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|(i?FILE_FLAG_OPEN_REPARSE_POINT:0),nullptr);
++        Handle h;h.h=CreateFileW(io.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|(linkMayLead(i)?0:FILE_FLAG_OPEN_REPARSE_POINT),nullptr);
+         if(h.h==INVALID_HANDLE_VALUE)continue;
+         FILE_ATTRIBUTE_TAG_INFO tag{};if(!GetFileInformationByHandleEx(h.h,FileAttributeTagInfo,&tag,sizeof(tag))||!(tag.FileAttributes&FILE_ATTRIBUTE_DIRECTORY))continue;
+         // A tex or textures folder near the model counts as itself, never where a link or junction leads.
+-        if(i&&(tag.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT)&&IsReparseTagNameSurrogate(tag.ReparseTag))continue;
++        if(!linkMayLead(i)&&(tag.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT)&&IsReparseTagNameSurrogate(tag.ReparseTag))continue;
+         auto real=finalPath(h.h);if(!real.empty())finals.push_back(real);
+     }
+     return finals;
+ }
+-DependencyScope::path DependencyScope::locate(std::string_view reference) const {
++DependencyScope::path DependencyScope::find(std::string_view reference,bool& outsideRoot) const {
++    outsideRoot=false;
+     if(reference.empty()||props::networkPath(reference))return {};
+     path ref;try{ref=path(fromUtf8(reference));}catch(...){return {};}
+     path candidate;
+@@ -202,26 +224,29 @@
+     else candidate=(root/ref).lexically_normal();
+     if(!plainParts(candidate))return {};
+     auto text=absoluteText(candidate);if(text.empty())return {};
+-    if(reach==Reach::Local)return candidate;
++    // Both reaches stay in the import root as written (R19, review MH-01).
+     for(auto& tree:trees)if(within(text,absoluteText(tree)))return candidate;
+-    return {};
++    outsideRoot=true;return {};
+ }
+ bool DependencyScope::allows(const path& file) const {
+     if(!plainParts(file))return false;
+     auto text=absoluteText(file);if(text.empty())return false;
+     std::vector<size_t> holders;for(size_t i=0;i<trees.size();i++)if(within(text,absoluteText(trees[i])))holders.push_back(i);
+-    if(holders.empty()&&reach==Reach::Confined)return false;
++    if(holders.empty())return false;
+     auto io=extended(file);if(io.empty())return false;
+     Handle h;h.h=CreateFileW(io.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,nullptr);
+     if(h.h==INVALID_HANDLE_VALUE)return false;
+     BY_HANDLE_FILE_INFORMATION info{};if(!GetFileInformationByHandle(h.h,&info)||(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))return false;
+-    // Links and junctions are followed by Windows: where the file really is decides.
++    // Links and junctions are followed by Windows: for a confined scope, where the file really
++    // is decides; a local one follows the player's own links inside the root.
+     auto real=finalPath(h.h);
+     bool inside=reach==Reach::Local;if(!inside&&!real.empty())for(auto& tree:finalTrees())inside=inside||within(real,tree);
+     // Where Windows cannot say, the path as written counts when no link lies on the way.
+-    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,i>0);
++    if(!inside)for(auto i:holders)inside=inside||linkFreeBelow(absoluteText(trees[i]),text,!linkMayLead(i));
+     if(!inside)return false;
+     auto& denied=denylist();return !denied||!denied(path(real.empty()?longName(text):real));
+ }
+ #endif
+-}
++DependencyScope::path DependencyScope::locate(std::string_view reference) const {bool outsideRoot=false;return find(reference,outsideRoot);}
++bool DependencyScope::outside(std::string_view reference) const {bool outsideRoot=false;find(reference,outsideRoot);return outsideRoot;}
++}
+diff --git a/mmdhl/native/dependency_scope.hpp b/mmdhl/native/dependency_scope.hpp
+--- a/mmdhl/native/dependency_scope.hpp
++++ b/mmdhl/native/dependency_scope.hpp
+@@ -8,41 +8,56 @@
+ // file is untrusted: what it reads goes into the cache and to other players with the
+ // model, so a network path, a drive- or root-relative one, an alternate data stream and
+ // anything the process's denylist names (the worker's FilePolicy), wherever a link
+-// leads, are never opened. A confined scope (FBX, glTF and DAE characters,
+-// character_import.cpp) also reads only its own folder and below it and, for textures,
+-// the tex and textures folders the static prop resolver also searches one and two
+-// levels up: a reference that is absolute or climbs out of them is never opened and a
+-// link or junction cannot lead out of them. PMX and PMD characters (assets.cpp) and
+-// static props (props/import.cpp, props/texture_resolver.cpp) keep 2.2's reach.
++// leads, are never opened. Every model reads only inside its import root (R19, review
++// MH-01): its own folder and below it, the tex and textures folders the static prop
++// resolver also searches one and two levels up (when textureFolders) and, for a model in
++// a Steam Workshop item's folder, that whole item. A reference may use ".." as long as
++// it stays there (2.2's references within a model's folders keep working); one that
++// climbs out of it, or an absolute path elsewhere, is never opened. A confined scope
++// (FBX, glTF and DAE characters, character_import.cpp) also checks where a file really
++// is: a link or junction cannot lead out of the root. PMX and PMD characters (assets.cpp)
++// and static props (props/import.cpp, props/texture_resolver.cpp) follow a link the
++// player made inside the root, as in 2.2 (a downloaded model brings no junction).
+ // It lives in the runtime so that one denylist serves them all.
+ namespace mmd {
+ class DependencyScope {
+ public:
+     using path = std::filesystem::path;
+-    // Confined: the folders above only (FBX, glTF and DAE characters, new in 2.3).
+-    // Local: PMX and PMD textures and static props read what they read in 2.2 (absolute
+-    // paths and ones that climb out, which many artists' working folders use), but still
+-    // never a network path, an alternate data stream, a drive- or root-relative path or,
+-    // through any link, a place the denylist names.
++    // Confined: inside the root as written and where the file really is (FBX, glTF and DAE
++    // characters, new in 2.3).
++    // Local: inside the root as written (PMX and PMD textures, static props); links inside it
++    // are followed, but never to a network path, an alternate data stream or, through any
++    // link, a place the denylist names. Until R19 Local read anywhere (2.2's reach).
+     enum class Reach {Confined,Local};
+     DependencyScope(path modelFolder,bool textureFolders,Reach reach=Reach::Confined);
+     // The path `reference` (UTF-8, absolute or relative to the model's folder) names,
+     // normalized, when that lies in the scope as written; empty otherwise (also for
+     // network paths and parts Windows would rewrite, such as a trailing dot).
+     path locate(std::string_view reference) const;
++    // Whether `reference` is refused only because it lies outside the import root: a plain
++    // local path that names somewhere else (for the warning that says so).
++    bool outside(std::string_view reference) const;
+     // An existing regular file that really lies in the scope and is not denied. Where it
+     // really is: the opened file's final path, links resolved, or, where Windows cannot
+     // say (some RAM disks, FUSE and cloud drives), a path as written with no link or
+     // junction between the scope's folder and the file.
+     bool allows(const path& file) const;
+     const path& folder() const {return root;}
++    // The Steam Workshop item folder (...\workshop\content\<app>\<item>) `folder` lies in, or empty.
++    static path workshopItem(const path& folder);
+ private:
+     path root;
+     Reach reach;
+     std::vector<path> trees;                        // as written (lexical)
++    size_t itemTree=0;                              // the Workshop item's index in trees (0: none)
+     mutable std::vector<std::wstring> finals;       // where they really are
+     mutable bool resolved=false;
+     const std::vector<std::wstring>& finalTrees() const;
++    // locate's answer, and whether a well-formed reference was refused for lying outside the root.
++    path find(std::string_view reference,bool& outsideRoot) const;
++    // The model's folder and the Workshop item count as themselves where a link leads to
++    // them; a tex or textures folder near the model must not be a link itself.
++    bool linkMayLead(size_t tree) const {return tree==0||tree==itemTree;}
+ };
+ // Places no model dependency is read from, by final path (the worker sets its FilePolicy).
+ void setDependencyDenylist(std::function<bool(const std::filesystem::path&)> denied);
+diff --git a/mmdhl/native/file_access.cpp b/mmdhl/native/file_access.cpp
+--- a/mmdhl/native/file_access.cpp
++++ b/mmdhl/native/file_access.cpp
+@@ -403,28 +403,33 @@
+    FileGrant grant;grant.id=g.at("id").get<std::string>();grant.requester=g.at("requester").get<std::string>();
+    if(grant.id.size()!=16||!std::all_of(grant.id.begin(),grant.id.end(),[](char c){return std::isxdigit((unsigned char)c)&&!std::isupper((unsigned char)c);}))continue;
+    if(grant.requester.empty()||cleanLabel(grant.requester,64)!=grant.requester)continue;
++   // The requesting script (R19); a grant saved before has none.
++   if(g.contains("script")){if(!g["script"].is_string())continue;grant.script=g["script"].get<std::string>();if(cleanLabel(grant.script,160)!=grant.script)continue;}
+    // Text checks only: a grant on an unplugged drive stays for when it returns.
+    grant.folder=drivePath(g.at("folder").get<std::string>());if(policy.deniedPath(grant.folder)||policy.broadFolder(grant.folder))continue;
+    grant.created=g.value("created",int64_t(0));grant.used=g.value("used",int64_t(0));
+-   bool duplicate=false;for(auto& other:grants)duplicate|=other.id==grant.id||(other.requester==grant.requester&&sameText(trimmed(other.folder),trimmed(grant.folder)));
++   bool duplicate=false;for(auto& other:grants)duplicate|=other.id==grant.id||(other.requester==grant.requester&&other.script==grant.script&&sameText(trimmed(other.folder),trimmed(grant.folder)));
+    if(!duplicate&&grants.size()<256)grants.push_back(std::move(grant));
+   }catch(...){}
+  }
+  return true;
+ }
+ std::string FileGrantStore::save() const {
+- Json list=Json::array();for(auto& g:grants)list.push_back({{"id",g.id},{"requester",g.requester},{"folder",utf8(g.folder.wstring())},{"created",g.created},{"used",g.used}});
++ Json list=Json::array();for(auto& g:grants){Json entry={{"id",g.id},{"requester",g.requester},{"folder",utf8(g.folder.wstring())},{"created",g.created},{"used",g.used}};if(!g.script.empty())entry["script"]=g.script;list.push_back(entry);}
+  auto text=Json({{"schema",1},{"enabled",enabled},{"grants",list}}).dump(2);
+  fs::create_directories(ioPath(file.parent_path()));writeAtomic(file,std::span(reinterpret_cast<const unsigned char*>(text.data()),text.size()));return text;
+ }
+-const FileGrant* FileGrantStore::covering(const std::string& requester,const fs::path& path) const {
+- for(auto& g:grants)if(g.requester==requester&&insideFolder(path,g.folder))return &g;
++// A remembered folder answers only the label and the script it was given to (R19, review MH-02).
++const FileGrant* FileGrantStore::covering(const std::string& requester,const std::string& script,const fs::path& path) const {
++ for(auto& g:grants)if(g.requester==requester&&g.script==script&&insideFolder(path,g.folder))return &g;
+  return nullptr;
+ }
+-struct FileAccess::Item {std::string name,requester,grant;fs::path root;bool folder=false;uint64_t size=0;};
++struct FileAccess::Item {std::string name,requester,script,grant;fs::path root;bool folder=false;uint64_t size=0;};
+ struct FileAccess::Request {
+  enum Kind{Pick,Path,Enable} kind=Path;
+- std::string requester,script,purpose,title,language;Json filters=Json::array(),result;bool multiple=false,folder=false;
++ // caller: the requesting script as the Lua VM recorded it (it keys remembered folders);
++ // script: what the dialog shows, the caller when known.
++ std::string requester,caller,script,purpose,title,language;Json filters=Json::array(),result;bool multiple=false,folder=false;
+ #ifdef _WIN32
+  fs::path path,dir,rememberFolder;HANDLE process=nullptr,group=nullptr;
+ #else
+@@ -694,7 +699,7 @@
+ // listings no longer deliver: also the ones a smaller folder answered before a larger one
+ // replaced it (that keeps them while it stays, in every process). Allowed once: until the map changes.
+ void FileAccess::prune(){
+- auto ended=[&](const Item& i){return !i.grant.empty()&&!store.covering(i.requester,i.root);};
++ auto ended=[&](const Item& i){return !i.grant.empty()&&!store.covering(i.requester,i.script,i.root);};
+  std::erase_if(items,[&](const auto& entry){return ended(*entry.second);});
+  for(auto& [id,t]:tasks)if(t->item&&ended(*t->item))halt(*t,TaskRevoked);
+ }
+@@ -725,18 +730,20 @@
+  // Labels are free to change, so a script cannot ask forever under new names either.
+  if(refusals>=FileRefusalLimit)refuse("auto_denied_session","The player refused or closed ten requests; addons can ask again after the map changes");
+ }
+-static void common(FileAccess::Request& r,const Json& o){
++static void common(FileAccess::Request& r,const Json& o,const std::string& caller){
+  if(!o.is_object())refuse("invalid_options","File access options must be an object");
+  r.requester=text(o,"requester",64);if(r.requester.empty())refuse("invalid_options","Name the requesting addon (requester)");
+- r.script=text(o,"script",160);r.purpose=text(o,"purpose",120);r.language=language(o);
+-}
+-uint64_t FileAccess::pick(const Json& o){
+- auto r=std::make_unique<Request>();r->kind=Request::Pick;common(*r,o);
++ // The dialog names the script the module found on the Lua stack; what Lua reports only when it found none.
++ r.caller=cleanLabel(caller,160);r.script=r.caller.empty()?text(o,"script",160):r.caller;
++ r.purpose=text(o,"purpose",120);r.language=language(o);
++}
++uint64_t FileAccess::pick(const Json& o,const std::string& caller){
++ auto r=std::make_unique<Request>();r->kind=Request::Pick;common(*r,o,caller);
+  r->title=text(o,"title",80);r->multiple=flag(o,"multiple");r->folder=flag(o,"folder");r->filters=filters(o);
+  available(r->requester);return enqueue(std::move(r));
+ }
+-uint64_t FileAccess::request(const Json& o){
+- auto r=std::make_unique<Request>();r->kind=Request::Path;common(*r,o);r->folder=flag(o,"folder");
++uint64_t FileAccess::request(const Json& o,const std::string& caller){
++ auto r=std::make_unique<Request>();r->kind=Request::Path;common(*r,o,caller);r->folder=flag(o,"folder");
+  // Set by installation.lua's guard while its check does not allow mmdhl_worker.exe, which shows the windows.
+  bool noDialog=flag(o,"noDialog");
+  if(!o.contains("path")||!o["path"].is_string())refuse("invalid_options","Give the path to request");
+@@ -746,9 +753,9 @@
+  // would let a script learn silently which drives or user folders this computer has.
+  if(auto problem=driveProblem(r->path,true))r->problem=problem;else if(policy->deniedPath(r->path))r->problem="denied_location";
+  // A remembered folder answers without asking, once the path proves to lead inside it.
+- if(r->problem.empty()&&store.covering(r->requester,r->path))try{
++ if(r->problem.empty()&&store.covering(r->requester,r->caller,r->path))try{
+   auto target=resolveFile(r->path);
+-  if(target.folder==r->folder&&!policy->deniedPath(target.path))if(auto g=store.covering(r->requester,target.path))r->result=grant(*r,target,g->id);
++  if(target.folder==r->folder&&!policy->deniedPath(target.path))if(auto g=store.covering(r->requester,r->caller,target.path))r->result=grant(*r,target,g->id);
+  }catch(const FileAccessError& e){if(e.code=="disabled")throw;}  // turned off meanwhile in another game process: no window either
+  // Without the worker nothing else can answer. The same refusal whatever the path is, so it tells a script nothing about it.
+  if(noDialog&&r->result.is_null())refuse("worker_unavailable","Model Hotloader's installation check does not allow the worker that shows file access windows");
+@@ -793,7 +800,7 @@
+    else r.target=t;
+   }catch(const FileAccessError& e){r.problem=e.code;}
+   if(r.target){
+-   if(auto g=store.covering(r.requester,r.target->path)){r.result=grant(r,*r.target,g->id);return;}
++   if(auto g=store.covering(r.requester,r.caller,r.target->path)){r.result=grant(r,*r.target,g->id);return;}
+    r.rememberFolder=r.folder?r.target->path:r.target->path.parent_path();
+    r.canRemember=!policy->broadFolder(r.rememberFolder)&&!policy->deniedPath(r.rememberFolder);
+   }
+@@ -814,8 +821,8 @@
+  // Saving read the newest store: another game process may have turned file access off, or
+  // revoked the folder (an item it answered lasts only while a remembered folder covers it).
+  if(!store.enabled)refuse("disabled","The player turned file access for other addons off");
+- if(!grantId.empty()&&!store.covering(r.requester,target.path))refuse("released","The player revoked this folder; ask for it again");
+- auto entry=std::make_shared<Item>();entry->root=target.path;entry->folder=target.folder;entry->size=target.size;entry->requester=r.requester;entry->grant=grantId;
++ if(!grantId.empty()&&!store.covering(r.requester,r.caller,target.path))refuse("released","The player revoked this folder; ask for it again");
++ auto entry=std::make_shared<Item>();entry->root=target.path;entry->folder=target.folder;entry->size=target.size;entry->requester=r.requester;entry->script=r.caller;entry->grant=grantId;
+  entry->name=utf8(target.path.filename().empty()?target.path.wstring():target.path.filename().wstring());
+  auto handle=randomHex(16);items[handle]=entry;
+  Json item={{"handle",handle},{"name",entry->name},{"folder",entry->folder},{"remembered",!grantId.empty()},{"displayPath",displayPath(target.path)}};
+@@ -853,9 +860,10 @@
+  // The target is checked again when it is read; "always" is kept only where the dialog offered it.
+  std::string grantId;bool saved=true;
+  if(said=="always"&&r.canRemember){
+-  FileGrant g;g.id=randomHex(8);g.requester=r.requester;g.folder=r.rememberFolder;g.created=g.used=now();grantId=g.id;
++  FileGrant g;g.id=randomHex(8);g.requester=r.requester;g.script=r.caller;g.folder=r.rememberFolder;g.created=g.used=now();grantId=g.id;
+   saved=persist([g](FileGrantStore& s){
+-   std::erase_if(s.grants,[&](const FileGrant& o){return o.requester==g.requester&&insideFolder(o.folder,g.folder);});
++   // It replaces this addon's smaller folders, and those saved before R19 without a script.
++   std::erase_if(s.grants,[&](const FileGrant& o){return o.requester==g.requester&&(o.script==g.script||o.script.empty())&&insideFolder(o.folder,g.folder);});
+    if(s.grants.size()>=256)s.grants.erase(s.grants.begin());
+    s.grants.push_back(g);});
+  }
+@@ -935,7 +943,7 @@
+ void FileAccess::release(const std::string& handle){items.erase(handle);}
+ Json FileAccess::grants(){
+  localOnly();refresh();
+- Json list=Json::array();for(auto& g:store.grants)list.push_back({{"id",g.id},{"requester",g.requester},{"folder",displayPath(g.folder)},{"created",g.created},{"used",g.used}});
++ Json list=Json::array();for(auto& g:store.grants)list.push_back({{"id",g.id},{"requester",g.requester},{"script",g.script},{"folder",displayPath(g.folder)},{"created",g.created},{"used",g.used}});
+  return {{"enabled",store.enabled},{"grants",list}};
+ }
+ bool FileAccess::revoke(const std::string& id){
+diff --git a/mmdhl/native/file_access.hpp b/mmdhl/native/file_access.hpp
+--- a/mmdhl/native/file_access.hpp
++++ b/mmdhl/native/file_access.hpp
+@@ -48,9 +48,14 @@
+ bool insideFolder(const fs::path& path,const fs::path& folder);
+ // Shown to Lua instead of paths: the user profile folder becomes "~".
+ std::string displayPath(const fs::path& path);
+-// Remembered "always allow" answers: per requester label and folder. Labels are what
+-// a script reports, so this is a convenience, not a boundary between local addons.
+-struct FileGrant {std::string id,requester;fs::path folder;int64_t created=0,used=0;};
++// Remembered "always allow" answers: per requester label, the requesting script and folder.
++// The script is where the module found the call on the Lua stack (module.cpp luaCaller),
++// not what the caller says, so an addon that only reuses another addon's label no longer
++// inherits its folders silently (R19, review MH-02). Lua in the same state can still name
++// its chunks after another addon's file on purpose (CompileString): this keeps addons
++// apart, it is not a boundary between them. A grant from before R19 has no script and
++// answers only a caller the module could not identify either ("").
++struct FileGrant {std::string id,requester,script;fs::path folder;int64_t created=0,used=0;};
+ struct FileGrantStore {
+  fs::path file;bool enabled=true;std::vector<FileGrant> grants;
+  // The store a file's text describes; entries that fail the policy are dropped. false: the
+@@ -58,7 +63,7 @@
+  bool parse(std::string_view text,const FilePolicy& policy);
+  // Writes the whole store; returns the text written.
+  std::string save() const;
+- const FileGrant* covering(const std::string& requester,const fs::path& path) const;
++ const FileGrant* covering(const std::string& requester,const std::string& script,const fs::path& path) const;
+ };
+ // The store file's text: nullopt when there is none; throws while it cannot be read.
+ std::optional<std::string> readGrantStore(const fs::path& file);
+@@ -83,10 +88,12 @@
+  FileAccess(const FileAccess&)=delete;
+  FileAccess& operator=(const FileAccess&)=delete;
+  Json info();
+- uint64_t pick(const Json& options);
++ // caller: the requesting script as the Lua VM records it (module.cpp luaCaller); it keys
++ // remembered folders and is what the dialogs show. Empty when it could not be found.
++ uint64_t pick(const Json& options,const std::string& caller={});
+  // options "noDialog": the installation check does not allow the worker that shows the
+  // windows: only a remembered folder answers, anything else is refused "worker_unavailable".
+- uint64_t request(const Json& options);
++ uint64_t request(const Json& options,const std::string& caller={});
+  Json poll(uint64_t id);
+  uint64_t read(const std::string& handle,const Json& options);
+  std::optional<FileReadResult> pollRead(uint64_t id);
+diff --git a/mmdhl/native/module.cpp b/mmdhl/native/module.cpp
+--- a/mmdhl/native/module.cpp
++++ b/mmdhl/native/module.cpp
+@@ -24,6 +24,7 @@
+ #else
+ #include "posix.hpp"
+ #include "release.hpp"
++#include <dlfcn.h>
+ #include <unistd.h>
+ #endif
+ #include <future>
+@@ -56,7 +57,10 @@
+ struct PackageJob{std::shared_ptr<PackageProgress> progress;std::future<Json> future;Json result;bool finished=false;};
+ // finished: when a poll or a later start first saw the scan done (GetTickCount64).
+ struct AddonScan{std::future<Json> future;std::shared_ptr<std::atomic_bool> cancel;uint64_t finished=0;};
+-struct Context{std::map<uint64_t,PackageJob> packages;std::map<uint64_t,AddonScan> addonScans;std::map<uint64_t,std::future<void>> assetChecks;fs::path root;SceneShare sceneShare;std::map<uint64_t,SharedExport> exports;std::map<uint64_t,std::future<bool>> commits;std::map<uint64_t,std::shared_ptr<SharedTransfer>> transfers;std::unique_ptr<World> runtime=std::make_unique<World>();fs::path bin,cache;uint64_t sequence=1;std::map<uint64_t,Job> jobs;std::map<std::string,std::shared_ptr<Model>> assets;std::map<std::string,std::future<std::shared_ptr<Model>>> loading;std::map<std::string,std::future<Rig>> fitting;std::map<std::string,Rig> fitted;PreviewQueue previews;std::unique_ptr<World> preview;std::map<uint64_t,std::unique_ptr<World>> editors;std::unique_ptr<FileAccess> files;std::unique_ptr<PickedModels> picked;};
++struct Context{std::map<uint64_t,PackageJob> packages;std::map<uint64_t,AddonScan> addonScans;std::map<uint64_t,std::future<void>> assetChecks;fs::path root;SceneShare sceneShare;std::map<uint64_t,SharedExport> exports;std::map<uint64_t,std::future<bool>> commits;std::map<uint64_t,std::shared_ptr<SharedTransfer>> transfers;std::unique_ptr<World> runtime=std::make_unique<World>();fs::path bin,cache;uint64_t sequence=1;std::map<uint64_t,Job> jobs;std::map<std::string,std::shared_ptr<Model>> assets;std::map<std::string,std::future<std::shared_ptr<Model>>> loading;std::map<std::string,std::future<Rig>> fitting;std::map<std::string,Rig> fitted;PreviewQueue previews;std::unique_ptr<World> preview;std::map<uint64_t,std::unique_ptr<World>> editors;std::unique_ptr<FileAccess> files;std::unique_ptr<PickedModels> picked;
++ // Set when the module closes: loads and checks still running stop at their next step, so the
++ // close (a map change) waits only for the step each is in (R19, review MH-06).
++ std::shared_ptr<std::atomic_bool> closing=std::make_shared<std::atomic_bool>(false);};
+ std::unique_ptr<Context> context;
+ std::future<Json> installationProbe;
+ void pruneSharedWork(){
+@@ -236,7 +240,7 @@
+ FUNCTION(CancelJob) {auto it=context->jobs.find(number(LUA,1));if(it!=context->jobs.end()){auto& j=it->second;j.child.kill();j.process=false;
+ #endif
+ j.result={{"state","cancelled"}};retireJob(j);}LUA->PushBool(true);return 1;} END_FUNCTION
+-FUNCTION(RequestAsset) {auto id=stringArg(LUA,1);if(!validId(id))throw std::runtime_error("Invalid asset ID");if(!fs::exists(context->cache/L"assets"/wide(id)/L"manifest.json"))throw std::runtime_error("Model was deleted; import it again");if(!context->assets.contains(id)&&!context->loading.contains(id)){auto cache=context->cache;context->loading[id]=std::async(std::launch::async,[cache,id]{return loadAsset(cache,id);});}LUA->PushBool(true);return 1;} END_FUNCTION
++FUNCTION(RequestAsset) {auto id=stringArg(LUA,1);if(!validId(id))throw std::runtime_error("Invalid asset ID");if(!fs::exists(context->cache/L"assets"/wide(id)/L"manifest.json"))throw std::runtime_error("Model was deleted; import it again");if(!context->assets.contains(id)&&!context->loading.contains(id)){auto cache=context->cache;context->loading[id]=std::async(std::launch::async,[cache,id,closing=context->closing]{return loadAsset(cache,id,closing.get());});}LUA->PushBool(true);return 1;} END_FUNCTION
+ std::shared_ptr<Model> asset(const std::string& id){if(context->assets.contains(id))return context->assets.at(id);auto it=context->loading.find(id);if(it!=context->loading.end()&&it->second.wait_for(std::chrono::seconds(0))==std::future_status::ready){auto pending=std::move(it->second);context->loading.erase(it);auto m=pending.get();for(auto old=context->assets.begin();old!=context->assets.end()&&context->assets.size()>=8;)if(old->second.use_count()==1)old=context->assets.erase(old);else ++old;context->assets[id]=m;return m;}return {};}
+ // Plus each part's soft triangles (classified at load, so outside the manifest and the asset's identity).
+ FUNCTION(AssetInfo) {auto m=asset(stringArg(LUA,1));if(!m){LUA->PushNil();return 1;}auto info=m->info();for(size_t i=0;i<m->materials.size()&&i<info["materials"].size();i++)info["materials"][i]["softTriangles"]=m->materials[i].softTriangles;push(LUA,info);return 1;} END_FUNCTION
+@@ -248,8 +252,9 @@
+  auto kind=stringArg(LUA,1),id=stringArg(LUA,2);if(!validId(id)||(kind!="character"&&kind!="static"))throw std::runtime_error("Invalid asset check");
+  if(context->assetChecks.size()>=8)throw std::runtime_error("Earlier asset checks are still running or waiting to be polled");
+  auto cache=context->cache;auto handle=context->sequence++;
+- context->assetChecks.emplace(handle,std::async(std::launch::async,[cache,kind,id]{
+-  if(kind=="character"){loadAsset(cache,id);return;}
++ context->assetChecks.emplace(handle,std::async(std::launch::async,[cache,kind,id,closing=context->closing]{
++  if(kind=="character"){loadAsset(cache,id,closing.get());return;}
++  if(closing->load())throw std::runtime_error("The check stopped: the map is changing");
+   auto limits=props::fullTextureLimits();auto bundle=props::decode(props::readFile(cache/L"static"/L"assets"/wide(id+".gmdl"),limits.packageBytes),limits);if(bundle.id!=id)throw std::runtime_error("Prop SHA-256 mismatch");}));
+  LUA->PushNumber(double(handle));return 1;
+ } END_FUNCTION
+@@ -297,8 +302,9 @@
+  push(LUA,context->sceneShare.describe(vector(LUA,1),float(LUA->GetNumber(2)),LUA->IsType(3,GarrysMod::Lua::Type::Number)?uint64_t(LUA->GetNumber(3)):0,kinds));return 1;} END_FUNCTION
+ FUNCTION(ReadSceneChunk) {auto b=context->sceneShare.chunk(stringArg(LUA,1),number(LUA,2),number(LUA,3));LUA->PushString(reinterpret_cast<const char*>(b.data()),unsigned(b.size()));return 1;} END_FUNCTION
+ FUNCTION(AcceptSceneGeometry) {auto b=stringArg(LUA,2);context->sceneShare.accept(stringArg(LUA,1),std::span(reinterpret_cast<const unsigned char*>(b.data()),b.size()));LUA->PushBool(true);return 1;} END_FUNCTION
+-FUNCTION(PublishRemoteScene) {context->sceneShare.publish(world(),json(LUA,1));LUA->PushBool(true);return 1;} END_FUNCTION
+-FUNCTION(ClearRemoteScene) {context->sceneShare.imported.clear();world().externalScene.store({});return 0;} END_FUNCTION
++// true, then the shapes the client should forget and ask for again when a frame names them (JSON).
++FUNCTION(PublishRemoteScene) {auto forget=context->sceneShare.publish(world(),json(LUA,1));LUA->PushBool(true);push(LUA,forget);return 2;} END_FUNCTION
++FUNCTION(ClearRemoteScene) {context->sceneShare.clear();world().externalScene.store({});return 0;} END_FUNCTION
+ FUNCTION(GetSharedManifest) {push(LUA,sharedManifest(context->cache,stringArg(LUA,1),json(LUA,2),LUA->GetBool(3)));return 1;} END_FUNCTION
+ FUNCTION(GetMountablePackage) {auto path=mountablePackage(context->cache,stringArg(LUA,1));LUA->PushString(path.c_str());return 1;} END_FUNCTION
+ FUNCTION(SharedFileMatches) {auto path=sharedPath(context->cache,stringArg(LUA,1));auto size=number(LUA,2);auto digest=stringArg(LUA,3);LUA->PushBool(fs::is_regular_file(path)&&fs::file_size(path)==size&&hash(readFile(path))==digest);return 1;} END_FUNCTION
+@@ -703,9 +709,38 @@
+  return *context->files;
+ }
+ #define END_FILE_FUNCTION catch(const FileAccessError& e){LUA->PushNil();LUA->PushString(e.what());LUA->PushString(e.code.c_str());return 3;}catch(const std::exception& e){return failure(LUA,e);} }
++// The Lua file that asked (R19, review MH-02): the first Lua function on the stack outside
++// Model Hotloader's own file access wrapper, as the VM recorded it (its chunk name), never
++// what the caller passes. Remembered folders are keyed on it. Through lua_shared's own
++// lua_getstack and lua_getinfo, which Lua cannot replace; empty when they cannot be found.
++struct LuaDebugRecord{int event;const char* name;const char* namewhat;const char* what;const char* source;int currentline;int nups;int linedefined;int lastlinedefined;char short_src[60];int i_ci;};
++std::string luaCaller(GarrysMod::Lua::ILuaBase* LUA){
++ using GetStack=int(*)(lua_State*,int,LuaDebugRecord*);using GetInfo=int(*)(lua_State*,const char*,LuaDebugRecord*);
++ static const auto api=[]{
++#ifdef _WIN32
++  auto library=GetModuleHandleW(L"lua_shared.dll");
++  return std::pair<GetStack,GetInfo>{library?reinterpret_cast<GetStack>(GetProcAddress(library,"lua_getstack")):nullptr,library?reinterpret_cast<GetInfo>(GetProcAddress(library,"lua_getinfo")):nullptr};
++#else
++  return std::pair<GetStack,GetInfo>{reinterpret_cast<GetStack>(dlsym(RTLD_DEFAULT,"lua_getstack")),reinterpret_cast<GetInfo>(dlsym(RTLD_DEFAULT,"lua_getinfo"))};
++#endif
++ }();
++ auto state=LUA->GetState();if(!api.first||!api.second||!state)return {};
++ for(int level=1;level<64;level++){
++  // Room to spare after the record: LuaJIT's lua_Debug is this size, a larger one stays harmless.
++  struct{LuaDebugRecord record;char spare[256];} frame{};
++  if(!api.first(state,level,&frame.record))break;
++  if(!api.second(state,"S",&frame.record)||!frame.record.what||!frame.record.source)continue;
++  std::string_view what=frame.record.what,source=frame.record.source;
++  if(what!="Lua"&&what!="main")continue;
++  if(source.ends_with("mmdhl/file_access.lua")||source.ends_with("/hook.lua"))continue;
++  if(source.starts_with("@"))source.remove_prefix(1);
++  return std::string(source.substr(0,160));
++ }
++ return {};
++}
+ FUNCTION(FileAccessInfo) {if(!localServerRealm()){push(LUA,{{"version",1},{"available",false},{"reason","no_local_server"},{"local",false}});return 1;}push(LUA,files().info());return 1;} END_FILE_FUNCTION
+-FUNCTION(FileAccessPick) {LUA->PushNumber(double(files().pick(json(LUA,1))));return 1;} END_FILE_FUNCTION
+-FUNCTION(FileAccessRequest) {LUA->PushNumber(double(files().request(json(LUA,1))));return 1;} END_FILE_FUNCTION
++FUNCTION(FileAccessPick) {LUA->PushNumber(double(files().pick(json(LUA,1),luaCaller(LUA))));return 1;} END_FILE_FUNCTION
++FUNCTION(FileAccessRequest) {LUA->PushNumber(double(files().request(json(LUA,1),luaCaller(LUA))));return 1;} END_FILE_FUNCTION
+ FUNCTION(FileAccessPoll) {push(LUA,files().poll(number(LUA,1)));return 1;} END_FILE_FUNCTION
+ FUNCTION(FileAccessRead) {LUA->PushNumber(double(files().read(stringArg(LUA,1),json(LUA,2))));return 1;} END_FILE_FUNCTION
+ FUNCTION(FileAccessPollRead) {auto r=files().pollRead(number(LUA,1));if(!r){LUA->PushBool(false);return 1;}LUA->PushString(r->data.data(),unsigned(r->data.size()));push(LUA,r->info);return 2;} END_FILE_FUNCTION
+@@ -775,6 +810,8 @@
+  // goes away (an unscoped world() would create a fresh singleton after shutdown).
+  {WorldScope realm(context->runtime.get());clearPhysicsBridge();}
+ #endif
++ // Loads and checks still running stop at their next step: the futures below wait only for that.
++ *context->closing=true;
+  #ifdef _WIN32
+  for(auto& [id,job]:context->packages)job.progress->cancel=true;for(auto& [id,scan]:context->addonScans)*scan.cancel=true;for(auto& [id,j]:context->jobs){if(j.group){TerminateJobObject(j.group,1);CloseHandle(j.group);}if(j.process)CloseHandle(j.process);}context.reset();
+  #else
+diff --git a/mmdhl/native/props/import.cpp b/mmdhl/native/props/import.cpp
+--- a/mmdhl/native/props/import.cpp
++++ b/mmdhl/native/props/import.cpp
+@@ -46,13 +46,14 @@
+     aiReturn Seek(size_t offset,aiOrigin origin)override{size_t next=offset;if(origin==aiOrigin_CUR){if(offset>bytes.size()-pos)return aiReturn_FAILURE;next=pos+offset;}if(origin==aiOrigin_END){if(offset>bytes.size())return aiReturn_FAILURE;next=bytes.size()-offset;}if(next>bytes.size())return aiReturn_FAILURE;pos=next;return aiReturn_SUCCESS;}
+     size_t Tell()const override{return pos;}size_t FileSize()const override{return bytes.size();}void Flush()override{}
+ };
+-// The model file and what it names (glTF buffers, OBJ material libraries), as in 2.2
+-// (DependencyScope::Reach::Local): never a network path or, through any link, a denied place.
++// The model file and what it names (glTF buffers, OBJ material libraries), only from the
++// model's import root (DependencyScope::Reach::Local; R19, review MH-01): never a network
++// path, nothing outside the root and, through any link, never a denied place.
+ class UnicodeIO final:public Assimp::IOSystem {
+     fs::path model;DependencyScope scope;
+     fs::path path(const char* p)const{std::string s(p);if(networkPath(s))throw std::runtime_error("Network model dependencies are not supported");
+         auto q=fs::absolute(fs::path(wide(s))).lexically_normal();if(q==model)return q;
+-        q=scope.locate(s);if(q.empty()||!scope.allows(q))throw std::runtime_error("Model dependency in a protected location");return q;}
++        q=scope.locate(s);if(q.empty()||!scope.allows(q))throw std::runtime_error(scope.outside(s)?"Model dependency outside the model's folder":"Model dependency in a protected location");return q;}
+ public:
+     explicit UnicodeIO(const fs::path& source):model(fs::absolute(source).lexically_normal()),scope(model.parent_path(),false,DependencyScope::Reach::Local){}
+     bool Exists(const char* p)const override{try{return fs::is_regular_file(path(p));}catch(...){return false;}}
+diff --git a/mmdhl/native/props/material_overrides.cpp b/mmdhl/native/props/material_overrides.cpp
+--- a/mmdhl/native/props/material_overrides.cpp
++++ b/mmdhl/native/props/material_overrides.cpp
+@@ -44,7 +44,7 @@
+         catch(const std::exception&){
+             if(!resources.refuses(ref))throw;
+             std::string name="?";try{name=utf8(fs::path(wide(ref)).filename().wstring());}catch(...){}
+-            warnings.push_back("Material override texture in a protected location was not used: "+name);return std::nullopt;
++            warnings.push_back(resources.outside(ref)?"Material override texture outside the model's folder was not used: "+name:"Material override texture in a protected location was not used: "+name);return std::nullopt;
+         }
+     };
+     std::set<std::string> matchedMaterials,matchedMeshes;
+diff --git a/mmdhl/native/props/texture_resolver.hpp b/mmdhl/native/props/texture_resolver.hpp
+--- a/mmdhl/native/props/texture_resolver.hpp
++++ b/mmdhl/native/props/texture_resolver.hpp
+@@ -17,14 +17,15 @@
+     std::map<std::wstring,std::vector<fs::path>> names;
+     void index();
+ public:
+-    // Static props keep 2.2's reach (DependencyScope::Reach::Local); characters in other
+-    // formats pass Reach::Confined.
++    // Static props follow the player's own links inside the model's import root
++    // (DependencyScope::Reach::Local); characters in other formats pass Reach::Confined.
+     explicit TextureResolver(fs::path directory,DependencyScope::Reach reach=DependencyScope::Reach::Local);
+     ResolvedTexture resolve(const std::string& reference);
+-    // The reference names a file the model may not read as written: a denied place or a
+-    // network path (for a confined resolver also one outside the model's folders or
+-    // through a link out of them). resolve()
+-    // then looks for its file name instead.
++    // The reference names a file the model may not read as written: a denied place, a
++    // network path or one outside the model's import root (for a confined resolver also
++    // one through a link out of it). resolve() then looks for its file name instead.
+     bool refuses(const std::string& reference) const;
++    // Refused only for lying outside the import root (DependencyScope::outside).
++    bool outside(const std::string& reference) const {return scope.outside(reference);}
+ };
+ }
+diff --git a/mmdhl/native/runtime.hpp b/mmdhl/native/runtime.hpp
+--- a/mmdhl/native/runtime.hpp
++++ b/mmdhl/native/runtime.hpp
+@@ -227,7 +227,25 @@
+ constexpr int MaxTextureEdge=4096,FullTextureEdge=16384;
+ // character: a model the worker converted from another format (assets.hpp).
+ Json importAsset(const fs::path& source,const fs::path& cache,const Json& options,const fs::path& progress={},CharacterConversion* character=nullptr);
+-std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id);
++// Loads a cached character in this process (R19, reviews MH-04 and MH-06): before its model
++// and each texture are read, their sizes are checked against what loading may still take
++// (LoadBudget); `stop`, when given and set (the module is closing), ends the load at its next
++// step instead of reading and parsing the rest.
++std::shared_ptr<Model> loadAsset(const fs::path& cache,const std::string& id,const std::atomic_bool* stop=nullptr);
++// The memory a load in this process may take: half of the physical memory free when it
++// starts, less what loads already running hold. A model is estimated at LoadExpansion times
++// its file (the bytes, nanoem's objects, the model's own copies and what is derived from
++// them), a texture at its file. A load that does not fit fails before it allocates.
++struct LoadBudget {
++ static constexpr uint64_t LoadExpansion=8;
++ // Holds `bytes` of the budget until destroyed; throws, holding nothing, when they do not fit.
++ LoadBudget(uint64_t bytes,const std::string& what);
++ ~LoadBudget();
++ LoadBudget(const LoadBudget&)=delete;LoadBudget& operator=(const LoadBudget&)=delete;
++ // Tests only: what loading may take in all instead of the free memory (0: the free memory).
++ static void simulateLimit(uint64_t bytes);
++ uint64_t held=0;
++};
+ 
+ // Bone hierarchy, bone morphs and IK for one pose. The render thread evaluates
+ // into the Instance arrays; an asynchronous secondary world evaluates its tick
+diff --git a/mmdhl/native/scene_share.cpp b/mmdhl/native/scene_share.cpp
+--- a/mmdhl/native/scene_share.cpp
++++ b/mmdhl/native/scene_share.cpp
+@@ -1,5 +1,7 @@
+ #include "scene_share.hpp"
+ #include "rig_writer.hpp"
++#include <algorithm>
++#include <iterator>
+ namespace mmd {
+ namespace {
+ Json xyz(const btVector3& v){return {v.x(),v.y(),v.z()};}
+@@ -23,18 +25,39 @@
+  for(auto& [_,entry]:exported)if(entry.key==key){if(offset>entry.bytes.size()||count>32768)throw std::runtime_error("Invalid scene chunk request");auto end=std::min(entry.bytes.size(),offset+count);return Bytes(entry.bytes.begin()+offset,entry.bytes.begin()+end);}
+  throw std::runtime_error("Collision shape expired");
+ }
++double SceneShare::now() const {
++ if(clock)return clock();
++ return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
++}
++void SceneShare::drop(std::map<std::string,Imported>::iterator it){importedBytes-=it->second.bytes;dropped.push_back(it->first);imported.erase(it);}
++void SceneShare::clear(){imported.clear();importedBytes=0;dropped.clear();}
+ void SceneShare::accept(const std::string& key,std::span<const unsigned char> b){
++ if(b.size()>ImportBudget)throw std::runtime_error("Remote collision shape exceeds the memory budget");
+  if(!validId(key)||hash(b)!=key||at<uint32_t>(b,0)!=0x43534d4d||at<uint32_t>(b,4)!=1)throw std::runtime_error("Invalid collision shape or checksum");
++ if(auto known=imported.find(key);known!=imported.end()){known->second.used=now();return;}
+  auto kind=at<int>(b,8),n=at<int>(b,16),h=at<int>(b,20);if(kind<0||kind>2||n<0||h<0||48ull+uint64_t(n)*12+uint64_t(h)*4!=b.size())throw std::runtime_error("Malformed remote collision shape");
+  auto g=std::make_shared<SceneGeometry>();g->kind=SceneGeometry::Kind(kind);g->radius=at<float>(b,12);if(!std::isfinite(g->radius)||g->radius<0)throw std::runtime_error("Invalid remote sphere");g->minimum={BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT};g->maximum=-g->minimum;
+  for(int i=0;i<n;i++){size_t p=48+size_t(i)*12;btVector3 v(at<float>(b,p),at<float>(b,p+4),at<float>(b,p+8));for(int j=0;j<3;j++)if(!std::isfinite(v[j]))throw std::runtime_error("Invalid remote collision vertex");g->vertices.push_back(v);g->minimum.setMin(v);g->maximum.setMax(v);}
+  if(kind==SceneGeometry::Sphere){if(n||h||g->radius<=0)throw std::runtime_error("Malformed remote sphere");g->minimum={-g->radius,-g->radius,-g->radius};g->maximum=-g->minimum;}
+  size_t sum=0;for(int i=0;i<h;i++){int count=at<int>(b,48+size_t(n)*12+i*4);if(count<3)throw std::runtime_error("Invalid remote convex");sum+=count;g->hullCounts.push_back(count);}
+- if((kind==SceneGeometry::Triangles&&(n%3||h))||(kind==SceneGeometry::Convexes&&sum!=size_t(n)))throw std::runtime_error("Invalid remote collision topology");imported[key]=g;
++ if((kind==SceneGeometry::Triangles&&(n%3||h))||(kind==SceneGeometry::Convexes&&sum!=size_t(n)))throw std::runtime_error("Invalid remote collision topology");
++ // Room for it: the shapes unused the longest go (R19, review MH-05).
++ while(!imported.empty()&&(importedBytes+b.size()>ImportBudget||imported.size()>=ImportLimit)){
++  auto oldest=imported.begin();for(auto it=imported.begin();it!=imported.end();++it)if(it->second.used<oldest->second.used)oldest=it;
++  drop(oldest);
++ }
++ imported[key]=Imported{g,b.size(),now()};importedBytes+=b.size();
+ }
+-void SceneShare::publish(World& host,const Json& description){
++std::vector<std::string> SceneShare::publish(World& host,const Json& description){
+  auto frame=std::make_shared<SceneFrame>();frame->sequence=description.at("sequence");frame->timestamp=description.at("timestamp");if(!std::isfinite(frame->timestamp))throw std::runtime_error("Invalid scene clock");
+- for(auto& item:description.at("objects")){auto g=imported.find(item.at("shape").get<std::string>());if(g==imported.end())continue;SceneObject o;o.id=item.at("id");o.owner=item.at("owner");o.physicsBone=item.value("bone",0);o.geometry=g->second;o.isStatic=item.at("static");auto actor=item.value("actor",0);if(actor<0||actor>2)throw std::runtime_error("Invalid remote collision actor");o.actor=uint8_t(actor);auto q=item.at("rotation");btQuaternion r(q.at(0),q.at(1),q.at(2),q.at(3));if(!std::isfinite(r.length2())||r.length2()<.5||r.length2()>1.5)throw std::runtime_error("Invalid remote collision rotation");o.transform=btTransform(r.normalized(),vec(item.at("position")));o.velocity=vec(item.at("velocity"));o.angular=vec(item.at("angular"));frame->objects.push_back(std::move(o));}
++ auto time=now();std::vector<std::string> missing;
++ for(auto& item:description.at("objects")){auto key=item.at("shape").get<std::string>();auto g=imported.find(key);if(g==imported.end()){missing.push_back(key);continue;}g->second.used=time;SceneObject o;o.id=item.at("id");o.owner=item.at("owner");o.physicsBone=item.value("bone",0);o.geometry=g->second.geometry;o.isStatic=item.at("static");auto actor=item.value("actor",0);if(actor<0||actor>2)throw std::runtime_error("Invalid remote collision actor");o.actor=uint8_t(actor);auto q=item.at("rotation");btQuaternion r(q.at(0),q.at(1),q.at(2),q.at(3));if(!std::isfinite(r.length2())||r.length2()<.5||r.length2()>1.5)throw std::runtime_error("Invalid remote collision rotation");o.transform=btTransform(r.normalized(),vec(item.at("position")));o.velocity=vec(item.at("velocity"));o.angular=vec(item.at("angular"));frame->objects.push_back(std::move(o));}
+  host.externalScene.store(frame);
++ // Shapes no frame named for a while: their entity went away or out of reach (the frame just
++ // stored holds its own references, so nothing it uses goes from under it).
++ for(auto it=imported.begin();it!=imported.end();){auto next=std::next(it);if(time-it->second.used>IdleSeconds)drop(it);it=next;}
++ auto forget=std::move(dropped);dropped.clear();
++ for(auto& key:missing)if(std::find(forget.begin(),forget.end(),key)==forget.end())forget.push_back(key);
++ return forget;
+ }
+ }
+diff --git a/mmdhl/native/scene_share.hpp b/mmdhl/native/scene_share.hpp
+--- a/mmdhl/native/scene_share.hpp
++++ b/mmdhl/native/scene_share.hpp
+@@ -3,14 +3,31 @@
+ namespace mmd {
+ struct SceneShare {
+  struct Cached {std::weak_ptr<const SceneGeometry> source;std::string key;Bytes bytes;};
++ // A shape received from the server: kept while frames name it (R19, review MH-05).
++ struct Imported {std::shared_ptr<const SceneGeometry> geometry;size_t bytes=0;double used=0;};
+  std::map<const SceneGeometry*,Cached> exported;
+- std::map<std::string,std::shared_ptr<const SceneGeometry>> imported;
++ std::map<std::string,Imported> imported;
++ size_t importedBytes=0;
++ // A shape no frame has named for IdleSeconds goes: its entity went away or out of reach.
++ // Past ImportBudget bytes or ImportLimit shapes, the ones unused the longest go first; a
++ // shape that cannot fit even then is refused.
++ static constexpr double IdleSeconds=60;
++ static constexpr size_t ImportBudget=size_t(256)<<20,ImportLimit=4096;
++ // Seconds on a steady clock (tests set it).
++ std::function<double()> clock;
+  // consumer identifies the subscriber whose interest region this refreshes;
+  // kinds (Collide:: flags) are the objects it asked for: map geometry, objects,
+  // living players, living NPCs.
+  Json describe(const btVector3& center,float radius,uint64_t consumer=0,unsigned kinds=Collide::All);
+  Bytes chunk(const std::string&,size_t offset,size_t count)const;
+  void accept(const std::string&,std::span<const unsigned char>);
+- void publish(World&,const Json&);
++ // Returns the shapes the client should forget (and ask for again when a frame names them):
++ // those dropped since the last publication and those this frame names but which are not held.
++ std::vector<std::string> publish(World&,const Json&);
++ void clear();
++private:
++ std::vector<std::string> dropped;
++ double now() const;
++ void drop(std::map<std::string,Imported>::iterator);
+ };
+ }
+diff --git a/mmdhl/scripts/bootstrap.py b/mmdhl/scripts/bootstrap.py
+--- a/mmdhl/scripts/bootstrap.py
++++ b/mmdhl/scripts/bootstrap.py
+@@ -1,7 +1,9 @@
+ """Fetch pinned sources. Installed users need neither Python nor a compiler."""
+-import concurrent.futures, hashlib, io, json, pathlib, struct, sys, tarfile, urllib.request, zipfile
++import concurrent.futures, hashlib, io, json, os, pathlib, re, shutil, struct, subprocess, sys, tarfile, urllib.request, zipfile
+ 
+ ROOT = pathlib.Path(__file__).resolve().parents[1]
++# Where the locked repositories are fetched from with git (MMDHL_GIT_BASE: a mirror, or tests).
++GIT_BASE = os.environ.get('MMDHL_GIT_BASE', 'https://github.com')
+ 
+ def set_rpath(elf, rpath):
+     """Overwrites a 64-bit ELF library's DT_RPATH/DT_RUNPATH in place with a shorter path."""
+@@ -30,7 +32,29 @@
+         data[start:start + length] = rpath + bytes(length - len(rpath))
+     return bytes(data)
+ 
++def remove_tree(path):
++    """Removes a folder git made (its object files are read-only on Windows)."""
++    def writable(function, name, _):
++        os.chmod(name, 0o700)
++        function(name)
++    if os.path.lexists(path):
++        if sys.version_info >= (3, 12):
++            shutil.rmtree(path, onexc=writable)
++        else:
++            shutil.rmtree(path, onerror=writable)
++
++def git(*args, **kwargs):
++    """Runs git; its output, or RuntimeError with what it said."""
++    done = subprocess.run(['git', *map(str, args)], capture_output=True, **kwargs)
++    if done.returncode:
++        raise RuntimeError('git ' + ' '.join(map(str, args[:3])) + ' failed: ' + done.stderr.decode('utf-8', 'replace').strip())
++    return done.stdout
++
+ def fetch(item):
++    """One locked repository at its commit, fetched with git: every object git receives is
++    checked against its hash, and the commit's own hash names the whole tree, so what is
++    built is exactly the locked revision. (GitHub's archive downloads had no such check, and
++    their bytes are not promised to stay the same.)"""
+     name, (repo, revision) = item
+     target = ROOT / 'vendor' / name
+     marker = target / '.mmdhl-revision'
+@@ -38,23 +62,49 @@
+         return name + ': ready'
+     if target.exists():
+         raise RuntimeError(f'{target} exists without matching revision; inspect before replacing')
+-    req = urllib.request.Request(f'https://codeload.github.com/{repo}/tar.gz/{revision}', headers={'User-Agent': 'ModelHotloader-build'})
+-    with urllib.request.urlopen(req, timeout=120) as response:
+-        blob = response.read()
+-    target.mkdir(parents=True)
+-    with tarfile.open(fileobj=io.BytesIO(blob), mode='r:gz') as archive:
+-        for member in archive:
+-            parts = pathlib.PurePosixPath(member.name).parts[1:]
+-            if not parts or '..' in parts or member.issym() or member.islnk():
+-                continue
+-            dest = target.joinpath(*parts)
+-            if member.isdir():
+-                dest.mkdir(parents=True, exist_ok=True)
+-            elif member.isfile():
+-                dest.parent.mkdir(parents=True, exist_ok=True)
+-                dest.write_bytes(archive.extractfile(member).read())
++    if not re.fullmatch(r'[0-9a-f]{40}', revision):
++        raise RuntimeError(f'{name}: the lock names {revision!r}, not a full commit hash')
++    if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
++        raise RuntimeError(f'{name}: {repo!r} is not a GitHub owner/name')
++    work = ROOT / 'vendor' / f'.{name}.git'
++    remove_tree(work)
++    try:
++        git('init', '--quiet', '--bare', work)
++        git('--git-dir', work, 'fetch', '--quiet', '--no-tags', '--depth', '1', f'{GIT_BASE}/{repo}.git', revision)
++        fetched = git('--git-dir', work, 'rev-parse', '--verify', 'FETCH_HEAD^{commit}').decode().strip()
++        if fetched != revision:
++            raise RuntimeError(f'{name}: git fetched {fetched}, not the locked {revision}')
++        # The commit's tree as the archives held it (git archive honours export-ignore, as they
++        # did, and with GitHub's line endings: Git for Windows would otherwise write CRLF): links
++        # are left out, nothing lands outside the folder.
++        target.mkdir(parents=True)
++        archive = subprocess.Popen(['git', '-c', 'core.autocrlf=false', '-c', 'core.eol=lf', '--git-dir', str(work), 'archive',
++                                    '--format=tar', '--prefix=tree/', revision], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++        try:
++            with tarfile.open(fileobj=archive.stdout, mode='r|') as stream:
++                for member in stream:
++                    parts = pathlib.PurePosixPath(member.name).parts[1:]
++                    if not parts or '..' in parts or member.issym() or member.islnk():
++                        continue
++                    dest = target.joinpath(*parts)
++                    if member.isdir():
++                        dest.mkdir(parents=True, exist_ok=True)
++                    elif member.isfile():
++                        dest.parent.mkdir(parents=True, exist_ok=True)
++                        dest.write_bytes(stream.extractfile(member).read())
++        finally:
++            archive.stdout.close()
++            errors = archive.stderr.read()
++            archive.stderr.close()
++            code = archive.wait()
++        if code:
++            raise RuntimeError(f'{name}: git archive failed: ' + errors.decode('utf-8', 'replace').strip())
++    except BaseException:
++        remove_tree(target)
++        raise
++    finally:
++        remove_tree(work)
+     marker.write_text(revision)
+-    (target / '.archive-sha256').write_text(hashlib.sha256(blob).hexdigest())
+     return name + ': fetched ' + revision
+ 
+ if __name__ == '__main__':
+diff --git a/mmdhl/tests/actor_tests.cpp b/mmdhl/tests/actor_tests.cpp
+--- a/mmdhl/tests/actor_tests.cpp
++++ b/mmdhl/tests/actor_tests.cpp
+@@ -14,7 +14,34 @@
+  for(int k=0;k<6;k++){size_t ptr=stream+4+(k/3)*6;size_t values=ptr+read<int16_t>(b,ptr+(k%3)*2);float scale=read<float>(b,bone+(k<3?84:72)+(k%3)*4);float value=read<int16_t>(b,values+2)*scale;if(k<3)angles[k]=value;else p[k-3]=value;}
+  if(!delta){p+=vectorAt(b,bone+32);angles+=vectorAt(b,bone+60);}btMatrix3x3 m;m.setEulerZYX(angles.x(),angles.y(),angles.z());btQuaternion q;m.getRotation(q);return {p,q};
+ }
++// Remote collision shapes (R19, review MH-05): kept while frames name them, within a budget.
++// A sphere of radius r is the smallest shape the wire format carries (48 bytes).
++static void remoteShapeBudget(){
++ auto sphere=[](float radius){Bytes b(48,0);uint32_t magic=0x43534d4d,version=1;int kind=SceneGeometry::Sphere;std::memcpy(b.data(),&magic,4);std::memcpy(b.data()+4,&version,4);std::memcpy(b.data()+8,&kind,4);std::memcpy(b.data()+12,&radius,4);return b;};
++ auto frame=[](const std::vector<std::string>& keys,uint64_t sequence){Json objects=Json::array();uint64_t id=1;
++  for(auto& key:keys)objects.push_back({{"id",id++},{"owner",0},{"shape",key},{"static",false},{"actor",0},{"position",{0,0,0}},{"rotation",{0,0,0,1}},{"velocity",{0,0,0}},{"angular",{0,0,0}}});
++  return Json{{"sequence",sequence},{"timestamp",double(sequence)},{"objects",objects}};};
++ double time=1000;SceneShare share;share.clock=[&]{return time;};World client;
++ std::vector<std::string> keys;for(int i=0;i<4;i++){auto b=sphere(1.f+i);keys.push_back(hash(b));share.accept(keys.back(),b);}
++ if(share.imported.size()!=4||share.importedBytes!=4*48)throw std::runtime_error("Remote shapes were not kept: "+std::to_string(share.imported.size()));
++ // Shapes a frame names stay; the others go once no frame named them for IdleSeconds, and the
++ // client is told to forget them (and to ask again for a shape a frame names but that is gone).
++ if(!share.publish(client,frame({keys[0],keys[1]},1)).empty()||readScene(&client)->objects.size()!=2)throw std::runtime_error("A remote frame lost its shapes");
++ time+=SceneShare::IdleSeconds-1;share.publish(client,frame({keys[0],keys[1]},2));
++ time+=2;auto forget=share.publish(client,frame({keys[0]},3));std::sort(forget.begin(),forget.end());
++ auto idle=std::vector<std::string>{keys[2],keys[3]};std::sort(idle.begin(),idle.end());
++ if(forget!=idle||share.imported.size()!=2||!share.imported.contains(keys[0])||!share.imported.contains(keys[1])||share.importedBytes!=2*48)throw std::runtime_error("Idle remote shapes were kept, or used ones dropped");
++ time+=SceneShare::IdleSeconds+1;forget=share.publish(client,frame({keys[0],keys[2]},4));std::sort(forget.begin(),forget.end());
++ auto told=std::vector<std::string>{keys[1],keys[2]};std::sort(told.begin(),told.end());
++ if(forget!=told||share.imported.size()!=1||readScene(&client)->objects.size()!=1)throw std::runtime_error("The client was not told which shapes to ask for again");
++ // Past the count limit the shape unused the longest goes first.
++ SceneShare full;full.clock=[&]{return time;};std::string first;
++ for(size_t i=0;i<SceneShare::ImportLimit+1;i++){auto b=sphere(1.f+float(i));auto key=hash(b);if(!i)first=key;full.accept(key,b);time+=.001;}
++ if(full.imported.size()!=SceneShare::ImportLimit||full.imported.contains(first))throw std::runtime_error("The remote shape limit was not kept");
++ full.clear();if(!full.imported.empty()||full.importedBytes)throw std::runtime_error("Clearing kept remote shapes");
++}
+ int main(int argc,char** argv){try{
++ remoteShapeBudget();
+  // Automatic c_arms exclude upper-arm sleeves near the view camera while
+  // retaining forearms/hands. Explicit material choices still override it.
+  {
+diff --git a/mmdhl/tests/file_access_tests.cpp b/mmdhl/tests/file_access_tests.cpp
+--- a/mmdhl/tests/file_access_tests.cpp
++++ b/mmdhl/tests/file_access_tests.cpp
+@@ -208,6 +208,21 @@
+  check(granted.value("state","")=="granted"&&granted["items"][0].value("remembered",false)&&logged(log).size()==dialogs,"the remembered folder still asked: "+granted.dump());
+  answer(L"deny");granted=wait(*fa,fa->request({{"requester","Other Addon"},{"path",local+"\\allowed\\a.json"}}));
+  check(granted.value("state","")=="denied"&&logged(log).size()==dialogs+1,"another addon used the remembered folder: "+granted.dump());
++ // A remembered folder belongs to the label and the script the module found on the Lua stack,
++ // not to what the script reports (R19, review MH-02): another script with the same label is
++ // asked again, the same script is not, and the dialog names the script the module found.
++ {answer(L"always");granted=wait(*fa,fa->request({{"requester","Keyed"},{"script","forged.lua"},{"path",local+"\\allowed"},{"folder",true}},"addons/keyed/lua/real.lua"));
++  check(granted.value("state","")=="granted"&&granted.value("changed",false)&&logged(log).back().value("script","")=="addons/keyed/lua/real.lua","the keyed grant: "+granted.dump()+" "+logged(log).back().dump());
++  auto keyed=readJson(config.store)["grants"];bool scripted=false;for(auto& g:keyed)scripted|=g.value("requester","")=="Keyed"&&g.value("script","")=="addons/keyed/lua/real.lua";
++  check(scripted,"the keyed grant was stored without its script: "+keyed.dump());
++  auto asked=logged(log).size();
++  granted=wait(*fa,fa->request({{"requester","Keyed"},{"path",local+"\\allowed\\a.json"}},"addons/keyed/lua/real.lua"));
++  check(granted.value("state","")=="granted"&&granted["items"][0].value("remembered",false)&&logged(log).size()==asked,"the keyed folder asked its own script again: "+granted.dump());
++  answer(L"deny");granted=wait(*fa,fa->request({{"requester","Keyed"},{"script","addons/keyed/lua/real.lua"},{"path",local+"\\allowed\\a.json"}},"addons/thief/lua/x.lua"));
++  check(granted.value("state","")=="denied"&&logged(log).size()==asked+1,"another script with the same label used the remembered folder: "+granted.dump());
++  granted=wait(*fa,fa->request({{"requester","Keyed"},{"path",local+"\\allowed\\a.json"}}));
++  check(granted.value("state","")=="denied"&&logged(log).size()==asked+2,"a script the module could not name used the remembered folder: "+granted.dump());
++  auto listed=fa->grants();for(auto& g:listed["grants"])if(g.value("requester","")=="Keyed")check(fa->revoke(g["id"].get<std::string>()),"revoking the keyed grant");}
+  // Missing, linked and denied targets still show a dialog: Lua cannot probe silently.
+  answer(L"once");granted=wait(*fa,fa->request({{"requester","Prober"},{"path",local+"\\allowed\\missing.json"}}));
+  check(granted.value("state","")=="denied"&&logged(log).back().value("problem","")=="not_found","a missing file: "+granted.dump());
+@@ -244,7 +259,9 @@
+  answer(L"yes");on=fa->setEnabled(true,"en");check(wait(*fa,on["request"]).value("state","")=="granted"&&fa->info().value("enabled",false)&&readJson(config.store).value("enabled",false),"turning on");
+  // Revoking: the grant is gone and so are the items it answered.
+  granted=wait(*fa,fa->request({{"requester","Test Addon"},{"path",local+"\\allowed\\a.json"}}));check(granted["items"][0].value("remembered",false),"the remembered grant after re-enabling");
+- auto grants=fa->grants();check(grants["grants"].size()==1&&grants["grants"][0]["folder"].get<std::string>().starts_with("~"),"the grants list: "+grants.dump());
++ // The user's folder shows as "~" (when the test's folder lies in it: TEMP may be elsewhere).
++ bool inProfile=false;{PWSTR p=nullptr;SHGetKnownFolderPath(FOLDERID_Profile,0,nullptr,&p);inProfile=insideFolder(root,resolveFile(p).path);CoTaskMemFree(p);}
++ auto grants=fa->grants();check(grants["grants"].size()==1&&grants["grants"][0]["folder"].get<std::string>().starts_with("~")==inProfile,"the grants list: "+grants.dump());
+  check(fa->revoke(grants["grants"][0]["id"])&&fa->grants()["grants"].empty()&&readJson(config.store)["grants"].empty(),"revoke");
+  check(refusal([&]{fa->read(granted["items"][0]["handle"],Json::object());})=="released","an item outlived its revoked grant");
+  // The store: a corrupt file means no grants; entries that fail the rules are dropped.
+diff --git a/mmdhl/tests/import_error_tests.cpp b/mmdhl/tests/import_error_tests.cpp
+--- a/mmdhl/tests/import_error_tests.cpp
++++ b/mmdhl/tests/import_error_tests.cpp
+@@ -298,9 +298,11 @@
+   check(!fs::exists(derivative)&&!fs::exists(cache/L"textures"/wide(fullTexture+".png"))&&fs::exists(cache/L"textures"/wide(plainTexture+".vtf")),"deletion removes the full-size derivative of an unused texture");}
+ 
+  // ---- a PMX character's textures (dependency_scope.hpp, Reach::Local) ----
+- // As in 2.2 a texture may climb out of the model's folder or lie behind a junction (artists'
+- // working folders keep textures beside the model); a root-relative one or one in a denied
+- // place is never read, with a warning.
++ // A texture is read only inside the model's import root (R19, review MH-01): its folder, the
++ // tex and textures folders near it, or the Workshop item it came in. ".." inside the root still
++ // works and a junction the player made inside it is followed, as in 2.2; one that climbs out
++ // (a downloaded model naming ..\..\Pictures\...) is never read, with a warning, nor is a
++ // root-relative one or one in a denied place.
+  {auto pack=temp/L"pack";auto folder=pack/L"model";for(auto f:{folder/L"tex",pack/L"tex",pack/L"outside"})fs::create_directories(f);
+   for(auto f:{folder/L"beside.dds",folder/L"tex"/L"below.dds",pack/L"tex"/L"up.dds",folder/L"denied.dds",pack/L"outside"/L"secret.dds",pack/L"secret.dds"})fs::copy_file("tests/fixtures/checker.dds",f);
+ #ifdef _WIN32
+@@ -308,19 +310,47 @@
+ #else
+   {std::error_code e;fs::create_directory_symlink(pack/L"outside",folder/L"linked",e);check(!e,"the test link");}
+ #endif
+-  PmxSpec spec;spec.vertices=72;spec.materials.clear();
+-  spec.textures={"beside.dds","tex\\below.dds","..\\tex\\up.dds","denied.dds","..\\outside\\secret.dds","../secret.dds","linked\\secret.dds","\\secret.dds"};
++  PmxSpec spec;spec.vertices=81;spec.materials.clear();
++  spec.textures={"beside.dds","tex\\below.dds","..\\tex\\up.dds","denied.dds","..\\outside\\secret.dds","../secret.dds","linked\\secret.dds","\\secret.dds","tex\\..\\beside.dds"};
+   for(size_t i=0;i<spec.textures.size();i++){spec.materials.push_back({"m"+std::to_string(i),9});spec.materialTexture.push_back(int(i));}
+   writeAtomic(folder/L"model.pmx",pmx(spec));
+   setDependencyDenylist([](const fs::path& p){return p.filename()==L"denied.dds";});
+   auto result=importAsset(folder/L"model.pmx",temp/L"cache3",Json::object(),{});setDependencyDenylist({});
+   auto& textures=result["info"]["textures"];auto warnings=result["info"]["warnings"].dump();std::cout<<"  "<<warnings<<"\n";
+-  check(textures.size()==8,"every material keeps its texture slot");
+-  for(size_t i:{0,1,2,4,5,6})check(!textures[i].value("base","").empty(),"a texture is read as in 2.2: "+spec.textures[i]);
++  check(textures.size()==9,"every material keeps its texture slot");
++  for(size_t i:{0,1,2,6,8})check(!textures[i].value("base","").empty(),"a texture inside the model's root is read as in 2.2: "+spec.textures[i]);
+   for(size_t i:{3,7}){auto shown=spec.textures[i];std::replace(shown.begin(),shown.end(),'\\','/');
+    check(textures[i].value("base","").empty()&&has(warnings,"Texture in a protected location: "+shown),"a denied or root-relative texture is not read, with a warning: "+shown);}
++  for(size_t i:{4,5}){auto shown=spec.textures[i];std::replace(shown.begin(),shown.end(),'\\','/');
++   check(textures[i].value("base","").empty()&&has(warnings,"Texture outside the model's folder was not read: "+shown),"a texture outside the model's root is not read, with a warning: "+shown);}
+   check(!has(warnings,"Cannot read"),"a refused texture is never opened");
+-  fs::remove(folder/L"linked");}
++  fs::remove(folder/L"linked");
++  // A model in a Workshop item's folder reads anywhere in that item, and still nothing beside it.
++  auto item=temp/L"steamapps"/L"workshop"/L"content"/L"4000"/L"123456";auto deep=item/L"models"/L"a"/L"b";
++  for(auto f:{deep,item/L"shared"})fs::create_directories(f);
++  fs::copy_file("tests/fixtures/checker.dds",item/L"shared"/L"skin.dds");fs::copy_file("tests/fixtures/checker.dds",item.parent_path()/L"other.dds");
++  check(DependencyScope::workshopItem(deep)==item&&DependencyScope::workshopItem(pack).empty(),"the Workshop item a model lies in");
++  PmxSpec workshop;workshop.vertices=18;workshop.materials.clear();workshop.textures={"..\\..\\..\\shared\\skin.dds","..\\..\\..\\..\\other.dds"};
++  for(size_t i=0;i<workshop.textures.size();i++){workshop.materials.push_back({"w"+std::to_string(i),9});workshop.materialTexture.push_back(int(i));}
++  writeAtomic(deep/L"model.pmx",pmx(workshop));
++  auto inItem=importAsset(deep/L"model.pmx",temp/L"cache3",Json::object(),{});
++  check(!inItem["info"]["textures"][0].value("base","").empty(),"a texture elsewhere in the model's Workshop item is read");
++  check(inItem["info"]["textures"][1].value("base","").empty()&&has(inItem["info"]["warnings"].dump(),"Texture outside the model's folder was not read"),"a texture beside the Workshop item is not read");
++
++  // ---- loading in the game's process (R19, reviews MH-04 and MH-06) ----
++  // The model's size is checked against what loading may take before anything is read, and a
++  // load the closing module stopped ends at its next step.
++  auto id=result["asset"].get<std::string>();
++  LoadBudget::simulateLimit(1024);bool refused=false;
++  try{loadAsset(temp/L"cache3",id);}catch(const std::exception& e){refused=has(e.what(),"needs about")&&has(e.what(),"MB of memory to load");}
++  LoadBudget::simulateLimit(0);check(refused,"a model larger than the memory left for loading was read");
++  {LoadBudget::simulateLimit(1ull<<30);LoadBudget held((1ull<<30)-1000,"Another load");bool full=false;
++   try{loadAsset(temp/L"cache3",id);}catch(const std::exception& e){full=has(e.what(),"needs about");}
++   check(full,"loads running together are not counted together");}
++  check(loadAsset(temp/L"cache3",id)!=nullptr,"the budget outlived its loads");LoadBudget::simulateLimit(0);
++  std::atomic_bool closing=true;bool stopped=false;
++  try{loadAsset(temp/L"cache3",id,&closing);}catch(const std::exception& e){stopped=has(e.what(),"stopped");}
++  check(stopped,"a load went on after the module started closing");}
+ 
+  // ---- worker exits ----
+ #ifdef _WIN32
+diff --git a/mmdhl/tests/props/texture_resolver_tests.hpp b/mmdhl/tests/props/texture_resolver_tests.hpp
+--- a/mmdhl/tests/props/texture_resolver_tests.hpp
++++ b/mmdhl/tests/props/texture_resolver_tests.hpp
+@@ -32,10 +32,13 @@
+     // written. Its bytes would go into the cache and to other players with the model.
+     fs::create_directories(dir/L"outside");writeAtomic(dir/L"outside"/L"secret.png",data);writeAtomic(dir/L"secret.png",data);
+     TextureResolver confined(dir/L"model",DependencyScope::Reach::Confined);
+-    // A static prop reads what it read in 2.2 (Reach::Local): a reference that climbs out still
+-    // resolves as written; a root- or drive-relative one and an alternate data stream do not.
+-    {TextureResolver local(dir/L"model");auto out=local.resolve("../outside/secret.png");
+-     check(out.path==dir/L"outside"/L"secret.png"&&!out.repaired,"a static prop's texture outside its folder no longer resolves as in 2.2");
++    // A static prop reads only inside its import root too (Reach::Local; R19, review MH-01): a
++    // reference that climbs out is looked up by its file name in the model's folders instead,
++    // and a root- or drive-relative one and an alternate data stream are not read either.
++    {TextureResolver local(dir/L"model");
++     check(local.refuses("../outside/secret.png")&&local.outside("../outside/secret.png")&&!local.outside("\\secret.png"),"a static prop's texture outside its folder is refused as outside it");
++     rejects([&]{local.resolve("../outside/secret.png");},"a static prop's texture outside its folder was read");
++     check(local.resolve("tex/../body.png").path==dir/L"model"/L"body.png","a static prop's reference that stays in its folder no longer resolves");
+      rejects([&]{local.resolve("\\secret.png");},"a root-relative texture was read");}
+     for(auto escape:{std::string("../secret.png"),std::string("..\\outside\\secret.png"),std::string("tex/../../outside/secret.png"),std::string("C:secret.png"),std::string("\\secret.png"),
+         utf8((dir/L"outside"/L"secret.png").wstring()),utf8((dir/L"secret.png").wstring()),utf8((dir/L"outside"/L"secret.png").generic_wstring())})
+@@ -83,12 +86,13 @@
+      Options options;
+      auto beside=importModel(dir/L"model"/L"beside.gltf",options,{});
+      check(beside.vertices.size()==4&&beside.indices.size()==12,"a glTF buffer beside the model no longer imports");
+-     // As in 2.2, a static prop's buffers may lie outside its folder or behind a junction.
+-     check(importModel(dir/L"model"/L"escape.gltf",options,{}).vertices.size()==4,"a static prop's glTF buffer outside its folder no longer imports as in 2.2");
++     // A static prop's buffers come from its import root (R19, review MH-01): one outside its
++     // folder fails the import; behind a junction the player made inside it, as in 2.2, still imports.
++     rejects([&]{importModel(dir/L"model"/L"escape.gltf",options,{});},"a static prop's glTF buffer outside its folder was read");
+      check(importModel(dir/L"model"/L"linked.gltf",options,{}).vertices.size()==4,"a static prop's glTF buffer behind a junction no longer imports as in 2.2");
+-     // A .gmodel.json sidecar's textures are read like the prop's own (2.2's reach): one outside
+-     // the model's folder still applies, one in a denied place is left out with a warning naming
+-     // only the file and the rest of the override still applies; one that is nowhere still fails.
++     // A .gmodel.json sidecar's textures are read like the prop's own: one outside the model's
++     // folder or in a denied place is left out with a warning naming only the file and the rest
++     // of the override still applies; one that is nowhere still fails.
+      const Bytes png={137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,16,0,0,0,16,8,6,0,0,0,31,243,255,97,0,0,0,26,73,68,65,84,120,156,99,184,179,37,234,63,37,152,97,212,128,81,3,70,13,24,46,6,0,0,157,55,233,31,202,232,213,231,0,0,0,0,73,69,78,68,174,66,96,130};
+      writeAtomic(dir/L"outside"/L"fix.png",png);writeAtomic(dir/L"model"/L"paint.png",png);
+      auto painted=[&](const std::string& name,const Json& skin){auto j=Json::parse(gltf("shape.bin"));j["materials"]={{{"name","skin"}}};j["meshes"][0]["primitives"][0]["material"]=0;
+@@ -96,18 +100,21 @@
+      auto warned=[](const Asset& a,const std::string& text){for(auto& w:a.manifest["warnings"])if(w.get<std::string>()==text)return true;return false;};
+      auto skin=[](const Asset& a){for(auto& m:a.manifest["materials"])if(m.value("name","")=="skin")return m;return Json();};
+      const std::string refused="Material override texture in a protected location was not used: fix.png";
++     const std::string elsewhere="Material override texture outside the model's folder was not used: fix.png";
+      for(auto ref:{utf8((dir/L"outside"/L"fix.png").wstring()),std::string("../outside/fix.png")}){
+          auto a=importModel(painted("outside.gltf",{{"base_texture",ref},{"color",{1,0,0,1}}}),options,{});
+-         check(!warned(a,refused)&&!skin(a).value("base_texture","").empty(),"a sidecar texture outside the model's folder no longer applies as in 2.2");}
++         check(warned(a,elsewhere)&&skin(a).value("base_texture","").empty()&&skin(a)["color"][1]==0,"a sidecar texture outside the model's folder was read, or dropped the rest of the override");}
++     // A denied file inside the model's folder: the protected-location warning.
++     writeAtomic(dir/L"model"/L"fix.png",png);
+      setDependencyDenylist([](const fs::path& p){return p.filename()==L"fix.png";});
+-     {auto a=importModel(painted("denied.gltf",{{"base_texture","../outside/fix.png"},{"color",{1,0,0,1}}}),options,{});
++     {auto a=importModel(painted("denied.gltf",{{"base_texture","fix.png"},{"color",{1,0,0,1}}}),options,{});
+       check(warned(a,refused)&&skin(a).value("base_texture","").empty()&&skin(a)["color"][1]==0,"a sidecar texture in a denied place failed the import, was read or dropped the rest of the override");
+       for(auto& w:a.manifest["warnings"])check(w.get<std::string>().find(utf8(dir.wstring()))==std::string::npos,"a sidecar warning names a folder on this computer");}
+      setDependencyDenylist({});
+      auto inside=importModel(painted("inside.gltf",{{"base_texture","paint.png"}}),options,{});
+      check(!skin(inside).value("base_texture","").empty()&&!warned(inside,refused),"a sidecar texture beside the model no longer repairs the material");
+      setDependencyDenylist([](const fs::path& p){return p.filename()==L"fix.png";});
+-     auto masked=importModel(painted("masked.gltf",{{"base_texture","paint.png"},{"opacity_texture","../outside/fix.png"}}),options,{});
++     auto masked=importModel(painted("masked.gltf",{{"base_texture","paint.png"},{"opacity_texture","fix.png"}}),options,{});
+      setDependencyDenylist({});
+      check(!skin(masked).value("base_texture","").empty()&&warned(masked,refused),"a sidecar's denied opacity texture was read, or lost the base texture");
+      rejects([&]{importModel(painted("nowhere.gltf",{{"base_texture","nowhere.png"}}),options,{});},"a sidecar texture that is nowhere no longer fails the import");
