@@ -5363,3 +5363,31 @@ material editor.
 - With the LUT kept whole to 8 degrees down and faded out by 16 (`e3`): at 4.1 degrees down a purple sky
   over an orange band; at 6.3 a deep blue with an orange glow over the sunset; at 7.8 and 9.1 the glow
   only; at 10.8 night, the galaxy fading in.
+
+### Cost at 3840x2160 (`out/r18/perf-new`, `perf-old`)
+
+Means over about a second (76-95 frames) before each shot, the same spawn and views in both sessions
+(`perf-framing.jpg`), about 0.2 ms of noise. The R17 column is the published R17 package in a second
+session with the same states; the "R18, feature off" column switches one R18 feature off in the R18
+session (the middle deck's cover to 0 in partly cloudy, `cirrusArcStrength` 0 in hazy at 17.5 h).
+
+| Weather, view | R18 | R18, feature off | R17 |
+|---|---|---|---|
+| partly cloudy 15 h, sun / away / high | 11.30 / 11.97 / 11.26 | 11.01 / 11.78 / 11.11 (no middle deck) | 11.40 / 12.01 / 11.57 |
+| overcast 14.5 h, sun / away / high | 11.45 / 13.31 / 12.03 | | 11.56 / 12.29 / 12.10 |
+| drizzle 13 h, sun / away / high | 11.65 / 11.90 / 11.63 | | 11.85 / 12.31 / 12.31 |
+| foggy 10 h, sun / away / high | 11.87 / 11.88 / 11.16 | | 11.62 / 12.00 / 11.31 |
+| hazy 11 h, sun / away / high | 11.13 / 11.44 / 11.18 | | 11.61 / 11.66 / 11.48 |
+| hazy 17.5 h, arcs / sun | 11.26 / 11.13 | 11.15 / 11.27 (no halos of plates) | 11.28 / 11.75 |
+
+- **On average R18 costs what R17 did:** 11.62 ms over these 17 views against 11.77.
+- **The middle deck:** 0.15-0.3 ms where drawn, as R17's (0-0.33 ms in the R17 session).
+- **The sun dogs and the arc:** within the noise (+0.11 and -0.14 ms).
+- **Overcast toward the horizon costs 1 ms more** (13.31 against 12.29 ms; the views toward the sun and
+  overhead are the same). The march takes as many steps across the 0.9 km deck as across R17's 1.8 km
+  one, so a grazing ray meets twice as many dense samples, each one lit, before it turns opaque.
+- **Memory:** no texture, buffer or grid is added; `AtmosphereArgs` (also inside the ray-tracing,
+  composite and debug-view constants) grows by one 16-byte row. The DLL grew from 414,372,864 to
+  417,072,128 bytes, the shaders that include the sky (many permutations).
+- The frame times are about 2.5 ms higher than R17's own 4K table (8.5-10.5 ms), for both runtimes
+  alike: another day's machine state; the comparison holds within the session pair.

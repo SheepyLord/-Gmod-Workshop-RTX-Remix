@@ -107,6 +107,21 @@ config were put back byte for byte, with no Lua error.
   - sun dogs (brighter) and the arc at 20 and 11.6 degrees of sun;
   - twilight kept whole to 8 degrees down: a purple sky over an orange band at 4.1 down, a deep blue
     with a glow over the sunset at 6.3, the glow alone at 7.8 and 9.1, night at 10.8.
+## Cost and memory
+
+At 3840x2160 (the GPU binds there; at 1600x900 the game is CPU-bound), the published R17 package and R18
+in two sessions with the same states and views (the table is in RESEARCH.md, "R18"):
+
+- **On average R18 costs what R17 did:** 11.62 ms over 17 views of six weathers against 11.77 ms.
+- **The middle deck** costs 0.15-0.3 ms where it is drawn, as R17's did; its gaps cost nothing.
+- **The sun dogs and the arc** cost nothing measurable (within 0.2 ms of noise).
+- **Overcast toward the horizon costs 1 ms more** (13.3 against 12.3 ms): the march takes as many steps
+  across the 0.9 km deck as across R17's 1.8 km one, so a grazing ray lights twice as many dense samples
+  before it turns opaque. Its views toward the sun and overhead cost the same; drizzle is 0.2-0.7 ms
+  cheaper.
+- **Memory:** no texture, buffer or grid is added. The atmosphere's constants grow by 16 bytes, and
+  the DLL by 2.7 MB of shader code (417,072,128 bytes).
+
 ## Notes for the next round
 
 - **The middle deck's cloudlets are layer 1's bodies, read finer.** Inside a patch they follow layer 1's
