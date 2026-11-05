@@ -52,7 +52,8 @@
    integrator runs the combined PoC sessions.
 8. **Commits.** Each message says what changed and why, and ends with
    `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. The runtime fork's commits are the
-   exception: author `SheepyLord <37598021+SheepyLord@users.noreply.github.com>`, and no AI trailer, as the fork's `CLAUDE.md`
+   exception: author `SheepyLord` with the fork's own git identity (its configured noreply address), and no
+   AI trailer, as the fork's `CLAUDE.md`
    asks.
 9. **Tests**
    - Add a test for each fix wherever the code around it has tests.

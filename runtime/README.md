@@ -26,7 +26,8 @@ R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
   description says it scales all scene-adaptive emission (R-02).
 
 No option, texture or buffer is added. Built in `out/worktrees/r17/out/runtime-src` on 0032 (`e095f29a`),
-as `248fa6ee` (branch `claude/r19-review-fixes`).
+as `248fa6ee`, whose author was then corrected to the fork's git identity: `51cf1b8b`, the same tree
+(branch `claude/r19-review-fixes`). The stored `d3d9.dll` reports `remix-main+248fa6ee`.
 
 R18 adds `0032-Atmosphere-thin-decks-a-middle-deck-of-its-own-sun-d.patch`
 ([ADR 0110](../docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md),

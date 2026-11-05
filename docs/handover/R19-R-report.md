@@ -7,7 +7,7 @@ The brief is [R19-plan.md](R19-plan.md), "R19-R: the runtime"; the findings are 
 **Who did what.** Claude (the R19-R part), in the fork tree `out/worktrees/r17/out/runtime-src` on branch
 `claude/r19-review-fixes` and in this worktree on `r19-runtime`. No game was started.
 
-**What it makes.** One fork commit, `248fa6ee` on 0032 (`e095f29a`), exported alone as
+**What it makes.** One fork commit, `51cf1b8b` (built as `248fa6ee`, the same tree) on 0032 (`e095f29a`), exported alone as
 `runtime/patches/0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
 (`format-patch -1 --start-number 33 --binary --no-signature --zero-commit`, absolute `-o`; patches
 0001-0032 are untouched). `runtime\build_runtime.ps1` built `d3d9.dll` from it and imported it into
@@ -282,8 +282,9 @@ preset changed, so the companion's table stays as it is.
 - **Imports.** Done here: `d3d9.dll` in `packages/runtime`, `runtime/base.json` `packaged`. No pins, no
   other part. The fork branch `claude/r19-review-fixes` holds the commit, and it is not pushed.
 - **Strings to translate.** None.
-- **The patch's author** is `SheepyLord <37598021+SheepyLord@users.noreply.github.com>`, as the plan and the brief say; patches
-  0001-0032 carry `37598021+SheepyLord@users.noreply.github.com`, the fork's configured address.
+- **The patch's author** is SheepyLord with the fork's git identity (its configured noreply address),
+  as the earlier patches. The brief named another address; the integrator corrected the commit's author
+  (`248fa6ee` became `51cf1b8b`, the same tree) and exported the patch again: only its `From:` line changed.
 - **In-game checks** (PoC, any RTX session unless named):
   1. **Mods still load their textures.** The package's mods, ToPBR's generated materials (`~gmod_topbr`)
      and an imported character show their textures as before. ToPBR and the material editor's bridge

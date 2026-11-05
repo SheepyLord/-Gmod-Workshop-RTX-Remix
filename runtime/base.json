@@ -29,7 +29,7 @@
  },
  "packaged": {
   "d3d9.dll": "34287de8edcbffea4607171cf5f1f8ca0252360af258a767905f42e64853bea0",
-  "built_from": "HEAD -> claude/r19-review-fixes 248fa6ee (with what the rest of this record names)",
+  "built_from": "HEAD -> claude/r19-review-fixes 51cf1b8b (with what the rest of this record names); the stored d3d9.dll was built from 248fa6ee, the same tree before its author was corrected to the fork's git identity, and reports remix-main+248fa6ee",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
