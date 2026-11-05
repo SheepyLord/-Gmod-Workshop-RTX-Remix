@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "7d8a0ad87c00a7e0dcd3083b053553df1de43e1c19906a3368666983a97a066b",
-  "built_from": "HEAD e095f29a (with what the rest of this record names)",
+  "d3d9.dll": "34287de8edcbffea4607171cf5f1f8ca0252360af258a767905f42e64853bea0",
+  "built_from": "HEAD -> claude/r19-review-fixes 248fa6ee (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -86,6 +86,7 @@
    "patches/0030-Load-material-preloads-at-their-first-draw-instead-o.patch": "b10a05b2c5b8044c537af9664928e318bda28cd887282fd6f00e78055dd2cc6b",
    "patches/0031-Atmosphere-cloud-genera-per-weather-a-sun-disc-and-a.patch": "0e6446b23200865cc36d85b153c0b397f07a4f266733ab63ccfec02cd91fe424",
    "patches/0032-Atmosphere-thin-decks-a-middle-deck-of-its-own-sun-d.patch": "57ac7bda0469eecd08fb79bff7651299beb373b9702d1a14dbd72e4f65999513",
+   "patches/0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch": "30ba4b5cf07de1a73f2a60954f864bd3b509607c908f8f127794ba2496bc8524",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }
