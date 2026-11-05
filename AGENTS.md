@@ -62,7 +62,9 @@ patched copy of GMod managed by RTXLauncher.
    the user, 2026-10-29).
 4. **Native code is opt-in.** Only allowlisted packages may deploy or load native code
    ([ADR 0003](docs/decisions/0003-native-trust-allowlist.md)); a package from any other subscribed
-   Workshop item may hold content only ([ADR 0027](docs/decisions/0027-content-packages-from-any-subscription.md)). Do not loosen the allowlist, the path
+   Workshop item may hold content only ([ADR 0027](docs/decisions/0027-content-packages-from-any-subscription.md));
+   subscribed means Steam's record names a subscriber, not merely installed: any server can make the game
+   download an item ([ADR 0111](docs/decisions/0111-content-packages-only-from-subscribed-items.md)). Do not loosen the allowlist, the path
    rules or the off switches without a new decision record that the user agreed to.
 5. **Ask before anything outward-facing:** pushing to `origin`, publishing or updating a Workshop
    item, changing Steam settings or launch options, deleting user data.
