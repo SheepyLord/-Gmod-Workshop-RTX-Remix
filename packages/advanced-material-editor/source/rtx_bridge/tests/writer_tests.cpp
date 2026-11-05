@@ -1648,6 +1648,66 @@ int main() {
         assert(layoutBridge.ClearAllOwned().ok);
     }
 
+    // A texture source that leaves this computer is refused from its spelling,
+    // before any filesystem call: probing a UNC path makes Windows open an SMB
+    // session to the host the caller named and offer the player's credentials
+    // (R19, the class of the review's H3). 192.0.2.1 is TEST-NET-1, never
+    // routable. The refusal reason is the spelling check's own; a probe that
+    // failed would report invalid_texture_path, and an SMB attempt to that host
+    // would take many seconds instead of none.
+    {
+        const auto remoteRoot = root / "remote_source_game";
+        const auto data = remoteRoot / "garrysmod" / "data";
+        std::filesystem::create_directories(data);
+        std::filesystem::create_directories(remoteRoot / "rtx-remix");
+        Config remoteConfig;
+        remoteConfig.gameRoot = remoteRoot;
+        Bridge remoteBridge(std::move(remoteConfig));
+        const auto apply = [&](const std::filesystem::path& source, const char* hash) {
+            ApplyRequest remote;
+            remote.profileId = "material_remote_source";
+            remote.hashes = {hash};
+            remote.material.textures.push_back({TextureRole::Albedo, source, {}});
+            return remoteBridge.ApplyLegacyMaterial(remote);
+        };
+        const auto refusedFromSpelling = [&](const wchar_t* spelling) {
+            const auto result = apply(std::filesystem::path(spelling), "00000000AE000001");
+            return !result.ok && result.code == "texture_path_outside_allowed_roots" &&
+                result.message.find("must be a path on this computer") != std::string::npos;
+        };
+        const wchar_t* const remoteSpellings[]{
+            LR"(\\192.0.2.1\share\x.png)",           // UNC
+            L"//192.0.2.1/share/x.png",              // UNC with forward slashes
+            LR"(\/192.0.2.1/share\x.png)",           // separators mixed
+            LR"(\\?\UNC\192.0.2.1\share\x.png)",     // the long-path UNC form
+            LR"(\\?\C:\x.png)",                      // device paths
+            LR"(\\.\C:\x.png)",
+            LR"(\\192.0.2.1\share\..\..\x.png)",
+        };
+        const auto started = std::chrono::steady_clock::now();
+        for (const auto* spelling : remoteSpellings) assert(refusedFromSpelling(spelling));
+#ifdef _WIN32
+        // Other root names, and a drive letter without a root directory.
+        assert(refusedFromSpelling(LR"(\??\C:\x.png)"));
+        assert(refusedFromSpelling(LR"(\??\UNC\192.0.2.1\share\x.png)"));
+        assert(refusedFromSpelling(L"C:x.png"));
+        assert(refusedFromSpelling(L"C:"));
+#endif
+        assert(std::chrono::steady_clock::now() - started < std::chrono::seconds(5));
+
+        // Local spellings work as before: an absolute path, a path relative to
+        // the game, to garrysmod/ and to garrysmod/data/, and one with a root
+        // directory but no drive.
+        WriteMinimalDds(data / "local.dds");
+        assert(apply(data / "local.dds", "00000000AE000002").ok);
+        assert(apply("garrysmod/data/local.dds", "00000000AE000003").ok);
+        assert(apply("data/local.dds", "00000000AE000004").ok);
+        assert(apply("local.dds", "00000000AE000005").ok);
+        const auto rooted = apply(L"\\no_such_folder_advmat\\x.dds", "00000000AE000006");
+        assert(!rooted.ok && rooted.code == "invalid_texture_path");
+        assert(remoteBridge.ClearAllOwned().ok);
+    }
+
     // A folder in rtx-remix/mods may be a link to a mod kept elsewhere
     // (gm_poolrooms_rtx -> another drive). Its maps are read through the link,
     // must stay inside that link's own target, and are copied into this

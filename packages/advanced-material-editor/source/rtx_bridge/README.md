@@ -36,7 +36,9 @@ TIFF, GIF, and so every map with bake operations) keeps the conservative
 32 MiB / 2048-pixel limits, with at most four operations per map.
 `Capabilities()` reports the DDS limits as `maxTextureBytes` /
 `maxTextureDimension` and the decode limits as `maxDecodedTextureBytes` /
-`maxDecodedTextureDimension`. A source must resolve inside the game folder,
+`maxDecodedTextureDimension`. A source spelled as a network, device or
+drive-relative path (`\\host\share`, `//host`, `\\?\`, `\\.\`, `\??\`, `C:file`)
+is refused before any filesystem call. A source must resolve inside the game folder,
 except one read through a folder in `rtx-remix/mods` that is itself a link or
 junction to a mod kept elsewhere: it may resolve anywhere inside that link's
 own target. Unchanged
@@ -75,7 +77,8 @@ ctest --test-dir out/advmat-rtx-bridge -C Release --output-on-failure
 The tests do not load Garry's Mod or RTX Remix. `tests/writer_tests.cpp`
 exercises validation, deduplicated hash authoring, dedicated-mod containment,
 DDS ingestion (crafted headers: too many mips, missing data, bad array sizes,
-dimensions and formats, a cached copy cut down to its header), atomic
+dimensions and formats, a cached copy cut down to its header), UNC, device and
+drive-relative sources refused from their spelling, atomic
 transaction publication with deterministic failure injection, reversible
 preview, crash recovery, concurrent commits, unchanged-commit cache reuse,
 skipping the read of an unchanged source (shown with a file held open without

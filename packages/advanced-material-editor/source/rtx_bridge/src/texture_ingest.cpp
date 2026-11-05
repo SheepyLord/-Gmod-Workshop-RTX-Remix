@@ -349,6 +349,28 @@ bool IsWicExtension(const std::string& extension) {
     return std::find(supported.begin(), supported.end(), extension) != supported.end();
 }
 
+// A texture source names a file on this computer, judged from its spelling
+// alone, before any filesystem call. Refused: two leading separators, in any
+// mix of \ and / (UNC "\\host\share" and "//host", the device forms "\\?\" and
+// "\\.\"); any root name other than a drive letter and a colon (such as
+// "\??\"); and a drive letter without a root directory ("C:file", which Windows
+// resolves against that drive's current directory). Merely probing a UNC path
+// makes Windows open an SMB session to the host the caller named and offer the
+// player's credentials, and any client Lua can call this writer.
+bool IsLocalSourceSpelling(const std::filesystem::path& source) {
+    const auto& text = source.native();
+    const auto isSeparator = [](std::filesystem::path::value_type character) {
+        return character == '\\' || character == '/';
+    };
+    if (text.size() >= 2 && isSeparator(text[0]) && isSeparator(text[1])) return false;
+    if (!source.has_root_name()) return true;
+    const auto name = source.root_name().native();
+    if (name.size() != 2 || name[1] != ':') return false;
+    const auto letter = name[0];
+    const bool driveLetter = (letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z');
+    return driveLetter && source.has_root_directory();
+}
+
 // RTX Remix loads every folder in rtx-remix/mods, and a mod kept elsewhere is
 // often linked in (a gm_poolrooms_rtx junction to a folder outside the game).
 // A source reached through such a link may resolve anywhere inside that
@@ -759,6 +781,13 @@ Result ImportTexture(const TextureImportConfig& config,
                      const std::string& profileId,
                      const TextureInput& input,
                      ImportedTexture& output) {
+    // First, before the relative candidates and canonical() below touch the
+    // filesystem: a network, device or drive-relative spelling never gets that far.
+    if (!IsLocalSourceSpelling(input.source)) {
+        return Result::Failure("texture_path_outside_allowed_roots",
+            "texture source must be a path on this computer: network, device and "
+            "drive-relative paths are refused");
+    }
     std::error_code ec;
     std::filesystem::path source = input.source;
     if (source.is_relative()) {
