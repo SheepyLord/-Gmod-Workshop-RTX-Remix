@@ -1,9 +1,10 @@
 # R19-E report: the editors
 
 [Plan](R19-plan.md) (section "R19-E: the editors"); [review](R19-review.md). Branch `r19-editors`, fix
-commit `d3a3693` on `1e4cb10`. The integrator's follow-up, network texture sources in the bridge, is
-commit `7ef0a78` (see [the follow-up](#follow-up-network-texture-sources-in-the-bridge)); it replaces the
-bridge binary named below. Not started in the game (rule 7).
+commit `d3a3693` on `1e4cb10`. Two integrator follow-ups on the bridge, both in
+[the follow-up section](#follow-up-network-texture-sources-in-the-bridge): network texture sources
+(`7ef0a78`) and the same information leak closed for any out-of-roots source (`35d3d63`). Each replaces
+the bridge binary; the one the part holds now is `35d3d63`'s. Not started in the game (rule 7).
 
 Every change to `packages/` went through `tools/inputs.py import`: working copies under
 `out\r19e\work\<part>` (unpacked from the parts), `tools/package_content.py` with each part's
@@ -151,7 +152,7 @@ its origin commit) and the new `tools/tests/test_editors.py`, `editors_harness.l
 
 | Test | Result |
 |---|---|
-| `tools\ci\build_modules.ps1 -Only advmat` (local premake 5.0.0-beta2 and the fixes clone's `garrysmod_common` at `a854f237`, default `-Out`/`-Work`, `RUNNER_TEMP` = the main checkout's `out\t`) | Built `gmcl_advmat_rtx_bridge_win64.dll`, 324,096 bytes, SHA-256 `4e6361d1db911e420982823c9f30a6506837f3cbf948582f3c6aa80261c32f7f` (was 316,416, `aeb5de42...`). The follow-up replaced it with **325,120 bytes, SHA-256 `2cc935b0903c6e916f5b8a0ee59e70d409247b576ae3e9646f6928f2cf171ac4`**, the binary the part now holds. CTest 2/2: `advmat_rtx_writer_tests` (with the new DDS layout block) and the new `advmat_rtx_lua_tests` passed. `/W4 /WX` |
+| `tools\ci\build_modules.ps1 -Only advmat` (local premake 5.0.0-beta2 and the fixes clone's `garrysmod_common` at `a854f237`, default `-Out`/`-Work`, `RUNNER_TEMP` = the main checkout's `out\t`) | Built `gmcl_advmat_rtx_bridge_win64.dll`, 324,096 bytes, SHA-256 `4e6361d1db911e420982823c9f30a6506837f3cbf948582f3c6aa80261c32f7f` (was 316,416, `aeb5de42...`). The follow-ups replaced it: `7ef0a78` gave 325,120 bytes `2cc935b0903c6e916f5b8a0ee59e70d409247b576ae3e9646f6928f2cf171ac4`, and `35d3d63` **325,120 bytes, SHA-256 `a22bdf4aee6f0a173d5edde263973f8d8585ab872dc1ca29af341364ece7ba67`**, the binary the part holds now. CTest 2/2: `advmat_rtx_writer_tests` (with the new DDS layout block) and the new `advmat_rtx_lua_tests` passed. `/W4 /WX` |
 | `python -m unittest discover -s tests -p test_editors.py` (in `tools`) | 8 passed. The seven LuaJIT scenarios also ran against the parts before this change (`out\inputs`): each fails at the property its fix gives (2 encodes for one state, 6 profile encodes for 3, `table.Copy` error from the dupe callback, 100 actions through, an unbounded cache, 100 log lines, `GetBool` true for 0) |
 | `test_ci_tools`, `test_inputs`, `test_addon_workflow`, `test_addon_i18n` | Passed |
 | `tools\test.ps1 -SkipNative` | **All checks passed**: conventions OK, 586 tools tests (7 skipped), 28 gmapack, 25 Steam |
@@ -225,8 +226,9 @@ bridge's C++ is a part's source copy, built and tested by `build_modules.ps1` ab
   or reuses its own cached copy, only when the header's format, mip count (16 at most), faces, layers
   and data fit the file (BR-03). It refuses a texture source spelled as a network, device or
   drive-relative path before touching the filesystem, so no caller can make Windows connect to a
-  host of its choosing and offer the player's credentials (the class of H3, found by R19-X). New
-  `gmcl_advmat_rtx_bridge_win64.dll`.
+  host of its choosing and offer the player's credentials (the class of H3, found by R19-X), and it
+  refuses any source outside the game's import roots with one error before `canonical`, so the error
+  cannot reveal whether a file is on the player's PC. New `gmcl_advmat_rtx_bridge_win64.dll`.
 - Fixed: Advanced Bodygroup Tool:
   - crafted dupes paste without Lua errors (ABT-01);
   - the client's region analyses are a bounded, least-recently-used cache (ABT-02);
@@ -271,6 +273,13 @@ bridge's C++ is a part's source copy, built and tested by `build_modules.ps1` ab
   It also checks statically that no `:GetBool() or <fallback>` remains.
 
 ## Follow-up: network texture sources in the bridge
+
+Two integrator requests on the bridge's handling of Lua-supplied texture paths. The first (`7ef0a78`)
+refuses network, device and drive-relative spellings; the second (`35d3d63`,
+[below](#the-same-leak-for-any-out-of-roots-source)) makes any out-of-roots source refuse the same way
+whether it exists or not.
+
+### Network, device and drive-relative spellings
 
 Commit `7ef0a78`, at the integrator's request. R19-X found the class of the review's H3 in the bridge,
 and the integrator confirmed it.
@@ -318,24 +327,65 @@ and the integrator confirmed it.
 - Why the reason proves it: a probe that failed would have reported `invalid_texture_path`, and an
   SMB attempt to that host takes many seconds.
 - Local spellings still apply: an absolute path, `garrysmod/data/local.dds`, `data/local.dds` and
-  `local.dds`. `\no_such_folder_advmat\x.dds` reaches the local check and fails as
-  `invalid_texture_path`.
+  `local.dds`. `\no_such_folder_advmat\x.dds` (root-relative, no drive) is now refused as
+  out-of-roots by the second follow-up below; the spelling check still lets it through.
 
 **Results**
 - `tools\ci\build_modules.ps1 -Only advmat`, with `RUNNER_TEMP` = the main checkout's `out\t`: CTest
   2/2 passed.
-- New `gmcl_advmat_rtx_bridge_win64.dll`: **325,120 bytes, SHA-256
-  `2cc935b0903c6e916f5b8a0ee59e70d409247b576ae3e9646f6928f2cf171ac4`**.
+- `gmcl_advmat_rtx_bridge_win64.dll`: 325,120 bytes, SHA-256
+  `2cc935b0903c6e916f5b8a0ee59e70d409247b576ae3e9646f6928f2cf171ac4` (replaced by the second
+  follow-up's binary).
 - Imported with `tools\inputs.py import`: the source copy, `Source.md`, `provenance.json` and the
-  binary. `inputs.py verify`: 11 parts checked, 0 problems. Only the bridge's source files, its
-  documents and the binary differ from `444335c`.
+  binary. `inputs.py verify`: 11 parts checked, 0 problems.
 - `tools\test.ps1 -SkipNative`: all checks passed, 586 tools tests.
 
-**In game**
+### The same leak for any out-of-roots source
+
+Commit `35d3d63`, at the integrator's request, closes the open issue the first follow-up left (see
+below). The two error codes still differed for a source **outside** the game folder: a missing path
+answered `invalid_texture_path` (`canonical` failed), a present one `texture_path_outside_allowed_roots`
+(`canonical` resolved, then the roots check failed). A server's client Lua could tell them apart and so
+learn whether a file is on the player's PC, to probe usernames or installed software.
+
+**The fix** (`texture_ingest.cpp:793-838`)
+- `ImportTexture` decides containment lexically, before `canonical` and before any probe outside the
+  game folder. A source lexically outside every allowed root and outside `<game>/rtx-remix/mods` is
+  refused with the one code `texture_path_outside_allowed_roots`, whether it exists, cannot be
+  resolved, or resolves outside the roots.
+- The relative resolution probes only candidates that stay lexically inside the game folder (each is
+  tested with `IsDescendantOrSame` before `is_regular_file`), and an unresolved relative source stays
+  on the game root. So a crafted `../..` or a drive-relative `\dir` (which Windows joins to the game
+  root's current drive, not inside it) cannot probe elsewhere; the old code ran `canonical`, and for
+  `\dir` even `is_regular_file`, on the game's drive root.
+- A path lexically inside an allowed root or `rtx-remix/mods` is unchanged: the allowed-roots check and
+  `InsideLinkedModFolder` still decide where it really resolves, so linked mod folders work as before,
+  and a file in the game folder may still say `invalid_texture_path`.
+- `IsDescendantOrSame` normalises both sides, so the gate is purely lexical.
+
+**Tests** (`writer_tests.cpp`, block "A source outside every allowed root")
+- A real file and a missing file, both directly under the test's shared temp root (outside the game
+  root), give identical results: both `texture_path_outside_allowed_roots`, same message. The temp
+  file is created in the fixture; the missing one is asserted absent.
+- A present and a missing root-relative `\...\x.dds` likewise give identical results.
+- A file in the game folder is still told apart: one that exists applies; `garrysmod/data/gone.dds`
+  gives `invalid_texture_path`.
+
+**Results**
+- `tools\ci\build_modules.ps1 -Only advmat` (`RUNNER_TEMP` = the main checkout's `out\t`): CTest 2/2
+  passed.
+- New `gmcl_advmat_rtx_bridge_win64.dll`: **325,120 bytes, SHA-256
+  `a22bdf4aee6f0a173d5edde263973f8d8585ab872dc1ca29af341364ece7ba67`**, the binary the part holds now.
+- Imported with `tools\inputs.py import`. `inputs.py verify`: 11 parts checked, 0 problems; only the
+  bridge's source files, its documents and the binary differ from `f5bbedd`.
+- `tools\test.ps1 -SkipNative`: all checks passed, 586 tools tests.
+
+**In game** (both follow-ups)
 - Add to check 2: an RTX profile whose maps are game-relative and enhancement paths still applies.
 - `lua_run_cl print(AdvMatRTXBridge.ApplyLegacyMaterial({hashes={"0x0000000000000001"},
-  target={material="x"}, compiled={pbr={maps={albedo=[[\\192.0.2.1\s\x.png]]}}}}))` prints `false`
-  and the new reason at once.
+  target={material="x"}, compiled={pbr={maps={albedo=[[\\192.0.2.1\s\x.png]]}}}}))` prints `false` and
+  the refusal reason at once; the same with `albedo=[[C:\Windows\explorer.exe]]` prints
+  `texture_path_outside_allowed_roots` whether or not the file exists.
 
 ## Open issues
 
@@ -349,9 +399,7 @@ and the integrator confirmed it.
 - **The `files.json` origins** of the changed folders and files now name this worktree's `out\r19e`
   working copies, which are machine-local, as earlier imports did.
 - **No in-game test.** The checks above are for the integrator's PoC sessions.
-- **The bridge still answers whether a local file exists.** A local absolute source outside the game
-  folder is probed before the allowed-roots check, as before: `invalid_texture_path` when there is no
-  file, `texture_path_outside_allowed_roots` when there is. A client script can learn that way whether
-  a local file exists, but nothing leaves the machine and nothing is read. The follow-up kept local
-  absolute paths and linked mod folders working as they were, as asked. Closing this needs a lexical
-  allowed-roots check that still admits linked mod folders.
+- ~~**The bridge still answers whether a local file exists.**~~ Closed by `35d3d63` (the second
+  follow-up): a source lexically outside every allowed root and outside `rtx-remix/mods` now gets one
+  code before `canonical`, so the error no longer reveals whether a file is on the player's PC. A file
+  inside the game folder is still told apart, which the integrator allowed.
