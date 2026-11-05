@@ -1,7 +1,8 @@
 # Roadmap
 
 R18 (the user's request of 2026-11-05 to address R17's limits) is **done**, merged into `main` from
-`r18` ([report](handover/R18-report.md)): thin overcast, drizzle and fog decks that close at real
+`r18`, published as 0.0.0-dev.20261105202808+39480017 and checked in the field
+([report](handover/R18-report.md)): thin overcast, drizzle and fog decks that close at real
 stratus depths; a middle deck with patches and cloudlets of its own; sun dogs, the circumzenithal arc
 and the 46 degree halo; a milky haze for hazy; the twilight sky kept to 8 degrees after sunset
 ([ADR 0110](decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md),
