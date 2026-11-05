@@ -1,5 +1,33 @@
 # runtime/
 
+R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
+([report](../docs/handover/R19-R-report.md)), the runtime's findings of the pre-release review
+([R19-review.md](../docs/handover/R19-review.md)):
+- **The DDS readers (H1).** A DDS file in any loaded mod could corrupt the game's memory: the partial
+  loader wrote one size per mip level into a table of 16 whatever count the header gave, and GLI's
+  fallback copied as many bytes as the header claimed from a buffer as large as the file. Both now check
+  the headers with `gli::detail::dds_check_layout` (`include/gli/core/load_dds.inl`) before they read the
+  data: a format GLI knows, sides of 1 to 65536, at most 16 levels and no more than the sides allow (a
+  count of 0 reads as 1), at most 2048 layers, 1 to 6 cube faces, and 64-bit sizes with overflow checks
+  that fit in the file (a volume's levels count their depth). The partial loader
+  (`rtx_dds_file_parser.h`) also measures the file in 64 bits, checks every read, places nothing for a
+  subresource the file lacks and maps only a file that still holds the checked data; GLI's reader
+  refuses empty, short and unmeasurable files, and the fallback reads DDS only. Unit test:
+  `test_dds_reader`.
+- **String options read beside the render thread (F-01).** `RtxOption::getCopy()` copies a value under
+  the update mutex. The menus' string reads use it (text boxes, the texture menu's legacy-emissive and
+  thin-wall strings, the capture name, the language), and the fallback-mod list.
+- **A texture the cache shares takes the strongest preload of its users (F-03)**, at its next draw
+  (`PreloadStrength` in `rtx_texture_budget.h`).
+- **The middle deck (F-04, F-05).** Its patch mask is probed along the ray at most a quarter of a patch
+  apart (3 to 16 probes), and its moon-shadow taps read the mask where they are.
+- **Config (R-01, R-03).** A file saved through a link keeps its previous contents in a backup until the
+  rewrite completes; the float parser refuses NaN and infinities. `rtx.gmod.eyeWhiteBrightness`'s
+  description says it scales all scene-adaptive emission (R-02).
+
+No option, texture or buffer is added. Built in `out/worktrees/r17/out/runtime-src` on 0032 (`e095f29a`),
+as `248fa6ee` (branch `claude/r19-review-fixes`).
+
 R18 adds `0032-Atmosphere-thin-decks-a-middle-deck-of-its-own-sun-d.patch`
 ([ADR 0110](../docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md),
 [report](../docs/handover/R18-report.md)), R17's limits:
@@ -200,6 +228,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0030-Load-material-preloads-at-their-first-draw-...` | A material's `preload_textures` loads at its first draw, whole, before that frame renders, instead of when the mod loads; `rtx.texturemanager.preloadOnFirstDraw` ([ADR 0103](../docs/decisions/0103-material-preloads-load-at-their-first-draw.md)) |
 | `0031-Atmosphere-cloud-genera-per-weather-...` | Cloud genera as weather fields (low layer base, billows, cell size and bake cover, the middle deck, the high layer), presets mapped to genera; the sun disc; a 2D high cloud layer (cirrus, cirrostratus with its halo, cirrocumulus); the galaxy and nebula after astronomical twilight ([ADR 0109](../docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md)) |
 | `0032-Atmosphere-...` | R17's limits: a profile depth per weather so thin stratiform decks close; the middle deck's own patch mask and cloudlet size; sun dogs, the circumzenithal arc and the 46 degree halo; the aerosol's absorption and phase per weather (a milky haze); the twilight kept to 8 degrees down ([ADR 0110](../docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md)) |
+| `0033-Bound-the-DDS-readers-...` | The pre-release review's runtime findings: both DDS readers check a file's headers against the file before reading it; string options copied under the update mutex beside the render thread; a shared texture takes its users' strongest preload; the middle deck's patch probes and moon-shadow taps; config saves through links and non-finite floats ([R19-R report](../docs/handover/R19-R-report.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).
