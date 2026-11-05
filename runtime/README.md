@@ -1,5 +1,19 @@
 # runtime/
 
+R17 adds `0031-Atmosphere-cloud-genera-per-weather-a-sun-disc-and-a.patch`
+([ADR 0109](../docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md),
+[report](../docs/handover/R17-report.md)). Each weather owns its cloud genera through fifteen new
+weather fields, and its presets map to them:
+- the low layer's base, edge billows, cell size and bake cover (`nvdfNominalCoverage`, a step; above 1
+  a closed deck);
+- the middle deck;
+- the high layer's cover, kinds and optical depth.
+
+Numos also draws the sun's disc for the camera. A 2D high cloud layer at 9 km adds fibrous cirrus, a
+cirrostratus veil with the 22 degree halo and cirrocumulus grains. Cost at 3840x2160: the high layer
+nothing measurable, the middle deck 0.3-1.2 ms where drawn. Built in
+`out/worktrees/r17/out/runtime-src` on 0030 (`9907d412`), as `80c4a8cb`.
+
 R13-F adds `0030-Load-material-preloads-at-their-first-draw-instead-o.patch`
 ([ADR 0103](../docs/decisions/0103-material-preloads-load-at-their-first-draw.md),
 [report](../docs/handover/R13-F-report.md)): a USD material's `preload_textures` no longer loads every
@@ -164,6 +178,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0028-Fix-a-hash-race-baker-sources-...` | The review's fixes of 0024 and 0026: an atomic stable hash for the API, the terrain baker's sources count as in use, `D3DLOCK_NO_DIRTY_UPDATE` keeps the CPU copy, no pass in other games ([ADR 0100](../docs/decisions/0100-one-copy-and-idle-release-of-game-textures.md)) |
 | `0029-Lock-RtxOption-edits-made-beside-...` | Option layer values and the dirty option map change only under the update mutex: the Remix API, graph layers, the menu, migrations; an edit from another thread is never dropped at the end of a frame ([R13-D report](../docs/handover/R13-D-report.md)) |
 | `0030-Load-material-preloads-at-their-first-draw-...` | A material's `preload_textures` loads at its first draw, whole, before that frame renders, instead of when the mod loads; `rtx.texturemanager.preloadOnFirstDraw` ([ADR 0103](../docs/decisions/0103-material-preloads-load-at-their-first-draw.md)) |
+| `0031-Atmosphere-cloud-genera-per-weather-...` | Cloud genera as weather fields (low layer base, billows, cell size and bake cover, the middle deck, the high layer), presets mapped to genera; the sun disc; a 2D high cloud layer (cirrus, cirrostratus with its halo, cirrocumulus); the galaxy and nebula after astronomical twilight ([ADR 0109](../docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).

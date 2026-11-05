@@ -1,4 +1,4 @@
-# Builds the combined RTX package (what Workshop item 3829070317 carries) on GitHub, with every native
+# Builds the combined RTX package (what Workshop item 3829070317 carries) on GitHub for a release, with every native
 # binary in it built or fetched here (R16, ADR 0106): the Remix runtime from the fork with runtime/patches,
 # the RTX fixes' modules, the debug module and the material editor's bridge from their pinned sources
 # (tools/ci/pins.json), the Model Hotloader's natives from its source copy in packages/ (ADR 0107), this
@@ -11,37 +11,16 @@
 # (Actions storage is 2 GB). tools/publish_workshop.py --from-ci, on the developer's machine (it needs
 # Steam), uploads exactly that .gma to the Workshop after checking its SHA-256 against the report.
 #
+# Only a person starts it (Actions > Build the RTX package > Run workflow), when releasing (ADR 0108):
+# no push, pull request, tag or schedule does. During development the Workshop item gets packages built
+# on the developer's machine by tools/publish_workshop.py's git hooks.
+#
 # The runtime, the modules and the Hotloader's natives are cached by their sources (tools/ci/cache_key.py):
 # a run rebuilds them only when those change, or when BUILD_SALT does. Git LFS objects are cached as well; the binaries this
 # workflow makes are never downloaded from Git LFS.
 name: Build the RTX package
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'packages/**'
-      - 'companion/**'
-      - 'runtime/**'
-      - 'loader/**'
-      - 'glass/addon/**'
-      - 'glass/native/**'
-      - 'third_party/**'
-      - 'CMakeLists.txt'
-      - 'CMakePresets.json'
-      - 'LICENSE'
-      - '.gitattributes'
-      - 'tools/ci/**'
-      - 'tools/lib/**'
-      - 'tools/build.ps1'
-      - 'tools/inputs.py'
-      - 'tools/build_package.py'
-      - 'tools/publish_workshop.py'
-      - 'tools/package_*.py'
-      - 'tools/companion_i18n.py'
-      - 'tools/gmapack/**'
-      - 'tools/workshop.json'
-      - '.github/workflows/package.yml'
   workflow_dispatch:
 
 permissions:

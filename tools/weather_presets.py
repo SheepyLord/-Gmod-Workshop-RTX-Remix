@@ -3,13 +3,18 @@
 and what Remix has for each such option when nothing sets it (the package's classic layer, else the
 runtime's default), which the weather goes back to when it is left to Remix again. The companion's
 sky (nativeloader_sky.lua) blends between the presets through RemixConfig.SetConfigVariable, because
-the RTX fixes give Lua no way to the runtime's own blender (remixapi_SetGameValue). Reads only;
-writes the one Lua file."""
+the RTX fixes give Lua no way to the runtime's own blender (remixapi_SetGameValue). Reads the fork as
+the runtime is built from it (runtime/base.json's commit with runtime/patches applied, R17), or with --fork
+a checkout as it is. Reads only; writes the one Lua file (and scratch under out/tmp)."""
 import argparse
 import hashlib
+import json
+import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -21,6 +26,12 @@ BLENDER = RENDER / 'rtx_weather.cpp'
 # Where the options a preset field drives are declared (category, type and name of each RTX_OPTION).
 OPTION_HEADERS = [RENDER / 'rtx_atmosphere.h', RENDER / 'rtx_global_volumetrics.h', RENDER / 'rtx_precipitation.h']
 OPTION_MACROS = ('RTX_OPTION', 'RTX_OPTION_ARGS', 'RTX_OPTION_FLAG', 'RTX_OPTION_ENV')  # the default is the 4th argument of each
+# The files read from the fork, and what the runtime is built from (ADR 0034): a commit of the fork
+# and this repository's patches to it.
+SOURCES = [HEADER, BLENDER, *OPTION_HEADERS]
+BASE = REPO / 'runtime' / 'base.json'
+PATCHES = REPO / 'runtime' / 'patches'
+SCRATCH = REPO / 'out' / 'tmp'
 # The package's low Remix layer (ADR 0021): what it sets is Remix's own value in an RTX session.
 LAYER = REPO / 'packages' / 'runtime' / 'layers' / 'classic_remix_defaults.conf'
 # Options the companion's weather sets beside the preset fields (its WEATHER_LOOK): every one of these.
@@ -216,6 +227,34 @@ def read_presets(fork: Path, layer: Path | None = LAYER) -> dict:
             'header_sha256': hashlib.sha256((fork / HEADER).read_bytes()).hexdigest()}
 
 
+def patched_sources(fork: Path, scratch: Path, base: Path = BASE, patches: Path = PATCHES) -> str:
+    """Writes the files this tool reads under scratch as runtime/build_runtime.ps1 builds them: the fork's
+    commit named in base.json, with every patch of the patches folder applied in name order (only the
+    hunks of those files). The patches change the presets too (R17), so the fork's checkout alone is not
+    what the runtime has. Returns a description of the source for the table's first line."""
+    commit = json.loads(base.read_text(encoding='utf-8'))['commit']
+    for rel in SOURCES:
+        done = subprocess.run(['git', '-C', str(fork), 'show', f'{commit}:{rel.as_posix()}'], capture_output=True,
+                              timeout=120)
+        if done.returncode:
+            raise SourceError(f'{rel.as_posix()} at {commit[:8]}: '
+                              + done.stderr.decode('utf-8', 'replace').strip())
+        (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+        (scratch / rel).write_bytes(done.stdout)
+    # git apply on plain files: the ceiling keeps git from taking this repository (scratch is inside it)
+    # for the one to patch.
+    env = dict(os.environ, GIT_CEILING_DIRECTORIES=str(scratch.parent))
+    includes = [f'--include={rel.as_posix()}' for rel in SOURCES]
+    applied = sorted(patches.glob('*.patch'))
+    for patch in applied:
+        done = subprocess.run(['git', 'apply', '--whitespace=nowarn', *includes, str(patch)], cwd=scratch, env=env,
+                              capture_output=True, timeout=300)
+        if done.returncode:
+            raise SourceError(f'{patch.name} does not apply to the fork at {commit[:8]}: '
+                              + done.stderr.decode('utf-8', 'replace').strip()[:400])
+    return f'{commit[:8]} + {len(applied)} runtime/patches'
+
+
 def fork_commit(fork: Path) -> str:
     try:
         done = subprocess.run(['git', '-C', str(fork), 'rev-parse', '--short=8', 'HEAD'], capture_output=True,
@@ -265,17 +304,30 @@ def generate(data: dict, commit: str) -> str:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--fork', type=Path, default=FORK, help='the Remix fork checkout (read only)')
+    parser.add_argument('--fork', type=Path, default=None,
+                        help='a Remix fork tree to read as it is (default: the fork checkout at runtime/base.json\'s '
+                             'commit with runtime/patches applied, as the runtime is built)')
     parser.add_argument('--out', type=Path, default=OUT, help='the Lua table to write')
     parser.add_argument('--layer', type=Path, default=LAYER, help="the package's classic Remix layer (its values win over the runtime's defaults)")
     parser.add_argument('--check', action='store_true', help='exit 1 when --out differs from what would be written')
     args = parser.parse_args(argv)
+    scratch = None
     try:
-        data = read_presets(args.fork, args.layer)
-    except (OSError, SourceError, ValueError) as error:
+        if args.fork is None:
+            SCRATCH.mkdir(parents=True, exist_ok=True)
+            scratch = Path(tempfile.mkdtemp(prefix='weather-presets-fork-', dir=SCRATCH))
+            source = patched_sources(FORK, scratch)
+            data = read_presets(scratch, args.layer)
+        else:
+            source = fork_commit(args.fork)
+            data = read_presets(args.fork, args.layer)
+    except (OSError, SourceError, ValueError, subprocess.SubprocessError) as error:
         print(f'error: {error}', file=sys.stderr)
         return 1
-    text = generate(data, fork_commit(args.fork))
+    finally:
+        if scratch is not None:
+            shutil.rmtree(scratch, ignore_errors=True)
+    text = generate(data, source)
     current = args.out.read_text(encoding='utf-8') if args.out.is_file() else None
     # The commit line names the fork's checkout, which moves on without the presets changing; compare
     # the presets (the header hash is in that line too, so compare from the line after it).

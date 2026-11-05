@@ -6,6 +6,33 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R17
+
+- **The sky fits the weather, and its clouds shade** (the user's request;
+  [ADR 0109](docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md), runtime
+  patch 0031). Each weather now has its own cloud genera: fair-weather cumulus under cirrus when clear,
+  cumulus with altocumulus when partly cloudy, a closed stratocumulus deck under altostratus when
+  overcast, a cirrostratus veil with the 22 degree halo when hazy, stratus in fog and drizzle,
+  nimbostratus in rain and snow, and cumulonimbus with anvil cirrus in a thunderstorm. The clouds are
+  dense enough to shade: dark undersides, bright tops, billowed edges. An overcast or rainy sky closes
+  up; it used to keep blue gaps.
+- **The sun has a disc.** Numos drew the sun only as the haze around it (a scattered lamp). The disc is
+  now true to size, darker at its edge and reddened toward the horizon. Clouds hide it, and thin cirrus
+  dims it.
+- **High clouds.** Cirrus streaks drawn out by the wind, the cirrostratus veil and cirrocumulus grains
+  are drawn on a thin layer at 9 km. It stays lit and red for a while after sunset, rings the sun and
+  the moon with a halo when it is a veil, and dims the stars at night.
+- **The Milky Way and the nebula of the night-sky image come out in astronomical twilight.** They used
+  to be full by 9 degrees after sunset. The stars appear as before.
+- The Remix menu's sky settings gain Sun Disc, High Clouds and Edge Billows, translated into the six
+  languages. While a weather is set, the middle deck's sliders show the weather's values.
+- `tools/weather_presets.py` reads the Remix fork as the runtime is built from it: the fork's base
+  commit with `runtime/patches` applied.
+- **The RTX package workflow starts only by hand, for a release** (the user;
+  [ADR 0108](docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)). During
+  development, commits, merges and pushes of `main` build the package locally and update the Workshop
+  item as before R16. `publish_workshop.py --from-ci` uploads a release run's `.gma`.
+
 ### R16
 
 - **Fixed: a chosen time of day and weather did not apply on entering a map whose add-on sets its own

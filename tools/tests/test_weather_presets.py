@@ -1,5 +1,7 @@
 """weather_presets.py on a small made-up fork (one field of each kind, twelve presets) and, when the
 user's fork is on this machine, the committed table against it. Scratch goes under out/tmp."""
+import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -128,6 +130,37 @@ class WeatherPresetsTests(unittest.TestCase):
                           encoding='utf-8')
         with self.assertRaisesRegex(wp.SourceError, "rainstorm: no value for \\['precipitationFallSpeed'\\]"):
             wp.read_presets(fork)
+
+    def test_the_fork_as_the_runtime_is_built_from_it(self):
+        # R17: the runtime's patches change the presets, so the table is read from the fork's base commit
+        # with runtime/patches applied, not from the fork's checkout.
+        fork = self.fork()
+        def git(*args):
+            return subprocess.run(['git', '-C', str(fork), *args], check=True, capture_output=True, text=True).stdout
+        git('init', '-q')
+        git('-c', 'user.name=t', '-c', 'user.email=t@t', 'add', '-A')
+        git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'base')
+        commit = git('rev-parse', 'HEAD').strip()
+        header = fork / 'src' / 'dxvk' / 'rtx_render' / 'rtx_weather.h'
+        header.write_text(header.read_text(encoding='utf-8').replace('X(float, cloudDensity, 0.5f)', 'X(float, cloudDensity, 0.75f)'),
+                          encoding='utf-8')
+        runtime = fork / 'runtime'
+        (runtime / 'patches').mkdir(parents=True)
+        (runtime / 'patches' / '0001-denser.patch').write_bytes(git('diff').encode('utf-8'))
+        git('checkout', '--', '.')
+        (runtime / 'base.json').write_text(json.dumps({'commit': commit}), encoding='utf-8')
+        scratch = fork / 'scratch'
+        scratch.mkdir()
+        source = wp.patched_sources(fork, scratch, runtime / 'base.json', runtime / 'patches')
+        self.assertEqual(source, f'{commit[:8]} + 1 runtime/patches')
+        self.assertEqual(wp.read_presets(scratch)['presets']['clear']['cloudDensity'], 0.75)
+        self.assertEqual(wp.read_presets(fork)['presets']['clear']['cloudDensity'], 0.5)
+        (runtime / 'patches' / '0002-broken.patch').write_text('--- a/src/dxvk/rtx_render/rtx_weather.h\n'
+                                                              '+++ b/src/dxvk/rtx_render/rtx_weather.h\n'
+                                                              '@@ -1,1 +1,1 @@\n-no such line\n+x\n', encoding='utf-8',
+                                                              newline='\n')
+        with self.assertRaisesRegex(wp.SourceError, '0002-broken.patch does not apply'):
+            wp.patched_sources(fork, fork / 'scratch2', runtime / 'base.json', runtime / 'patches')
 
     @unittest.skipUnless((wp.FORK / wp.HEADER).is_file(), "the user's Remix fork is not on this machine")
     def test_the_committed_table_matches_the_fork(self):

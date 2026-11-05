@@ -29,8 +29,12 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
    [`tools/build_package.py`](../build_package.py.md) `--built out/ci/built` and
    [`tools/package_report.py`](../package_report.py.md) into the run's summary. The older `rtx-package`
    artifacts are deleted before the new `.gma` is uploaded; `rtx-package-report` keeps the report.
-4. On the developer's machine, [`tools/publish_workshop.py`](../publish_workshop.py.md) `--from-ci`
-   (the pre-push hook) uploads that `.gma` after checking it against the report.
+4. On the developer's machine, [`tools/publish_workshop.py`](../publish_workshop.py.md) `--from-ci
+   --commit <sha>` uploads that `.gma` after checking it against the report.
+
+Only a person starts the workflow, for a release
+([ADR 0108](../../docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)); during
+development the git hooks publish packages built on the developer's machine from `packages/`.
 
 The provenance records are keyed by each binary's SHA-256, so the report finds a binary wherever a
 packager puts it in the `.gma`. A record says where the binary came from (`repository`, `commit`), how

@@ -14,8 +14,13 @@ fork has eight fields, one of each blend kind, and twelve presets.
   the table is written.
 - **Refused sources.** An option the fork does not declare is refused, and so is a preset without a
   value for a field.
+- **The fork as the runtime is built from it (R17).** The small fork is made a Git repository; a
+  patch in a `runtime/patches` folder changes one preset value. `patched_sources` reads the files at
+  the base commit with the patch applied (the changed value) while the checkout keeps the old one, and
+  a patch that does not apply is refused by name.
 - **The committed table against the user's fork.** When the fork is on this machine, `--check` must
-  pass on the committed `weather_presets.lua`; the test is skipped otherwise.
+  pass on the committed `weather_presets.lua`, read from the fork's base commit with
+  `runtime\patches` applied; the test is skipped otherwise.
 
 Run with the other tool tests: `python -m unittest discover -s tests` from `tools\` (as
 `tools\test.ps1` does). Exit 0 when the tests pass.

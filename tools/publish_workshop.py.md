@@ -1,25 +1,27 @@
 # publish_workshop.py
 
 Keeps the project's Workshop item, 3829070317, up to date
-([ADR 0016](../docs/decisions/0016-one-workshop-item-kept-current.md)) with the combined RTX package
-that GitHub's package workflow builds, its native binaries included, and uploads exactly that `.gma`
-with GMod's `gmpublish.exe` ([ADR 0106](../docs/decisions/0106-the-rtx-package-built-on-github.md),
-R16). It can also build the package here, as [`workshop.json`](workshop.json) lays it out
-([ADR 0033](../docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)), to compare it;
-[`build_package.py`](build_package.py.md) is that build. A package built here is uploaded only with
-`--local-upload`, which ADR 0106 leaves to an explicit request of the user.
+([ADR 0016](../docs/decisions/0016-one-workshop-item-kept-current.md)). **During development** it builds
+the combined RTX package from this repository alone, as [`workshop.json`](workshop.json) lays it out
+([ADR 0033](../docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)), and uploads it with
+GMod's `gmpublish.exe` when its content changed; [`build_package.py`](build_package.py.md) is the same
+build without the upload. **For a release** a person starts GitHub's package workflow, which builds the
+package with every native binary and a hash report ([ADR 0106](../docs/decisions/0106-the-rtx-package-built-on-github.md));
+`--from-ci` then uploads exactly that run's `.gma`
+([ADR 0108](../docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)).
 
-Its git hooks run Git LFS's steps, and the pre-push hook of `main` runs it in the background with
-`--from-ci`: a push of `main` updates GitHub (with the Git LFS files) and then the item, once the package
-run of the pushed commit has finished. Commits and merges no longer publish.
+Its git hooks run it in the background, so that:
+- a commit or a merge on `main` updates the item;
+- a push of `main` updates GitHub (with the Git LFS files) and the item.
 
 ```powershell
 python tools\publish_workshop.py --install-hooks     # once per clone: the hooks below
-python tools\publish_workshop.py --from-ci           # upload the package GitHub built for HEAD (waits for the run)
-python tools\publish_workshop.py --from-ci --commit <sha> --dry-run   # download and check it, upload nothing
-python tools\publish_workshop.py --dry-run           # build here and compare, upload nothing
-python tools\publish_workshop.py --local-upload      # build here and upload (only when the user asks)
-python tools\publish_workshop.py --commit <sha>      # build that commit, from the checkout that has it out
+python tools\publish_workshop.py                     # publish now (skips if nothing changed)
+python tools\publish_workshop.py --dry-run           # build and compare, upload nothing
+python tools\publish_workshop.py --force             # build and upload even if unchanged
+python tools\publish_workshop.py --commit <sha>      # publish that commit, from the checkout that has it out
+python tools\publish_workshop.py --from-ci --commit <sha> --dry-run   # a release: download and check its run's package
+python tools\publish_workshop.py --from-ci --commit <sha>             # a release: upload that run's package
 python tools\publish_workshop.py --uninstall-hooks   # remove this script's hooks
 python tools\publish_workshop.py --uninstall-source-hooks <add-on repo>  # remove ADR 0024's hooks there
 ```
@@ -59,7 +61,9 @@ A change to any of them reaches the item through an import into `packages/` and 
 The Modern House RTX package is a separate test item (3829275998), uploaded by hand with
 `gmpublish update`, not by this script.
 
-## What a `--from-ci` run does (R16)
+## What a `--from-ci` run does (a release; R16, ADR 0108)
+
+A person has started the package workflow on GitHub for the commit (no push starts it).
 
 1. **The run.** It looks up the package workflow's runs of the commit (`--commit`, default `HEAD`) with
    `gh api .../actions/workflows/package.yml/runs?head_sha=...` and waits, checking every minute, until
@@ -126,8 +130,8 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
    refuses the package: manifest: unknown key "reshade"" until it was rebuilt.
 5. **Digest.** If the build's content digest matches the last upload's, it uploads nothing:
    **unchanged content**. It records the new fingerprint, so the next run stops at step 3.
-6. **Upload** (only with `--local-upload`; otherwise the result is `built-not-uploaded`). It runs
-   `gmpublish update -id <item> -addon <archive> -changes "<version> from <commit> (<reason>)"`. Steam must be running and logged in to the item's owner.
+6. **Upload.** It runs `gmpublish update -id <item> -addon <archive> -changes "<version> from <commit>
+   (<reason>)"`. Steam must be running and logged in to the item's owner.
    If the reviewed publisher incorrectly rejects Steam's process-presence check, the guarded fallback
    below retries with an isolated copy. Real Steam initialization and authorization still run normally.
 7. **Record.** It writes `out\workshop\published.json`: item, fingerprint, digest, version, the

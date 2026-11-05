@@ -225,7 +225,7 @@ class PublishTests(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def run_publish(self, **flags):
-        args = argparse.Namespace(dry_run=False, force=False, allow_dirty=True, reason='test', local_upload=True)
+        args = argparse.Namespace(dry_run=False, force=False, allow_dirty=True, reason='test')
         for key, value in flags.items():
             setattr(args, key, value)
         return pub.publish(self.config, args, lambda text: None)
@@ -259,13 +259,6 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(again['digest'], first['digest'])
         self.assertEqual(len(self.uploads), 1)
         self.assertEqual(self.run_publish()['result'], 'unchanged-inputs')  # the new fingerprint was kept
-
-    def test_a_local_build_is_uploaded_only_when_asked(self):
-        # ADR 0106: the item gets the package GitHub built; a build here only compares.
-        result = self.run_publish(local_upload=False)
-        self.assertEqual(result['result'], 'built-not-uploaded')
-        self.assertEqual(self.uploads, [])
-        self.assertFalse((pub.STATE / 'published.json').exists())
 
     def test_dry_run_and_force(self):
         dry = self.run_publish(dry_run=True)
@@ -456,11 +449,12 @@ class HookTests(unittest.TestCase):
             self.assertNotIn(b'\r\n', text)
             # Each runs Git LFS's own step, as the hooks `git lfs install` writes would (ADR 0033).
             self.assertIn(b'git lfs ' + name.encode(), text)
+        self.assertIn(b'"main"', (hooks / 'post-commit').read_bytes())
         self.assertIn(b'refs/heads/main', (hooks / 'pre-push').read_bytes())
-        # ADR 0106: only a push publishes, with the package GitHub builds for the pushed commit.
-        self.assertIn(b'--from-ci --commit "$local_sha"', (hooks / 'pre-push').read_bytes())
-        for name in ('post-commit', 'post-merge'):
-            self.assertNotIn(b'publish_workshop.py', (hooks / name).read_bytes(), name)
+        for name in ('post-commit', 'post-merge', 'pre-push'):
+            self.assertIn(b'--commit', (hooks / name).read_bytes(), name)  # R3-004
+            # ADR 0108: during development the hooks publish a build made here; GitHub builds only releases.
+            self.assertNotIn(b'--from-ci', (hooks / name).read_bytes(), name)
         pub.install_hooks(False, self.repo)  # ours: replaced quietly
         (hooks / 'pre-push').write_text('#!/bin/sh\necho mine\n', encoding='utf-8')
         with self.assertRaisesRegex(pub.PublishError, 'not ours'):
@@ -544,17 +538,12 @@ class HookTests(unittest.TestCase):
         self.assertEqual([rel for rel in files if not covered(rel)], [])
         self.assertIn('.gitattributes', pub.REPO_INPUTS)
 
-    def test_the_package_workflow_runs_for_every_publish_input(self):
-        # CI's package build (package.yml) must run when an input of the item changes.
+    def test_the_package_workflow_starts_only_by_hand(self):
+        # ADR 0108: the package workflow (the large .gma and every native binary) runs only when a person
+        # starts it, for a release; no push, pull request, tag or schedule starts it.
         text = (REPO / '.github' / 'workflows' / 'package.yml').read_text(encoding='utf-8')
-        patterns = re.findall(r"^\s*-\s*'([^']+)'", text.split('paths:', 1)[1].split('workflow_dispatch', 1)[0], re.M)
-
-        def triggers(path):
-            return any(re.fullmatch(re.escape(p).replace(r'\*\*', '.*').replace(r'\*', '[^/]*'), path)
-                       for p in patterns)
-        for rel in pub.REPO_INPUTS:
-            with self.subTest(rel=rel):
-                self.assertTrue(triggers(rel + '/x' if (REPO / rel).is_dir() else rel), rel)
+        trigger = text.split('\non:', 1)[1].split('\n\n', 1)[0]
+        self.assertEqual([line.strip() for line in trigger.strip().splitlines()], ['workflow_dispatch:'])
 
     def test_the_parts_a_config_unpacks(self):
         config = {'parts': [{'name': 'a', 'build': 'package_runtime', 'args': ['--runtime', 'out/inputs/runtime/files']},
