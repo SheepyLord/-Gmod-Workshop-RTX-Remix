@@ -53,6 +53,9 @@ and the material editor. Decision: [ADR 0106](../decisions/0106-the-rtx-package-
 | ReShade setup (and `ReShade64.dll` in it), `stdshader_dx6.dll`, `lib_coacd.dll` | fetched from reshade.me, the public fixes repository and CoACD's PyPI wheel, checked against pinned SHA-256 hashes |
 | Model Hotloader: `gmcl_mmdhl`, `gmsv_mmdhl`, `mmdhl_runtime`, `mmdhl_worker` | from `packages/`: built from staged, uncommitted changes in its author's worktree; reported as such |
 
+Result: [R16-report.md](R16-report.md) (GitHub run 41962824677 built, reported and packed the package that
+item 3829070317 now holds, checked in the PoC and the field).
+
 Local proof (2026-11-04, this worktree): `tools/ci/build_modules.ps1` with the local fixes clone,
 garrysmod_common and premake built all four modules at the shipped sizes; `collect_runtime.py` found all
 189 runtime files in the fork's `_output`; `build_package.py --built` made a 1,736,040,838-byte package

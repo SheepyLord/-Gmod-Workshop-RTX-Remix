@@ -5154,3 +5154,18 @@ material editor.
   Windows SDK 10.0.26100.0, CMake 3.31, Ninja 1.13, Python 3.12, Git LFS, `core.autocrlf true` in the
   system git config, no Vulkan SDK and no premake. A private repository's standard runner has 2 cores,
   8 GB and about 14 GB of SSD for the workspace.
+- **The first runs on GitHub** (2026-11-05, runs 41962240202 and 41962824677): the `windows-2022`
+  runner of this private repository had 2 processors and 8 GB, **81 GB free on C:** and 72.9 GB free on
+  D: (the workspace), git 2.56.0, PowerShell 7 (pwsh) for `shell: pwsh` steps. The fork's clone, its
+  worktree with the 30 patches, its submodules and the DLSS and SHARC clones took about 90 s and 2.6 GB
+  with `--filter=blob:none`.
+- **PowerShell 7.5 keeps an empty environment variable.** PowerShell passes `$null` to a .NET `string`
+  parameter as `""`; Windows PowerShell 5.1 (.NET Framework) deletes a variable set to `""`, .NET 9 keeps
+  it empty. `runtime/build_runtime.ps1` restored `GIT_OBJECT_DIRECTORY` that way after its scratch index,
+  and every later git call failed with "gitfile does not point to a valid repository" (git checks that
+  variable's folder before a worktree's own). Remove unset variables with `Remove-Item Env:NAME`.
+- **`git restore --source=<commit>` in a blob-filtered clone** did not fetch the blobs it needed ("unable
+  to read sha1 file of source/rtx_water/rtxwater.cpp"); `git checkout <commit>` (whole commits) does fetch
+  them in batches. The fixes are cloned whole in CI (about 300 MB).
+- The RTX fixes module built on the runner is 5,492,224 bytes (512 more than this machine's build: the
+  runner's `cl` is 19.44.35229, this machine's 19.44.35228, and the paths differ).
