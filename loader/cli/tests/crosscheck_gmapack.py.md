@@ -18,6 +18,11 @@ vendored Python reference, [`tools/gmapack/gmapack.py`](../../../tools/gmapack/g
    an LZMA stream missing its last bytes and one with junk after it (verify exit 2).
 5. `nlctl scan` counts the intact folder as all parsed (with the right LZMA and no-trailer counts)
    and the damaged folder as two failures plus one archive with trailing data.
+6. R19 (proxy F-07): a folder the scan cannot list is a failure, not a silent skip, and the walk goes
+   on. The test denies Everyone the listing of one scratch folder holding an archive (`icacls /deny
+   *S-1-1-0:(RD)`, removed again afterwards; only this test's own folder), beside a readable archive:
+   the scan exits 1 with that folder as its one failure ("folder not scanned") and the other archive
+   parsed. If `icacls` refuses, the case is skipped with a printed note.
 
 GMod's 8-byte LZMA footer is not part of this test because `gmapack.py` rejects it; the C++ unit
 tests and the real-data verification in [docs/RESEARCH.md](../../../docs/RESEARCH.md) cover it.

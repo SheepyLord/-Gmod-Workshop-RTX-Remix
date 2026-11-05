@@ -93,7 +93,35 @@ std::string utf8(const fs::path& path) {
   return std::string(text.begin(), text.end());
 }
 
+// The reasons a content-only candidate's Workshop item no longer counts (ADR 0025, ADR 0111).
+constexpr std::string_view kGone =
+    "not subscribed: Steam no longer has the item (appworkshop_4000.acf), so a package it deployed is removed";
+constexpr std::string_view kNotSubscribed =
+    "not subscribed: Steam has it only because the game or a server downloaded it (or it was unsubscribed); "
+    "content packages come only from subscriptions, so a package it deployed is removed";
+
 }  // namespace
+
+std::optional<bool> subscribed_by_an_account(std::string_view subscribedby) {
+  bool account = false;
+  std::size_t start = 0;
+  for (;;) {
+    const std::size_t comma = subscribedby.find(',', start);
+    std::string_view part = subscribedby.substr(start, comma == std::string_view::npos ? std::string_view::npos : comma - start);
+    while (!part.empty() && (part.front() == ' ' || part.front() == '\t')) part.remove_prefix(1);
+    while (!part.empty() && (part.back() == ' ' || part.back() == '\t')) part.remove_suffix(1);
+    if (!part.empty()) {
+      // Steam writes 32-bit account ids; up to 20 digits also takes a 64-bit one. Anything else is a
+      // record this code does not understand, which must neither add nor remove a package.
+      if (part.size() > 20 || !std::all_of(part.begin(), part.end(), [](char ch) { return ch >= '0' && ch <= '9'; })) {
+        return std::nullopt;
+      }
+      if (part.find_first_not_of('0') != std::string_view::npos) account = true;
+    }
+    if (comma == std::string_view::npos) return account;
+    start = comma + 1;
+  }
+}
 
 const char* source_name(Source source) {
   switch (source) {
@@ -175,7 +203,7 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
     out.push_back(std::move(c));
   }
 
-  // Content-only packages from the subscribed items, without the allowlist (ADR 0027).
+  // Content-only packages from the subscribed items, without the allowlist (ADR 0027, ADR 0111).
   const bool subscribed = config.subscribed_content && env.workshop_content.has_value();
   vdf::Node acf;
   bool have_acf = false;
@@ -184,7 +212,8 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
       acf = vdf::load(env.appworkshop_acf);
       have_acf = true;
     } catch (const std::exception&) {
-      // Without Steam's record the items still work; only the update details are missing.
+      // Without Steam's record the items still work; only the update details are missing, and no
+      // installed item can be shown to be subscribed, so none is new content (ADR 0111).
     }
   }
   // Steam's record: installed items (with the version), and the items it keeps details for, which
@@ -192,9 +221,24 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
   const vdf::Node* app = have_acf ? acf.find("AppWorkshop") : nullptr;
   const vdf::Node* installed = app ? app->find("WorkshopItemsInstalled") : nullptr;
   const vdf::Node* details = app ? app->find("WorkshopItemDetails") : nullptr;
+  // Whether an account on this computer subscribed to the item (ADR 0111). An item the game or a
+  // server downloaded (client Lua's steamworks.DownloadUGC, which any server may call) is installed
+  // and listed in both sections too, but its details have no `subscribedby`. Without a record that
+  // has the details section, or with a value this code does not understand, Steam cannot tell us.
+  const auto subscription = [&](const std::string& id) -> std::optional<bool> {
+    if (!details || !details->block) return std::nullopt;
+    const vdf::Node* item = details->find(id);
+    if (!item) return false;  // Steam keeps no details for it: no account here subscribes
+    if (!item->block) return std::nullopt;
+    const vdf::Node* by = item->find("subscribedby");
+    if (!by) return false;  // what a download without a subscription leaves (RESEARCH.md)
+    if (by->block) return std::nullopt;
+    return subscribed_by_an_account(by->value);
+  };
 
-  const auto workshop = [&](const std::string& id) {
+  const auto workshop = [&](const std::string& id, bool content_only) {
     Candidate c{Source::workshop, id, {}, {}, {}, {}};
+    c.content_only = content_only;
     if (installed) {
       if (const vdf::Node* item = installed->find(id)) {
         if (const vdf::Node* t = item->find("timeupdated")) {
@@ -222,10 +266,17 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
           }
         }
       }
-      if (!is_dir(folder) && app && !(installed && installed->find(id)) && !(details && details->find(id))) {
+      const bool recorded = (installed && installed->find(id)) || (details && details->find(id));
+      if (content_only && subscription(id) == false) {
+        // Content without the allowlist comes only from a subscription (ADR 0111). Steam's record
+        // names no subscriber here: a server or the game downloaded the item, or the user
+        // unsubscribed. Removed like an unsubscribed item (ADR 0025); the allowlist is unaffected.
+        c.unsubscribed = true;
+        c.problem = std::string(!recorded && !is_dir(folder) ? kGone : kNotSubscribed);
+      } else if (!is_dir(folder) && app && !recorded) {
         // Steam lists it nowhere and its files are gone: the user unsubscribed (ADR 0025).
         c.unsubscribed = true;
-        c.problem = "not subscribed: Steam no longer has the item (appworkshop_4000.acf), so a package it deployed is removed";
+        c.problem = std::string(kGone);
       } else if (!is_dir(folder)) {
         c.problem = "not installed (subscribe in Steam and let it download)";
       } else if (archives.empty()) {
@@ -238,10 +289,10 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
     }
     return c;
   };
-  for (const std::string& id : config.workshop) out.push_back(workshop(id));
+  for (const std::string& id : config.workshop) out.push_back(workshop(id, false));
   if (!subscribed) return out;
 
-  // Every other installed item whose single .gma is a package, and every other deployed one, by id.
+  // Every other subscribed item whose single .gma is a package, and every other deployed one, by id.
   const std::set<std::string> listed(config.workshop.begin(), config.workshop.end());
   const auto workshop_id = [](const std::string& name) {
     return !name.empty() && name.size() <= 20 && name[0] != '0' &&
@@ -252,7 +303,12 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
   for (const auto& entry : fs::directory_iterator(*env.workshop_content, ec)) {
     const std::string id = utf8(entry.path().filename());
     if (!workshop_id(id) || listed.count(id) || !is_dir(entry.path())) continue;
-    if (env.disabled_workshop.count(id) && !env.deployed_workshop.count(id)) continue;
+    const bool deployed = env.deployed_workshop.count(id) > 0;
+    if (env.disabled_workshop.count(id) && !deployed) continue;
+    // Installed is not subscribed (ADR 0111): any server can make the game download an item here.
+    // Only an item Steam's record shows an account of this computer subscribed to is new content;
+    // without a readable record nothing is, and the deployed ones keep their candidates below.
+    if (!deployed && subscription(id) != true) continue;
     std::vector<fs::path> archives;
     std::error_code inner;
     for (const auto& file : fs::directory_iterator(entry.path(), inner)) {
@@ -267,11 +323,7 @@ std::vector<Candidate> discover(const config::Config& config, const Environment&
   std::sort(order.begin(), order.end(), [](const std::string& a, const std::string& b) {
     return a.size() != b.size() ? a.size() < b.size() : a < b;  // numeric: no leading zeros
   });
-  for (const std::string& id : order) {
-    Candidate c = workshop(id);
-    c.content_only = true;
-    out.push_back(std::move(c));
-  }
+  for (const std::string& id : order) out.push_back(workshop(id, true));
   return out;
 }
 

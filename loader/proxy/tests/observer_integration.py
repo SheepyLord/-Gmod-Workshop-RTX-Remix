@@ -57,6 +57,19 @@ def main():
     env.pop('NATIVE_LOADER_DISABLE', None)
     # No Remix automation/consent variable is set; this host has no runtime at all.
     rundll = Path(os.environ['SystemRoot']) / 'System32/rundll32.exe'
+
+    # R19 (proxy F-06): in the observer's rundll32 every module that imports winmm.dll by name binds to
+    # this proxy, already loaded, so its exports must reach System32's winmm there too. rundll32 calls
+    # the forwarded timeGetTime; an empty forwarding slot would crash it.
+    root = scratch / ('forwarding-' + str(time.time_ns()))
+    (root / 'bin/win64').mkdir(parents=True)
+    shutil.copy2(args.proxy, root / 'bin/win64/winmm.dll')
+    forwarded = subprocess.run([str(rundll), str(root / 'bin/win64/winmm.dll') + ',timeGetTime'], env=env, timeout=20)
+    assert forwarded.returncode == 0, 'forwarded export in rundll32: exit %#x' % (forwarded.returncode & 0xFFFFFFFF)
+    assert not (root / 'native-loader').exists()  # the observer host still runs no loader work
+    assert root.resolve().is_relative_to(scratch) and root.resolve() != scratch
+    shutil.rmtree(root)
+    print('PASS observer host forwards winmm exports', flush=True)
     cases = [
         ('clean', 0, '', 'clean'),
         ('clean-noise', 0, 'VK_ERROR_DEVICE_LOST (nonfatal)', 'clean'),
@@ -173,7 +186,7 @@ def main():
         assert root.resolve().is_relative_to(scratch) and root.resolve() != scratch
         shutil.rmtree(root)
         print('PASS observer disabled:', policy, flush=True)
-    print(f'PASS observer integration: {len(cases) + 7} synthetic cases')
+    print(f'PASS observer integration: {len(cases) + 8} synthetic cases')
     return 0
 
 

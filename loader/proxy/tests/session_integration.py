@@ -171,6 +171,10 @@ def main():
         check(shader_path.name.lower() == 'stdshader_dx6.dll' and 'native-loader' in shader_path.parts and
               shader_path != shader_vanilla, f'override not used: {shader_path}')
         check(session['overrides'][0]['result'] == 'redirected', 'override not recorded')
+        # R19 (proxy F-05): a caller's LOAD_LIBRARY_SEARCH_* flag, which Windows refuses next to the
+        # altered search path, still gets the override.
+        check(probe['shader_search_error'] == 0 and Path(probe['shader_search_path']) == shader_path,
+              f'override with a LOAD_LIBRARY_SEARCH flag: {probe["shader_search_path"]!r}, error {probe["shader_search_error"]}')
         check(probe['command_line_w'].endswith('+exec nativeloader_session.cfg'), 'session cfg not executed')
         check('r_nl_test "1"' in session_cfg.read_text(encoding='ascii'), 'session cfg content')
         recorded = json.loads(record.read_text(encoding='utf-8'))
@@ -192,6 +196,19 @@ def main():
         check(any('-insecure' in note for note in status['session']['notes']), 'missing -insecure note')
         check(record.read_bytes() == record_bytes and session_cfg.stat().st_mtime_ns == cfg_time, 'repeat rewrote record or cfg')
         passed('without -insecure: no patches, override still applies, nothing rewritten')
+
+        # R19 (proxy F-04): the module's runtime is away for the first require (as when a scanner holds
+        # it), so that load fails; the next require tries the runtime again, and the module loads.
+        probe, status, session = run('rtx-dep-retry', ['-insecure'], {'NL_M5_DEP_RETRY': '1'})
+        check(probe['dep_retry'] == '!126', f'the first require found its runtime anyway: {probe["dep_retry"]!r}')
+        dep = probe['dep_module']
+        check(not dep.startswith('!') and dep.endswith('|nl-dep-runtime'), f'the second require did not load: {dep!r}')
+        loaded = session and session['module_dependencies']['loaded']
+        check(loaded and [entry['result'] for entry in loaded] == ['failed', 'loaded'],
+              f'session.json dependencies: {session and session.get("module_dependencies")}')
+        check((root / 'garrysmod/lua/bin/nl_dep_runtime_win64.dll').read_bytes() == lua_bin['nl_dep_runtime_win64.dll'],
+              'the runtime did not come back')
+        passed('a module dependency that failed to load is tried again at the next require, and reported once each way')
 
         # What the game does when an RTX session quits: it archives the session's values. During the
         # session the user also set r_3dsky to 2 themselves.
@@ -215,6 +232,7 @@ def main():
         check(status['activation']['outcome'] == 'inactive', 'RTX off not inactive')
         check(probe['engine_at_attach'] == 'NLM5PATCH:BEFORE', 'patched with RTX off')
         check(Path(probe['shader_path']) == shader_vanilla, f'override with RTX off: {probe["shader_path"]}')
+        check(Path(probe['shader_search_path']) == shader_vanilla, f'override with RTX off: {probe["shader_search_path"]}')
         check(probe['command_line_w'].endswith('+exec nativeloader_restore.cfg'), 'restore not executed')
         restore = restore_cfg.read_text(encoding='ascii')
         check('r_nl_test "0"' in restore and 'r_3dsky' not in restore, f'restore cfg (the user\'s r_3dsky must stay): {restore}')

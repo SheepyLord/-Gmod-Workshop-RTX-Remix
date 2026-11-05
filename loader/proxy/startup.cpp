@@ -231,6 +231,24 @@ void hide_rtx_addons(StartupContext& context) noexcept {
   }
 }
 
+// The RTX session marker (status::kSessionMarker): held from here until the process ends, when Windows
+// closes the handle and deletes the file. The companion's render guard installs only while it exists
+// (R19, proxy F-02): status.json alone says "active" long after the RTX start that wrote it, also in a
+// later start through an off switch, which never runs this code. Without the marker the guard stays
+// out of this session; the note says why.
+void hold_session_marker(StartupContext& context) noexcept {
+  try {
+    static void* held = nullptr;  // never closed: the process's end deletes the marker
+    if (held) return;
+    held = status::hold_session_marker(context.root, context.report.session_token);
+    context.report.session.notes.push_back(std::string("RTX session marker held until the game exits: ") +
+                                           std::string(status::kSessionMarker));
+  } catch (const std::exception& error) {
+    context.report.session.notes.push_back(std::string("RTX session marker not created (") + error.what() +
+                                           "); the companion's render guard does not install in this session");
+  }
+}
+
 void failed_startup(StartupContext& context, const char* message, DWORD error) noexcept {
   // A committed runtime is loaded and initialised: unloading it now would be riskier than keeping
   // it, so a failure after the commit (only reporting is left by then) is logged, nothing undone.
@@ -362,7 +380,12 @@ void startup_cxx(StartupContext& context) noexcept {
     }
     // Commit before reporting: the runtime's own start-up code has run, and a report that cannot be
     // written is no reason to unload it (see failed_startup).
-    if (context.report.activation.outcome == "active") context.runtime.commit();
+    if (context.report.activation.outcome == "active") {
+      context.runtime.commit();
+      hold_session_marker(context);
+    } else {
+      status::clear_session_marker(context.root);
+    }
     // Without RTX, put back console variables an earlier RTX session changed (M5, ADR 0010), and keep
     // RTX-only add-ons out of the session (ADR 0013).
     if (context.report.activation.outcome != "active" && context.prepared.config.from_file && context.prepared.config.enabled) {

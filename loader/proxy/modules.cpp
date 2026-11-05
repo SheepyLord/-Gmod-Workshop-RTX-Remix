@@ -97,7 +97,8 @@ struct State {
   std::vector<std::string> search_hooked;    // modules whose searches are filtered
   // Every session (ADR 0024): binary modules and what is loaded before them.
   std::vector<std::pair<std::wstring, std::vector<std::wstring>>> dependencies;  // lower-case module path -> paths
-  std::vector<std::wstring> loaded_first;     // lower-case paths already loaded (or tried) once
+  std::vector<std::wstring> loaded_first;     // lower-case paths loaded once: not loaded again
+  std::vector<std::wstring> failed_first;     // lower-case paths that failed once: tried again, reported once
   std::vector<std::string> dependencies_done; // JSON objects
   struct ReadRedirect {
     std::wstring source, replacement;
@@ -179,9 +180,20 @@ std::wstring widen_ansi(LPCSTR text) {
   return out;
 }
 
+// LoadLibraryEx's LOAD_LIBRARY_SEARCH_* flags. Windows refuses any of them together with
+// LOAD_WITH_ALTERED_SEARCH_PATH (ERROR_INVALID_PARAMETER), so a caller's search flags are kept as they
+// are: for a replacement loaded by its full path, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR or the default
+// directories already look beside it first, as the altered search path would (R19, proxy F-05).
+constexpr DWORD kSearchFlags = 0x00000100 /* DLL_LOAD_DIR */ | 0x00000200 /* APPLICATION_DIR */ | 0x00000400 /* USER_DIRS */ |
+                               0x00000800 /* SYSTEM32 */ | 0x00001000 /* DEFAULT_DIRS */ | 0x00004000 /* SYSTEM32_NO_FORWARDER */;
+
+DWORD replacement_flags(DWORD flags) {
+  return (flags & kSearchFlags) ? flags : flags | LOAD_WITH_ALTERED_SEARCH_PATH;
+}
+
 HMODULE load_replacement(State& s, std::wstring_view requested, const std::pair<std::wstring, std::wstring>& item, HANDLE handle,
                          DWORD flags) {
-  HMODULE module = s.load_ex_w(item.second.c_str(), handle, flags | LOAD_WITH_ALTERED_SEARCH_PATH);
+  HMODULE module = s.load_ex_w(item.second.c_str(), handle, replacement_flags(flags));
   const DWORD error = module ? 0 : GetLastError();
   std::string entry = "{\"module\": " + json::quote(narrow(item.first)) + ", \"requested\": " + json::quote(narrow(requested)) +
                       ", \"loaded\": " + json::quote(narrow(item.second)) + ", \"result\": " +
@@ -197,9 +209,11 @@ HMODULE load_replacement(State& s, std::wstring_view requested, const std::pair<
 constexpr DWORD kNotAnImage = LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE | LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE;
 
 // Before a load of a binary module that needs other files (ADR 0024), loads each of them by its
-// absolute path, once per process. The module's static import of the same base name then binds to
-// the loaded file, wherever Windows would have searched (next to gmod.exe first). A file that fails to
-// load is reported; the module's own load then fails as it would have.
+// absolute path, until it has loaded once in this process. The module's static import of the same base
+// name then binds to the loaded file, wherever Windows would have searched (next to gmod.exe first). A
+// file that fails to load is reported; the module's own load then fails as it would have, and the next
+// load of the module tries the file again: a scanner or an update may have held it only for a moment
+// (R19, proxy F-04). Each file's first failure and its success are reported, not every retry.
 void load_first(State& s, std::wstring_view requested) {
   if (s.dependencies.empty() || requested.empty()) return;
   const std::wstring path = lower(full_path(requested));
@@ -207,19 +221,29 @@ void load_first(State& s, std::wstring_view requested) {
     if (module != path) continue;
     for (const auto& file : files) {
       const std::wstring key = lower(file);
-      AcquireSRWLockExclusive(&s.lock);
+      AcquireSRWLockShared(&s.lock);
       const bool done = std::find(s.loaded_first.begin(), s.loaded_first.end(), key) != s.loaded_first.end();
-      if (!done) s.loaded_first.push_back(key);
-      ReleaseSRWLockExclusive(&s.lock);
+      ReleaseSRWLockShared(&s.lock);
       if (done) continue;
+      // Two threads can both get here; the second load only adds a reference to the same module.
       const HMODULE loaded = s.load_ex_w(file.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
       const DWORD error = loaded ? 0 : GetLastError();
-      std::string entry = "{\"module\": " + json::quote(narrow(module)) + ", \"loaded_first\": " + json::quote(narrow(file)) +
-                          ", \"result\": " + json::quote(loaded ? "loaded" : "failed") + ", \"windows_error\": " + std::to_string(error) + "}";
       AcquireSRWLockExclusive(&s.lock);
-      s.dependencies_done.push_back(std::move(entry));
+      bool report = false;
+      if (loaded && std::find(s.loaded_first.begin(), s.loaded_first.end(), key) == s.loaded_first.end()) {
+        s.loaded_first.push_back(key);
+        report = true;
+      } else if (!loaded && std::find(s.failed_first.begin(), s.failed_first.end(), key) == s.failed_first.end()) {
+        s.failed_first.push_back(key);
+        report = true;
+      }
+      if (report) {
+        s.dependencies_done.push_back("{\"module\": " + json::quote(narrow(module)) + ", \"loaded_first\": " + json::quote(narrow(file)) +
+                                      ", \"result\": " + json::quote(loaded ? "loaded" : "failed") +
+                                      ", \"windows_error\": " + std::to_string(error) + "}");
+      }
       ReleaseSRWLockExclusive(&s.lock);
-      write_session_json();
+      if (report) write_session_json();
     }
     return;
   }

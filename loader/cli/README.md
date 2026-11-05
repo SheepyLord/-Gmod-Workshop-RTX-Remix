@@ -70,7 +70,9 @@ These four commands, and `status`, exit with:
 `plan` runs the deployment half of what the bootstrap runs at start-up, without changing anything:
 it reads `native-loader\config.json`, finds every allowlisted source and every subscribed Workshop
 item that holds a package (marked "subscribed, content only",
-[ADR 0027](../../docs/decisions/0027-content-packages-from-any-subscription.md)), loads each package
+[ADR 0027](../../docs/decisions/0027-content-packages-from-any-subscription.md); subscribed by an account
+of this computer according to Steam's record, not merely installed,
+[ADR 0111](../../docs/decisions/0111-content-packages-only-from-subscribed-items.md)), loads each package
 and prints one decision per source (active, or why not;
 [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)). `--steam-dir` replaces the
 registry lookup of Steam's folder when the game root is outside a Steam library. Exit `0` when a plan was made (even if everything was skipped), `2` for an invalid config.
@@ -103,7 +105,11 @@ Plain (`.gma`) and LZMA-wrapped (Workshop `*_legacy.bin`) archives are both read
 - `verify` decodes everything and also reports `crc_trailer` and, for LZMA, `lzma_gmod_footer`.
   A damaged LZMA container (cut stream, wrong footer, bytes after it) is a format error: exit 2.
 - `scan` reads headers and indexes only. It counts `parsed`, `lzma`, `without_crc_trailer` and
-  `with_trailing_data`, and fails only archives whose contents or trailer are cut short.
+  `with_trailing_data`, and fails only archives whose contents or trailer are cut short. A folder it
+  cannot list ("folder not scanned", walk continues past it) and an entry whose attributes cannot be
+  read are failures too (R19, proxy F-07): before, a folder denied by its permissions was skipped
+  without a word, so an inventory could pass while missing archives. Links and junctions are not
+  followed.
 
 Exit codes: `0` ok, `1` a check found problems (bad CRC, trailing data, failed archives in a scan),
 `2` bad usage or unreadable / malformed input, `3` internal error.

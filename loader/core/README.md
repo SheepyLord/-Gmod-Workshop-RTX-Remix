@@ -35,7 +35,7 @@ exact start-marker bytes reject changed or different sessions. This code has no 
 | `include/nl/package.h`, `src/package.cpp` | Package contents from a `.gma` or a development folder (links and reparse points refused), `Contents::extract` (wanted files streamed to a `Sink` with bounded memory), and `load` (manifest read, parsed and checked; `manifest_sha256` of its bytes) |
 | `include/nl/vdf.h`, `src/vdf.cpp` | Valve KeyValues reader (Steam `.vdf`/`.acf`, GMod's `addonnomount.txt`) |
 | `include/nl/config.h`, `src/config.cpp` | `native-loader\config.json` schema 1: the allowlist and switches; strict, unknown keys rejected |
-| `include/nl/discovery.h`, `src/discovery.cpp` | Finds allowlisted sources without the Steam API: the game's library (or `libraryfolders.vdf`), item archives, `appworkshop_4000.acf`, `addonnomount.txt`; then the subscribed items whose `.gma` lists `native/manifest.json` (`lists_native_manifest`), as content-only candidates ([ADR 0027](../../docs/decisions/0027-content-packages-from-any-subscription.md)) |
+| `include/nl/discovery.h`, `src/discovery.cpp` | Finds allowlisted sources without the Steam API: the game's library (or `libraryfolders.vdf`), item archives, `appworkshop_4000.acf`, `addonnomount.txt`; then the subscribed items whose `.gma` lists `native/manifest.json` (`lists_native_manifest`), as content-only candidates ([ADR 0027](../../docs/decisions/0027-content-packages-from-any-subscription.md)). Subscribed means Steam's `WorkshopItemDetails` names an account of this computer in `subscribedby` (`subscribed_by_an_account`), not merely installed: an item a server had the game download is no candidate, a deployed one without a subscription is removed like an unsubscribe, and without a readable record nothing is new and the deployed ones stay ([ADR 0111](../../docs/decisions/0111-content-packages-only-from-subscribed-items.md)) |
 | `include/nl/content.h`, `src/content.cpp` | What a content-only package may hold: GMod's Workshop whitelist (`workshop_whitelisted`, gmad's table), Remix mod data (`remix_mod_file`), and `problem` (any native code, or a file outside those, ADR 0027) |
 | `include/nl/reshade.h`, `src/reshade.cpp` | ReShade in RTX sessions ([ADR 0028](../../docs/decisions/0028-reshade-in-rtx-sessions.md)): `probe` (the game's `bin/win64/ReShade.ini` and its `[INSTALL] BasePath`, the RTX sessions' own `native-loader/reshade/ReShade.ini`, the package's layer manifest), `parse_layer`, `plan` (`remix.reshade` auto/on/off), `migrate` (the game's settings with every path made absolute and the presets pointed to copies), `fresh`, `is_preset` and `prepare`, which makes the folder and its settings once and never writes the game's ReShade |
 | `include/nl/planner.h`, `src/planner.cpp` | `consider` (load each candidate's package) and `make_plan` (precedence, one runtime, root overlaps; [ADR 0006](../../docs/decisions/0006-package-precedence-and-planning.md)) |
@@ -49,7 +49,7 @@ exact start-marker bytes reject changed or different sessions. This code has no 
 | `include/nl/cmdline.h`, `src/cmdline.cpp` | Command line: `tokenize` / raw `argument_spans` / `has_arg`, validated transactional `swap_records` (Buffer/Length/MaximumLength and USHORT limits), `append_arguments` and guarded `rewrite_arguments` for kernelbase W/A plus the PEB. Rewrites verify the expected wide line and original ANSI ACP conversion first. A move-only `SwapResult` supports explicit/automatic exact-descriptor restore or committing buffers for process lifetime; write failure restores every attempted slot. |
 | `src/version.cpp` | `nl::version()` |
 | `include/nl/startup.h`, `src/startup.cpp` | Startup preparation and pure keep-last-good policy: config/journal preflight, current-PID-only exclusion, explicit disabled sources versus unavailable ones, safe contention/pending decisions ([ADR 0009](../../docs/decisions/0009-startup-deployment-last-good.md)) |
-| `include/nl/status.h`, `src/status.cpp` | Startup status schema 1 and matching log fields; atomic per-PID temporary-file replacement; uninstall removes generated status and the empty data folder, preserving unrelated files |
+| `include/nl/status.h`, `src/status.cpp` | Startup status schema 1 and matching log fields; atomic per-PID temporary-file replacement; uninstall removes generated status and the empty data folder, preserving unrelated files. R19 (proxy F-02): the RTX session marker `garrysmod/data/native-loader/rtx-session.txt` (`hold_session_marker`: delete-on-close, read sharing only, so it exists exactly while the game that holds it runs; `clear_session_marker` removes one a power loss left), which the companion's render guard requires next to an "active" report |
 
 ## GMA reader rules
 
@@ -112,10 +112,23 @@ The full design is [ADR 0007](../../docs/decisions/0007-transactional-deployment
   back; someone else's file in a package's way is moved to `backup/originals` and put back once no
   generation names its path; an identical one is adopted (ADR 0035). The loader never deletes either
   folder's files. Folders go only when empty.
+- R19: a displaced file never lands on a place that is taken. When `backup/originals/<path>` already
+  holds a file the journal does not list (an uninstall left it there, "put it back by hand"), the file
+  found now is kept as a changed copy instead, with a note (M5); a taken `backup/edits/<tx>/<path>`
+  (copies from before an uninstall reset the transaction numbers) becomes `backup/edits/<tx>-<n>/<path>`.
+  Files moved into either folder are hashed just before their move: one that changed since the run
+  planned fails the run, which undoes itself, and the next run plans with it as it is (NLCORE-03).
 - Nothing is placed, moved or deleted through a link anywhere below the game folder.
 - Clean-up never stops a command: what it cannot delete now stays listed, with a note, for the next
-  run; uninstall keeps the journal until everything is gone.
-- A run with nothing to do makes no change at all.
+  run; uninstall keeps the journal until everything is gone, the files earlier runs could not delete
+  included (NLCORE-01).
+- A run with nothing to do makes no change at all, except removing what an earlier pass of the same run
+  staged for a package that then failed its checks (NLCORE-02).
+- Declared sizes are untrusted: the free-space sums saturate instead of wrapping, and a package that
+  declares more than the whole volume holds is skipped as broken (NLCORE-05). One that only needs more
+  free space than there is stops the run, as before.
+- A rollback refuses while a root file both generations share is missing or changed, since no copy of
+  it is kept anywhere; `apply` puts it back first (NLCORE-04).
 
 ## Rules for code here
 

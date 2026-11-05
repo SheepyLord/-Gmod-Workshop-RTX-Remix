@@ -32,6 +32,17 @@ void resolve_exports() noexcept {
   if (length && length < kPathCapacity &&
       append_path(g_bootstrap.system_winmm, {g_bootstrap.system_winmm, length}, L"\\winmm.dll")) {
     // Never load by base name: that would return this proxy and recurse.
+    //
+    // This runs in DllMain, under the loader lock, which Microsoft's DllMain guidance says not to load
+    // libraries under: a DLL whose initialization waits for another thread that itself needs the lock
+    // would deadlock. No such cycle can form here (R19, proxy F-08, kept by design). The loader lock is
+    // re-entrant on this thread, so the load itself is legal; what matters is what System32's
+    // winmm.dll runs while it loads. Its static imports are ntdll.dll and api-ms-win-* API sets only
+    // (kernelbase and the UCRT, already initialized or initialized on this thread). WINMMBASE.dll, the
+    // multimedia API sets, AudioSes.dll, the user32 sets and OLEAUT32.dll are delay-loaded: they load
+    // at a function's first call, never in winmm's own DllMain. Read from the import tables of
+    // Windows 11 26100's winmm.dll (docs/RESEARCH.md); the forwarding table must be filled before
+    // the executable's entry point, so it cannot wait for the entry hook.
     system = LoadLibraryW(g_bootstrap.system_winmm);
   }
   if (!system) g_bootstrap.system_load_error = GetLastError();
@@ -110,8 +121,11 @@ bool install_hook() noexcept {
 }
 
 void attach(HMODULE module) noexcept {
-  if (observer::host()) return;  // rundll32 runs only the exported observer/preview, never the loader
+  // Every host first: rundll32 runs the observer from this DLL, and any module there that imports
+  // winmm.dll by name binds to this one, already loaded, so no export may jump through an empty slot
+  // (R19, proxy F-06).
   resolve_exports();
+  if (observer::host()) return;  // rundll32 runs only the exported observer/preview, never the loader
   const auto exe_length = GetModuleFileNameW(nullptr, g_bootstrap.exe, kPathCapacity);
   const auto dll_length = GetModuleFileNameW(module, g_bootstrap.module, kPathCapacity);
   if (!exe_length || exe_length >= kPathCapacity || !dll_length || dll_length >= kPathCapacity) return;

@@ -145,6 +145,28 @@ TEST_CASE("discovery: only an item Steam lists nowhere, with its folder gone, co
   fs::remove_all(dir);
 }
 
+TEST_CASE("discovery: subscribedby names an account only with a non-zero account id (ADR 0111)") {
+  using nl::discovery::subscribed_by_an_account;
+  CHECK(subscribed_by_an_account("1") == true);
+  CHECK(subscribed_by_an_account("123456789,234567890,3456789012") == true);  // the shape Steam writes
+  CHECK(subscribed_by_an_account("0,345678901") == true);
+  CHECK(subscribed_by_an_account(" 42 ") == true);
+  CHECK(subscribed_by_an_account("42,") == true);
+  CHECK(subscribed_by_an_account("76561198000000000") == true);     // a 64-bit id would do too
+  CHECK(subscribed_by_an_account("18446744073709551615") == true);  // 20 digits
+  CHECK(subscribed_by_an_account("") == false);
+  CHECK(subscribed_by_an_account("0") == false);
+  CHECK(subscribed_by_an_account("000") == false);
+  CHECK(subscribed_by_an_account("0,0") == false);
+  CHECK(subscribed_by_an_account(" , ") == false);
+  // Not what Steam writes: neither added nor removed on its strength.
+  CHECK(!subscribed_by_an_account("abc").has_value());
+  CHECK(!subscribed_by_an_account("12a").has_value());
+  CHECK(!subscribed_by_an_account("-1").has_value());
+  CHECK(!subscribed_by_an_account("123456789012345678901").has_value());  // 21 digits
+  CHECK(!subscribed_by_an_account("1;2").has_value());
+}
+
 TEST_CASE("discovery: subscribed items holding a package are content-only candidates after the allowlist (ADR 0027)") {
   const auto dir = nl::test::scratch_dir("discovery_subscribed");
   const FakeLibrary lib(dir);
@@ -163,6 +185,12 @@ TEST_CASE("discovery: subscribed items holding a package are content-only candid
   touch(lib.content / "1300" / "387671470694828055_legacy.bin", "LZMA");  // never scanned
   touch(lib.game / "garrysmod" / "cfg" / "addonnomount.txt",
         "\"addonnomount\"\n{\n\t\"1\"\t\t\"222\"\n\t\"2\"\t\t\"1200\"\n}\n");
+  // Steam's record: each of these is subscribed (ADR 0111).
+  touch(lib.steamapps / "workshop" / "appworkshop_4000.acf", R"("AppWorkshop" { "appid" "4000"
+      "WorkshopItemsInstalled" { "111" { "size" "1" "timeupdated" "1793000000" "manifest" "987" } "999" { "size" "1" }
+        "1000" { "size" "1" } "1100" { "size" "1" } "1200" { "size" "1" } }
+      "WorkshopItemDetails" { "999" { "subscribedby" "12345678" } "1000" { "subscribedby" "12345678,23456789" }
+        "1100" { "subscribedby" "12345678" } "1200" { "subscribedby" "12345678" } } })");
   CHECK(nl::discovery::lists_native_manifest(lib.content / "1000" / "pbr.gma"));
   CHECK(!nl::discovery::lists_native_manifest(lib.content / "900" / "plain.gma"));
   CHECK(!nl::discovery::lists_native_manifest(lib.content / "111" / "runtime.gma"));  // not a GMAD archive
@@ -186,12 +214,85 @@ TEST_CASE("discovery: subscribed items holding a package are content-only candid
   for (std::size_t i = 1; i < c.size(); ++i) CHECK(c[i].content_only);
   CHECK(c[2].problem.empty());
   CHECK(c[3].disabled_by_user);
-  CHECK(c[4].unsubscribed);  // no folder, and Steam's record lists only 111
+  CHECK(c[4].unsubscribed);  // no folder, and Steam's record does not list it
+  CHECK(c[4].problem.find("Steam no longer has the item") != std::string::npos);
 
   config.subscribed_content = false;
   c = nl::discovery::discover(config, env);
   REQUIRE(c.size() == 1);
   CHECK(c[0].label == "111");
+  fs::remove_all(dir);
+}
+
+TEST_CASE("discovery: installed is not subscribed; only a subscription brings content (ADR 0111)") {
+  const auto dir = nl::test::scratch_dir("discovery_downloaded");
+  const FakeLibrary lib(dir);
+  const auto package = [&](const std::string& item) {
+    nl::test::FixtureArchive archive;
+    archive.files.push_back({"native/manifest.json", "{}"});
+    archive.files.push_back({"lua/autorun/x.lua", "-- x"});
+    touch(lib.content / item / (item + ".gma"), nl::test::build_gma(archive));
+  };
+  // 2001 subscribed. 2002: what steamworks.DownloadUGC leaves (a server's client Lua may call it):
+  // installed, details without subscribedby. 2003 "0". 2004 installed with no details at all. 2005 a
+  // value Steam does not write. 2006 subscribed, still downloading (details only, no folder yet).
+  for (const char* item : {"2001", "2002", "2003", "2004", "2005"}) package(item);
+  const auto acf = lib.steamapps / "workshop" / "appworkshop_4000.acf";
+  const std::string record = R"("AppWorkshop" { "appid" "4000"
+      "WorkshopItemsInstalled" { "2001" { "size" "1" } "2002" { "size" "1" } "2003" { "size" "1" } "2004" { "size" "1" }
+        "2005" { "size" "1" } }
+      "WorkshopItemDetails" { "2001" { "subscribedby" "12345678" "timetouched" "1" }
+        "2002" { "manifest" "5" "ugchandle" "6" "timeupdated" "7" "timetouched" "8" }
+        "2003" { "subscribedby" "0" } "2005" { "subscribedby" "everyone" } "2006" { "subscribedby" "12345678" } } })";
+  touch(acf, record);
+  nl::config::Config config;  // nothing allowlisted
+  auto env = nl::discovery::environment_for(lib.game, dir / "no-steam");
+  auto c = nl::discovery::discover(config, env);
+  REQUIRE(c.size() == 1);
+  CHECK(c[0].label == "2001" && c[0].content_only && c[0].problem.empty() && !c[0].unsubscribed);
+
+  // Deployed from items that are not subscribed (an older loader took them, or the user unsubscribed
+  // and Steam keeps the files for now): removed like an unsubscribe, the reason says why.
+  env.deployed_workshop = {"2001", "2002", "2003", "2004", "2005", "2006"};
+  c = nl::discovery::discover(config, env);
+  REQUIRE(c.size() == 6);
+  for (const auto& candidate : c) CHECK(candidate.content_only);
+  CHECK(c[0].label == "2001" && c[0].problem.empty() && !c[0].unsubscribed);
+  for (std::size_t i = 1; i <= 3; ++i) {  // 2002, 2003, 2004
+    CHECK(c[i].unsubscribed);
+    CHECK(!c[i].disabled_by_user);
+    CHECK(c[i].problem.find("only because the game or a server downloaded it") != std::string::npos);
+    CHECK(c[i].location.empty());
+  }
+  CHECK(c[4].label == "2005" && c[4].problem.empty() && !c[4].unsubscribed);  // not understood: kept as it is
+  CHECK(c[5].label == "2006" && !c[5].unsubscribed && c[5].problem.find("not installed") != std::string::npos);
+
+  // The allowlist is unaffected: an allowlisted item needs no subscription.
+  config.workshop = {"2002"};
+  c = nl::discovery::discover(config, env);
+  REQUIRE(!c.empty());
+  CHECK(c[0].label == "2002" && !c[0].content_only && c[0].problem.empty() && !c[0].unsubscribed);
+  config.workshop.clear();
+
+  // Without Steam's record (missing, unreadable, or no details section) nothing is new content, and
+  // what is deployed stays as it is: one bad read must not remove and redeploy packages.
+  for (const std::string broken : {std::string(), std::string("\"AppWorkshop\" { broken"),
+                                   std::string(R"("AppWorkshop" { "WorkshopItemsInstalled" { "2001" { "size" "1" } } })")}) {
+    if (broken.empty()) fs::remove(acf);
+    else touch(acf, broken);
+    env.deployed_workshop.clear();
+    CHECK(nl::discovery::discover(config, env).empty());
+    env.deployed_workshop = {"2001", "2002", "2006"};
+    c = nl::discovery::discover(config, env);
+    REQUIRE(c.size() == 3);
+    CHECK(c[0].label == "2001" && c[0].problem.empty() && !c[0].unsubscribed);
+    CHECK(c[1].label == "2002" && c[1].problem.empty() && !c[1].unsubscribed);
+    // No folder: kept while it may be downloading. A readable record that lists it nowhere is
+    // still ADR 0025's unsubscribe.
+    const bool record_lists_nothing = broken.rfind("\"AppWorkshop\" { \"Workshop", 0) == 0;
+    CHECK(c[2].label == "2006" && c[2].unsubscribed == record_lists_nothing);
+    if (!record_lists_nothing) CHECK(c[2].problem.find("not installed") != std::string::npos);
+  }
   fs::remove_all(dir);
 }
 

@@ -239,6 +239,51 @@ def main():
         check(game.status.read_bytes() == stale_before, 'pure pass-through rewrote stale status')
         passed('all off switches stay pure pass-through, including stale status preservation')
 
+        # R19 (proxy F-02): that stale "active" is why an RTX start also holds
+        # garrysmod/data/native-loader/rtx-session.txt for its whole life. Windows deletes it when the
+        # game ends, however it ends, and no off-switch start makes one: the companion's guard needs it.
+        marker = game.status.with_name('rtx-session.txt')
+        check(not marker.exists(), f'a session marker outlived its game: {marker}')
+        ready = game.root / 'marker.ready'
+        holder = subprocess.Popen([str(game.exe), '--m4-hold', str(ready)], cwd=game.root,
+                                  env={k: v for k, v in os.environ.items() if k != 'NATIVE_LOADER_DISABLE'},
+                                  creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            deadline = time.monotonic() + 15
+            while not ready.exists() and time.monotonic() < deadline and holder.poll() is None:
+                time.sleep(0.02)
+            check(ready.exists(), 'the RTX holder did not start')
+            held = json.loads(game.status.read_text(encoding='utf-8'))
+            check(held['process_id'] == holder.pid and held['activation']['outcome'] == 'active', f'holder status: {held["activation"]}')
+            check(any(note.startswith('RTX session marker held') for note in held['session']['notes']),
+                  f'the marker is not reported: {held["session"]["notes"]}')
+            check(marker.exists() and marker.name in os.listdir(marker.parent), 'a running RTX start holds no session marker')
+            try:
+                marker.unlink()
+            except OSError:
+                pass
+            else:
+                check(False, 'another process deleted the session marker of a running game')
+            check(marker.exists(), 'the session marker of a running game went')
+        finally:
+            holder.kill()  # ended as a crash ends it: Windows still closes the handle
+            holder.wait(timeout=10)
+        deadline = time.monotonic() + 5
+        while marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        check(not marker.exists(), 'the session marker outlived a killed game')
+        vanilla(game.run(extra=['-nonativeloader'], report_expected=False))
+        check('\n"activation":{"outcome":"active"' in game.status.read_text(encoding='utf-8'), 'the stale report changed')
+        check(not marker.exists(), 'an off-switch start made a session marker')
+        marker.write_text('session_token=1-1\n', encoding='ascii')  # what a power loss would leave
+        game.config['remix'] = {'enabled': False}
+        game.save()
+        vanilla(game.run())
+        check(not marker.exists(), 'a start without RTX kept a leftover session marker')
+        game.config['remix']['enabled'] = True
+        game.save()
+        passed('an RTX start holds its session marker until the game ends; off-switch and RTX-off starts have none')
+
         user = Game('user-layers')
         user_values = {'DXVK_RTX_CONFIG_FILE': '用户.conf,user-top.conf', 'DXVK_CONFIG_FILE': 'dxvk-user.conf,dxvk-top.conf',
                        'DXVK_LOG_LEVEL': 'debug', 'RTX_TEST': ''}
@@ -477,6 +522,54 @@ def main():
         acf.write_text(listed, encoding='ascii')
         active(steam, steam.run())
         passed('an update in progress keeps the package; an unsubscribed Workshop item is removed, and comes back when subscribed again')
+
+        # ADR 0111 (R19 H2): a content package without the allowlist deploys only from an item an
+        # account here subscribed to. One a server or the game downloaded (steamworks.DownloadUGC)
+        # is installed and recorded too, but its details name no subscriber.
+        subscriptions = Game('content-subscriptions', workshop=True)
+        source = scratch / 'content-src'
+        mod_bytes = b'#usda 1.0' + bytes([10])
+        mod_rel = 'native/root/rtx-remix/mods/nl_h2_mod/mod.usda'
+        (source / mod_rel).parent.mkdir(parents=True)
+        (source / mod_rel).write_bytes(mod_bytes)
+        write_json(source / 'native/manifest.json', {
+            'schema': 1, 'id': 'h2-content', 'version': '1.0.0', 'kinds': ['root-files'],
+            'root_files': [{'path': 'rtx-remix/mods/nl_h2_mod'}],
+            'files': {mod_rel: {'size': len(mod_bytes), 'sha256': hashlib.sha256(mod_bytes).hexdigest()}}})
+        (source / 'addon.json').write_text(json.dumps({'title': 'h2', 'type': 'servercontent', 'tags': []}), encoding='utf-8')
+        item = subscriptions.case / 'steamapps/workshop/content/4000/456/content.gma'
+        item.parent.mkdir(parents=True)
+        subprocess.run([sys.executable, str(gmapack), 'create', '--folder', str(source), '--out', str(item), '--quiet'],
+                       check=True, capture_output=True)
+        record = subscriptions.case / 'steamapps/workshop/appworkshop_4000.acf'
+
+        def steam_record(subscribed):
+            by = ' "subscribedby" "12345678"' if subscribed else ''
+            record.write_text('"AppWorkshop" { "appid" "4000" "WorkshopItemsInstalled" { "123" { "size" "1" } "456" { "size" "1" } } '
+                              '"WorkshopItemDetails" { "123" { "subscribedby" "12345678" } '
+                              '"456" { "manifest" "9" "timetouched" "1"' + by + ' } } }', encoding='ascii')
+        deployed_mod = subscriptions.root / 'rtx-remix/mods/nl_h2_mod/mod.usda'
+        steam_record(False)
+        downloaded = active(subscriptions, subscriptions.run())
+        check(not deployed_mod.exists(), 'content from a downloaded item nobody subscribed to was deployed')
+        check(not any('456' in skip['package'] for skip in downloaded['deployment']['skipped']), 'an unsubscribed download was listed')
+        steam_record(True)
+        active(subscriptions, subscriptions.run())
+        check(deployed_mod.read_bytes() == mod_bytes, 'a subscribed content package was not deployed')
+        steam_record(False)
+        dropped = active(subscriptions, subscriptions.run())
+        check(not deployed_mod.exists(), 'content from an item no longer subscribed stayed')
+        check(any('456' in skip['package'] and 'only because the game or a server downloaded it' in skip['reason']
+                  for skip in dropped['deployment']['skipped']), f'reason: {dropped["deployment"]["skipped"]}')
+        check(item.exists(), 'a Workshop file was touched')
+        steam_record(True)
+        active(subscriptions, subscriptions.run())
+        check(deployed_mod.exists(), 'a subscribed content package did not come back')
+        record.unlink()
+        blind = active(subscriptions, subscriptions.run())
+        check(deployed_mod.exists() and blind['deployment']['outcome'] == 'unchanged', 'a missing Steam record removed deployed content')
+        passed('content packages come only from subscriptions; a deployed one goes when no account here subscribes, '
+               'and stays when Steam\'s record cannot be read')
 
         locked = Game('locked')
         active(locked, locked.run())

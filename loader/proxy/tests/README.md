@@ -9,7 +9,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | File | Purpose |
 |---|---|
 | `test_exit_report.cpp` | Quiet switch, language precedence/aliases, localized advice for all six reasons and known exception-code labels in all seven catalogs |
-| `observer_integration.py` | Real System32 rundll32 observer against generated synthetic hosts: process waiting, chosen exit statuses, all evidence sources, quiet reports, clean silence, manual invocation rejection, loader off switches and non-game/Chromium gates ([usage](observer_integration.py.md)) |
+| `observer_integration.py` | Real System32 rundll32 observer against generated synthetic hosts: process waiting, chosen exit statuses, all evidence sources, quiet reports, clean silence, manual invocation rejection, loader off switches and non-game/Chromium gates; R19: a forwarded export called in rundll32 reaches System32's winmm (proxy F-06) ([usage](observer_integration.py.md)) |
 | `telemetry_integration.py` | R6 real worker in a copied synthetic host: flushed ten-second samples, default/on/off/disabled policy, old CSV archived before new sampling and `nlctl status` text/JSON ([usage](telemetry_integration.py.md)) |
 | `test_presentation.cpp` | Display GMA CRC/index/metadata checks, inert payload, package identity and source-path refusal, cache edits preserved, stock menu marker validation, private-path exclusion and generated main-menu diagnostics redirect |
 | `test_presentation_hooks.cpp` | Real filesystem fixture IAT: exact A/W read redirects and attribute sizes, unrelated/write-capable/OPEN_ALWAYS calls unchanged, edited caches refused, uninstall pass-through and cache traversal boundary |
@@ -22,13 +22,13 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 | `host.cpp` | Statically imports `timeGetTime`; writes the timestamped main marker |
 | `activation_probe.h`, `activation_probe.cpp` | M4 host probe: module/static/delay paths, environment, DLL directory, W/A/PEB command line; test-only TLS descriptor fault and hold mode |
 | `fixture_runtime.cpp`, `fixture_static.cpp`, `fixture_delay.cpp` | Packaged fake d3d9 with one static and one delay dependency; controlled DllMain failures for rollback tests |
-| `activation_integration.py` | M4 synthetic acceptance and unchanged-startup timing; [usage](activation_integration.py.md) |
+| `activation_integration.py` | M4 synthetic acceptance and unchanged-startup timing; R19: the RTX session marker's life (held while the game runs, gone when it is killed, none after an off switch, a leftover removed without RTX) and content packages only from subscriptions (ADR 0111); [usage](activation_integration.py.md) |
 | `install_tests.ps1` | Synthetic installer/hash/foreign-file/Steam protection cases; [usage](install_tests.ps1.md) |
 | `fixture_engine.cpp`, `fixture_shader.cpp` | M5: a fake `engine.dll` whose marker a patch set rewrites (DllMain copies it, so the probe sees whether the patch came first) and a `stdshader_dx6.dll` to override |
 | `fixture_filesystem.cpp` | M5 (ADR 0013): a fake `filesystem_stdio.dll` that lists a folder with `FindFirstFileA`/`FindNextFileA` and `FindFirstFileExW`/`FindNextFileW` through its own imports, as GMod's does when it mounts add-ons |
 | `fixture_luashared.cpp`, `fixture_dep_module.cpp`, `fixture_dep_runtime.cpp` | Loader 0.3.0 (ADR 0024): a fake `lua_shared.dll` that loads a binary module with `LoadLibraryExA` through its own import, as GMod's does for `require`, and a `gmcl_nl_dep_win64.dll` whose static import `nl_dep_runtime_win64.dll` is deployed only beside it in `garrysmod\lua\bin` |
-| `session_probe.h`, `session_probe.cpp` | M5 host probe (`--m5-probe`): loads `bin\win64\engine.dll` and `stdshader_dx6.dll` as the engine does, lists `garrysmod\addons` (relative and absolute) and `garrysmod\cfg` through the fake `filesystem_stdio.dll`, and records it all with the command line |
-| `session_integration.py` | M5 synthetic acceptance: patch before DllMain, override, session cfg, restore; [usage](session_integration.py.md) |
+| `session_probe.h`, `session_probe.cpp` | M5 host probe (`--m5-probe`): loads `bin\win64\engine.dll` and `stdshader_dx6.dll` as the engine does, lists `garrysmod\addons` (relative and absolute) and `garrysmod\cfg` through the fake `filesystem_stdio.dll`, and records it all with the command line. R19: loads the shader again with `LOAD_LIBRARY_SEARCH_DEFAULT_DIRS` (proxy F-05), and with `NL_M5_DEP_RETRY` set requires the binary module once with its runtime moved aside and once with it back (proxy F-04) |
+| `session_integration.py` | M5 synthetic acceptance: patch before DllMain, override, session cfg, restore; R19: the override with a caller's search flag, and a module dependency tried again after a failure; [usage](session_integration.py.md) |
 | `check_imports.py` | Standard-library PE import/delay-import check: the bootstrap must import only KERNEL32; [usage](check_imports.py.md) |
 
 Run all tests through `tools/build.ps1`, or select `nl_backend_tests`, `nl_proxy_tests`, `nl_proxy_generated_exports`,

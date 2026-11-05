@@ -16,4 +16,7 @@ observer exit, manual-invocation refusal, all loader off switches and non-game/C
 The chosen exit codes simulate failures; no actual memory exhaustion or driver reset occurs.
 The manual export call is refused for its process id (exit code `0x4E4C0000 + 2`). A case without an
 `exit observer ready` note fails, with the loader log, which names a refusal's reason.
+First (R19, proxy F-06), rundll32 calls the proxy's forwarded `timeGetTime` export, as any module in the
+observer's process that imports `winmm.dll` by name would: it must return (exit 0), not jump through an
+empty forwarding slot, and the observer host still writes no loader files.
 Exit 0 on success; nonzero on an assertion, timeout or OS error. Run via CTest normally.
