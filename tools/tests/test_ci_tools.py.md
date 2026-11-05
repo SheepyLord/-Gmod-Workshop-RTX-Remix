@@ -14,9 +14,10 @@ commit: `patched_tree` (`source`, `public`, `premake5.lua`) and `rtxwater_tree` 
 touch only `source/rtx_water`, and `build_modules.ps1` uses `write-tree` and these keys, never
 `patched_commit`. When this machine has a clone of the fixes with the pinned commits (`NL_FIXES_CLONE`,
 or `garrys-mod-rtx-remixed` beside this checkout or beside the main checkout of a worktree), the test
-replays the script's index steps in a `git clone --shared` scratch clone (the fixes clone is only
-read): the base and the patches give `patched_tree`, RTX Water's commit and its patches give
-`rtxwater_tree`. Otherwise that test is a reported skip.
+replays the script's index steps in a `git clone --shared` scratch clone (the fixes clone is only read,
+though git may refresh the time of a pack file there when `write-tree` finds an object it already has):
+the base and the patches give `patched_tree`, RTX Water's commit and its patches give `rtxwater_tree`.
+Otherwise that test is a reported skip.
 
 No network: downloads are replaced or read from a local folder. Scratch under `out\tmp`, removed
 afterwards. Exit 0 when all pass, 1 otherwise.

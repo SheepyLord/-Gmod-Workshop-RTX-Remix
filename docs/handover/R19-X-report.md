@@ -125,6 +125,12 @@ tile loops' float-to-int conversion. `SetShape` already truncates to whole trian
   This run only refreshed MSBuild bookkeeping there (tlog, lastbuildstate, recipe; no library rebuilt);
   `git status` of both repositories is clean. `build_modules.ps1.md` now says so and how to avoid it
   (omit `-GmodCommon`).
+- **And one more:** my scratch clones and the build's work clone borrow the fixes clone's objects
+  (`git clone --shared`). When `git write-tree` or a commit there wrote an object the fixes clone already
+  had, git refreshed the time of the pack holding it: four existing packs in the fixes clone now show
+  today's time. Their names, sizes and content are unchanged (`count-objects`: 5 packs, 313.63 MiB, 172
+  loose, as before), and none of my objects is there (`cat-file` finds neither commit nor tree). Documented
+  in `build_modules.ps1.md`; a `--no-local` clone would avoid it at the cost of copying about 300 MB.
 
 ## Tests
 

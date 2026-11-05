@@ -58,7 +58,9 @@ at git's first warning). **Needs:** git, Visual Studio 2022 (MSBuild, MSVC 14.44
 `-GmodCommon`, garrysmod_common's own helper projects (`helpers`, `helpers_extended`, `lua_shared`), which
 premake generates and MSBuild builds inside that checkout's git-ignored `projects\` folder. To leave a
 checkout untouched, omit `-GmodCommon`: the script then clones garrysmod_common into `-Work`.
-`-FixesClone` is only read (a `--shared` clone keeps its new objects, the written trees too, to itself).
+`-FixesClone` is only read: a `--shared` clone keeps its new objects, the written trees too, to itself.
+When it writes an object the clone it borrows from already has (`git write-tree` on the patched index
+does), git refreshes the time of that clone's pack file instead; no content changes.
 **Exit:** 0 when every asked module is built; a failed step stops it with an error.
 
 Checked 2026-11-04 on this machine with the local fixes clone, garrysmod_common and premake: all four
