@@ -122,6 +122,24 @@ in two sessions with the same states and views (the table is in RESEARCH.md, "R1
 - **Memory:** no texture, buffer or grid is added. The atmosphere's constants grow by 16 bytes, and
   the DLL by 2.7 MB of shader code (417,072,128 bytes).
 
+## Publication and the field check
+
+**Published.** `r18` was merged into `main` as `daf4ce9` and pushed (`6e4c46f..daf4ce9`; one LFS object
+of 61 MB, the runtime). The post-merge hook built the package here and uploaded it to item 3829070317 as
+0.0.0-dev.20261105202808+39480017 (1,814,543,303 bytes; the pre-push hook's run found the same inputs).
+Its `d3d9.dll` is the one tested in the PoC (SHA-256 `7d8a0ad8...`); its weather table differs from the
+tested package's only in line endings (a CRLF checkout). The package workflow on GitHub was not started.
+
+**Checked in the field.** Before the starts, no other lab, game or PoC lock was active.
+`tools\steam\verify_install.py` found the field install intact; only the user's `autoexec.cfg` differs.
+The field's `cfg/client.vdf` (the companion's sky settings) was saved first and is byte-identical afterwards;
+`config.cfg` was put back by the session. Evidence: `out\r18\field\` in the main checkout.
+
+| Start | Result |
+|---|---|
+| 01-download | Steam downloaded the new item (`gmod-rtx-remix-0.0.0-dev.20261105202808_39480017.gma`, 1,814,543,303 bytes) as the game started; the game still ran R17's 235d458f (the first start only downloads). The map loaded and the game quit normally |
+| 02-sky | Deployed and active: 0.0.0-dev.20261105202808+39480017. The sky probe on `gm_construct` under the user's own settings showed partly cloudy with cumulus and cirrus, overcast as a closed grey deck, hazy at 17.5 h with the 22 degree halo, the sun dogs and the circumzenithal arc, and the blue hour with its orange glow 6.3 degrees after sunset. Frames took 7.8-8.2 ms, with no Lua error and a normal quit |
+
 ## Notes for the next round
 
 - **The middle deck's cloudlets are layer 1's bodies, read finer.** Inside a patch they follow layer 1's
