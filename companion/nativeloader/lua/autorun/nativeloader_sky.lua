@@ -478,10 +478,31 @@ local function applyAll()
     apply()
 end
 
+-- A map's add-on that sets its sky again after the player took it over showed that sky until the
+-- timer below put the player's back. Modern House RTX does so 23, 43 and 63 s after the map starts:
+-- its afternoon sun came up for as long as 10 s in the middle of the player's night, and the daylight
+-- then lingered in the image's temporal history wherever the camera had looked, a haze over the
+-- stars with a straight edge where the view had turned (native loader review R5, 2026-10-31). An
+-- add-on that runs the hook NativeLoaderSkySet after setting the sky gets the player's sky back in
+-- the same tick; Modern House RTX's MHRTX.ApplySettings is wrapped to run it (again after a reload
+-- of that add-on's Lua replaced it).
+local function followMapAddon()
+    if not (istable(MHRTX) and isfunction(MHRTX.ApplySettings)) or MHRTX.ApplySettings == MHRTX.nativeLoaderApply then return end
+    local applySettings = MHRTX.ApplySettings
+    MHRTX.nativeLoaderApply = function(...)
+        applySettings(...)
+        hook.Run("NativeLoaderSkySet")
+    end
+    MHRTX.ApplySettings = MHRTX.nativeLoaderApply
+end
+
 -- The clock and the weather, every nativeloader_sky_interval seconds; what has not changed is not
 -- sent again (set).
 local lastTick
 timer.Create("nativeloader_sky", interval(), 0, function()
+    -- A map's add-on that loads after the map started (Modern House RTX does) is followed from its
+    -- first sky on, not only once the 10 s timer below finds it.
+    followMapAddon()
     if not clock or not inCharge() then return end
     local t = RealTime()
     local dt = lastTick and math.max(t - lastTick, 0) or 0
@@ -503,23 +524,6 @@ timer.Create("nativeloader_sky", interval(), 0, function()
     end
 end)
 
--- A map's add-on that sets its sky again after the player took it over showed that sky until the
--- timer below put the player's back. Modern House RTX does so 23, 43 and 63 s after the map starts:
--- its afternoon sun came up for as long as 10 s in the middle of the player's night, and the daylight
--- then lingered in the image's temporal history wherever the camera had looked, a haze over the
--- stars with a straight edge where the view had turned (native loader review R5, 2026-10-31). An
--- add-on that runs the hook NativeLoaderSkySet after setting the sky gets the player's sky back in
--- the same tick; Modern House RTX's MHRTX.ApplySettings is wrapped to run it (again after a reload
--- of that add-on's Lua replaced it).
-local function followMapAddon()
-    if not (istable(MHRTX) and isfunction(MHRTX.ApplySettings)) or MHRTX.ApplySettings == MHRTX.nativeLoaderApply then return end
-    local applySettings = MHRTX.ApplySettings
-    MHRTX.nativeLoaderApply = function(...)
-        applySettings(...)
-        hook.Run("NativeLoaderSkySet")
-    end
-    MHRTX.ApplySettings = MHRTX.nativeLoaderApply
-end
 hook.Add("NativeLoaderSkySet", "nativeloader_sky", function()
     if takenOver and owner() and ready() then applyAll() end
 end)
@@ -581,6 +585,10 @@ end
 for name in pairs(DEFAULTS) do cvars.AddChangeCallback(name, changed, "nativeloader_sky") end
 
 local function start()
+    -- The player's own time (Follow the map's sun unticked) and weather apply on every map from its
+    -- start, also where the map's add-on sets a sky (ADR 0105, the user's item 44 of R16). Following
+    -- the map keeps such an add-on's sky until a setting here changes (ADR 0031).
+    takenOver = not cv.nativeloader_sky_follow_map:GetBool()
     followMapAddon()
     mapInfo = readMap()
     startClock()
@@ -685,14 +693,14 @@ local function buildPanel(panel)
     end
     local who = owner()
     if who then
-        panel:Help(string.format(L("On this map the sky is set by %s. Changing a setting here takes it over for this session."), who))
+        panel:Help(string.format(L("On this map %s also sets the sky. It keeps its sky while Follow the map's sun is ticked and nothing here is changed; otherwise your settings here replace it."), who))
     end
     local sky = panel:ComboBox(L("Sky"), "nativeloader_sky")
     sky:AddChoice(L("Physical sky"), "1")
     sky:AddChoice(L("The map's skybox"), "0")
     panel:ControlHelp(L("The physical sky has a sun, clouds, stars and a moon, and lights the map from them."))
     panel:CheckBox(L("Follow the map's sun"), "nativeloader_sky_follow_map")
-    panel:ControlHelp(L("Puts the sun where the map's own sun is. Moving Time of day or Sun direction turns this off."))
+    panel:ControlHelp(L("Puts the sun where the map's own sun is; on a map whose add-on sets its own sky, such as Modern House RTX, keeps that sky. Moving Time of day or Sun direction turns this off."))
     panel:NumSlider(L("Time of day"), "nativeloader_sky_hour", 0, 24, 2)
     local nowLabel = panel:Help("")
     local think = nowLabel.Think

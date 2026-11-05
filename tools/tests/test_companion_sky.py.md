@@ -51,8 +51,13 @@ The harness is written to a scratch folder under `out\tmp`.
 - **The clock.** With the time passing and a 24-minute day, 60 s is an hour, and stopping the clock
   keeps the time it reached.
 - **Weather left to Remix:** nothing more is sent for it.
-- **A map whose add-on sets the sky** (`MHRTX_Config` on `modern_house`): nothing is sent until the
-  player changes a sky setting; then the companion takes over.
+- **A map whose add-on sets the sky** (`MHRTX_Config` on `modern_house`): while the sky follows the map
+  (the default), nothing is sent until the player changes a sky setting; then the companion takes over.
+- **The player's own time on such a map** (R16; `PRESET` gives the session saved settings, here
+  "Follow the map's sun" unticked, 09:48 and clear): the sky is sent at the map's start; Modern House
+  RTX, loaded afterwards, is followed from the sky's next tick, and its own afternoon (21 degrees) is
+  replaced in the same call by the player's sun (57.7 degrees). Without the R16 change the add-on's sun
+  stays.
 - **The map's own skybox** (`nativeloader_sky 0`) gives back `rtx.skyMode 0` and the configured
   `rtx.ignoreGameDirectionalLights`.
 - **A night map** (sky `sky_borealis01`) starts at 23:00, with the full moon where the map's light
