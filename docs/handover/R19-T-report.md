@@ -86,6 +86,11 @@ the last good package; a successful run still keeps one. This replaces the order
 ("before uploading its own"); see "Proposed decision note" below. For the minutes between the upload
 and the deletion, Actions storage holds two packages: see "Before the release run".
 
+**Integrator's change (Claude, R19 integration): reverted to deletion first, by design.** Actions
+storage is 2 GB and about 1.2 GB was in use, one package about 0.84 GB: holding two would make the
+release run's upload fail. The workflow and `tools/ci/README.md` say why the order is deliberate; the
+last good package stays on the Workshop item and in `out\workshop\ci`, and ADR 0106 decision 4 stands.
+
 ### F-08: the LZMA spool had no cap
 
 `tools/gmapack/gmapack.py` (the user's vendored GMA File Packer; the change is noted in

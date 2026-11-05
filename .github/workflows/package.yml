@@ -7,10 +7,13 @@
 #
 # The run's summary reports the SHA-256 of the .gma and of every file in it, and where each native binary
 # came from (tools/package_report.py); the artifact rtx-package-report keeps that report. The .gma is the
-# artifact rtx-package, and only the newest one is kept (Actions storage is 2 GB): the older ones are
-# deleted once it is uploaded, so a failed upload leaves the last good package (review R19, F-07; until
-# then they were deleted first). tools/publish_workshop.py --from-ci, on the developer's machine (it needs
-# Steam), uploads exactly that .gma to the Workshop after checking its SHA-256 against the report.
+# artifact rtx-package, and only the newest one is kept: the older ones are deleted before it is uploaded.
+# That order is deliberate (review R19, F-07): Actions storage is 2 GB, a package takes about 0.84 GB and
+# the per-push bundles more, so two packages at once would fail the upload. A failed upload therefore
+# leaves no package artifact; the last good package stays on the Workshop item and in the developer's
+# out/workshop/ci, and a new run builds it again. tools/publish_workshop.py --from-ci, on the developer's
+# machine (it needs Steam), uploads exactly that .gma to the Workshop after checking its SHA-256 against
+# the report.
 #
 # Only a person starts it (Actions > Build the RTX package > Run workflow), when releasing (ADR 0108):
 # no push, pull request, tag or schedule does. During development the Workshop item gets packages built
@@ -325,16 +328,8 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v6
-        with:
-          name: rtx-package
-          path: out/dist/*.gma
-          retention-days: 90
-          compression-level: 6
-          if-no-files-found: error
-
-      # Only after this run's package is uploaded: a failed upload must not take the last good package
-      # with it (review R19, F-07). The step runs only when every step before it succeeded.
+      # Before this run's package is uploaded, deliberately (review R19, F-07): Actions storage cannot hold
+      # two packages, so deleting afterwards would make the upload fail. This run's own artifacts are kept.
       - name: Only the newest package is kept (older rtx-package artifacts deleted)
         shell: pwsh
         env:
@@ -347,6 +342,14 @@ jobs:
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
             "deleted the older rtx-package artifact $id"
           }
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: rtx-package
+          path: out/dist/*.gma
+          retention-days: 90
+          compression-level: 6
+          if-no-files-found: error
 
       - name: Disk at the end
         if: always()

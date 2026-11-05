@@ -28,9 +28,10 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
    `tools\build.ps1 -Config Release`, `collect_repo_build.py`, `fetch_prebuilt.py`, then
    [`tools/build_package.py`](../build_package.py.md) `--built out/ci/built` and
    [`tools/package_report.py`](../package_report.py.md) into the run's summary. `rtx-package-report`
-   keeps the report. The new `.gma` is uploaded as `rtx-package`, and only then are the older
-   `rtx-package` artifacts deleted, so one is kept and a failed upload leaves the last good one (review
-   R19, F-07; until then they were deleted first). For a few minutes Actions storage holds two.
+   keeps the report. The older `rtx-package` artifacts are deleted, then the new `.gma` is uploaded as
+   `rtx-package`. The order is deliberate (review R19, F-07): Actions storage (2 GB) cannot hold two
+   packages, so a failed upload leaves none; the last good package stays on the Workshop item and in
+   `out\workshop\ci` on the developer's machine, and a new run builds it again.
 4. On the developer's machine, [`tools/publish_workshop.py`](../publish_workshop.py.md) `--from-ci
    --commit <sha>` uploads that `.gma` after checking it against the report. Without a successful run of
    that commit it uploads nothing and exits 1.
