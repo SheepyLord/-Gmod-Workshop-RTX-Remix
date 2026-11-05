@@ -5391,3 +5391,63 @@ session (the middle deck's cover to 0 in partly cloudy, `cirrusArcStrength` 0 in
   417,072,128 bytes, the shaders that include the sky (many permutations).
 - The frame times are about 2.5 ms higher than R17's own 4K table (8.5-10.5 ms), for both runtimes
   alike: another day's machine state; the comparison holds within the session pair.
+
+## R19: the pre-release review's fixes (2026-11-05, Claude and seven Claude subagents)
+
+The verified review is [R19-review.md](handover/R19-review.md); each part's report holds its full evidence.
+
+- **Steam's `subscribedby`** (`WorkshopItemDetails` in `appworkshop_4000.acf`): comma-separated decimal
+  account ids. This library: 817 items installed and in the details; 777 have `subscribedby` (744 with
+  three ids, 22 with four, 10 with one, 1 with two); 40 have none, holding `manifest`, `timeupdated`,
+  `timetouched`, `latest_*` and sometimes `ugchandle`: what `steamworks.DownloadUGC` leaves (M6 measured
+  that it installs an item without a subscription; ADR 0015). None of the 40 holds a native package.
+- **GMod's Lua clock.** `bin\win64\lua_shared.dll` imports only `tier0.dll`, `vstdlib.dll` and
+  `KERNEL32.dll`, so it links the C runtime statically: LuaJIT's `os.clock()` counts from when that DLL
+  loads, after the loader's start-up, not from the process start. The UCRT's `clock()` is QPC wall time
+  since its CRT's initialization (Windows SDK 10.0.26100 `ucrt\time\clock.cpp`). So the render guard
+  cannot date a status report from Lua; it uses a marker file held for the life of the game process.
+- **A file held with `FILE_FLAG_DELETE_ON_CLOSE` and read sharing only:** `GetFileAttributesW`,
+  `FindFirstFileW`, `std::filesystem::exists` and Python's `os.stat` see it; another `DeleteFileW` fails
+  with a sharing violation, a second `CREATE_ALWAYS` fails; it is gone moments after the holding process
+  is killed (`test_status.cpp`, `activation_integration.py`).
+- **System32 `winmm.dll`'s imports** (10.0.26100.1): statically only `ntdll.dll` and API sets; WINMMBASE,
+  the `api-ms-win-mm-*` sets, AudioSes, the `ext-ms-win-ntuser-*` sets, OLEAUT32 and the COM sets are
+  delay-loaded. So the proxy's load of it under the loader lock waits on no other thread (review F-08).
+- **The fixes' native Lua surface.** `gmcl_RTXFixesBinary` registers `MaterialPipeline`, `RemixMaterial`,
+  `RemixLight`, `RemixConfig` and `RTXWaterNative` in the real `_G`, so any server's client Lua calls them.
+  Source's `IFileSystem::Open` opens an absolute or UNC path as given, whatever the path ID; before R19 the
+  VTF reader (`vtf_parser.cpp:232` at `913bb6b`), ToPBR's `ParseVMTFile` (`to_pbr.cpp:1855-1859`) and
+  `ReadVMTShaderName` (`auto_categorisation.cpp:312`) fell back to the bare name.
+  `RemixConfig.SetConfigVariable` writes any option to the User layer; the path-valued ones are the
+  atmosphere textures (`rtx_atmosphere.cpp:880-883`), `rtx.cameraSequence.filePath`
+  (`rtx_camera.cpp:1159-1176`), NRC's CUDA DLL folder (`rtx_nrc_context.cpp:251-256`) and Nsight's paths.
+- **The patched fixes' trees.** Replaying `build_modules.ps1`'s index steps, the four pre-R19 patches on
+  `f28bd5a` give exactly `913bb6b`'s object ids (`source` `aa6ed7d1`, `public` `7165af4d`, `premake5.lua`
+  `b308ed2f`); RTX Water's `b5c194e` `source/rtx_water` is `b3547296`. `pins.json` now records the
+  patched ids, so the check holds without a pushed commit.
+- **The material editor's bridge** resolved a texture source (`std::filesystem::canonical`) before its
+  root check, so a UNC source contacted its host first (the same class as ToPBR's folder); its writer test
+  needs `%TEMP%` of at most about 75 characters (76 fails at `writer_tests.cpp:1152`, 50 passes; R16
+  found the same limit). GMod's duplicator calls entity modifiers without `pcall`, so one modifier's error
+  stops the rest of a paste.
+- **The Model Hotloader's dependencies** fetched with `git fetch --depth 1 <repo> <sha>` and `git archive`
+  (with `core.autocrlf=false`, `core.eol=lf`) are byte-identical to GitHub's codeload archives of the same
+  commits (R16's vendor folder); with Git for Windows' default `core.autocrlf=true`, `git archive` writes
+  CRLF. `sv_commands.lua`'s main chunk holds 196 locals (LuaJIT refuses past 200).
+- **Glass map imports.** vbsp gives each leaf its own range of the leaf-brush lump (gm_construct: 5,002
+  leaves whose ranges sum to exactly its 6,386 references; gm_flatgrass 3,610 and 2,855; none shared), so a
+  world walk visits each reference at most once. The walk costs 5.5 ms per 8,388,480 references, so the
+  former unbounded 2^36 was about 45 s on the import worker. A crafted 99 KiB map of 7,000 brushes sharing
+  one prism parses and cooks in 6.0 s; with R19's cancellation the destructor returns 0.75 ms after its
+  stop request. gm_construct with the R19 reader: parse 13.8 ms, asynchronous total 64.8 ms. A near-cap
+  pane snapshot is 5,686 bytes in the engine harness.
+- **GLI** (`include/gli`): `gli::load` tries a file as DDS, then KMG, then KTX, whatever its name, and the
+  KMG and KTX readers copy what their headers claim; GLI's texture cache keeps 16 levels in fixed arrays
+  (`texture.hpp:289-290`); `GLI_ASSERT` and the runtime's `assert` are empty in release builds;
+  `block_size(FORMAT_INVALID)` reads before the format table. The texture manager makes every replacement
+  texture a 2D image at the extent of its first loaded mip, so a side past the GPU's limit fails only when
+  the larger mips stream in (an open item).
+- **Runtime build time.** A change to `rtx_option.h` recompiles 251 objects in about 2 minutes with 4 jobs.
+  The fork's `.gitignore` ignores `tests/rtx/unit/*` except a few names: new test sources need `git add -f`.
+- **GitHub Actions storage.** About 1.2 GB of the 2 GB was in use with one package artifact (about 0.84 GB),
+  so the package workflow keeps deleting the older package before uploading its own (review F-07).

@@ -93,7 +93,8 @@ GarrysMod\
 │  │                                         took it over; put back once no generation names the path,
 │  │                                         and at uninstall (journal `originals`, ADR 0035)
 │  ├─ backup\edits\<transaction>\<path>    loader 0.6.0: changed copies of the loader's files that the
-│  │                                         package's copy replaced; never deleted by the loader (ADR 0035)
+│  │                                         package's copy replaced; never deleted by the loader (ADR 0035);
+│  │                                         R19: backup\edits\<transaction>-<n>\ when that place is taken
 │  ├─ backup\legacy\<transaction>\...    loader 0.8.0: archived prior Remix files plus manifest.json
 │  │                                         with original paths, sizes and SHA-256; kept after uninstall
 │  ├─ backup\render-guard\<file>.<n>      loader 0.10.1: a changed early render guard cache file, moved
@@ -126,6 +127,7 @@ GarrysMod\
    ├─ cfg\nativeloader_restore.cfg         M5: generated at the start without RTX that puts them back
    ├─ data\<folder>\...                    M5: create-only seed data from packages (journaled)
    ├─ data\native-loader\status.json       atomic report of each active bootstrap start (M4)
+   ├─ data\native-loader\rtx-session.txt   R19: held (delete-on-close) by an RTX start until the game exits
    └─ data\native-loader\session.json      M5: patch sets applied or skipped, overridden loads
 ```
 
@@ -256,6 +258,13 @@ by missing/disabled/invalid config, no deployed runtime, RTX off, pending state 
 failure. It is not produced by Chromium helpers or an M1 off switch. An old status after an off
 switch is deliberately stale. A new report uses `status.json.tmp-<PID>`, flushes it, then atomically
 renames it over status.json; simultaneous instances cannot share a temporary filename.
+
+**The RTX session marker (R19).** An RTX start also holds `garrysmod/data/native-loader/rtx-session.txt`
+for the life of the game process, opened with delete-on-close and read sharing only; it contains
+`session_token=<PID>-<creation FILETIME>`. Windows deletes it when the process ends, however it ends.
+The companion's render guard installs from an "active" report of loader 0.14.0 or later only while the
+marker exists, so a later start with an off switch never installs it from an older report. A start
+without RTX deletes a marker no process holds (left by a power loss), and so does uninstall.
 
 | Field | Meaning |
 |---|---|

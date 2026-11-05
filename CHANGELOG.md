@@ -6,6 +6,106 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R19
+
+- **The pre-release review's findings fixed; release v0.14.0 with loader 0.14.0** (the user's request;
+  [review](docs/handover/R19-review.md), [plan](docs/handover/R19-plan.md),
+  [report](docs/handover/R19-report.md)). Codex reviewed the release in eleven parts, independent Claude
+  verifiers checked each finding against the code, and every real finding was fixed by seven parallel
+  parts:
+  - **Content packages come only from subscribed Workshop items**
+    ([ADR 0111](docs/decisions/0111-content-packages-only-from-subscribed-items.md)). The loader deployed a
+    content package from every Workshop item Steam had installed, and any multiplayer server can make the
+    game download an item without a subscription (`steamworks.DownloadUGC`). Now only an item an account
+    on this computer subscribed to (Steam's `subscribedby`) is deployed, and a content package an older
+    loader deployed from such a download is removed at the next start, like an unsubscribe. A missing or
+    unreadable Steam record adds nothing and removes nothing. Allowlisted items are unchanged.
+  - **A texture file in a Remix mod can no longer corrupt the game's memory** (runtime patch 0033). Both
+    of the runtime's DDS readers check a file's mip count (at most 16, and what its size allows), sides,
+    layers, faces and data size against the file before reading it; the fallback reads DDS only and
+    refuses short files. The material editor's bridge checks a DDS the same way.
+  - **A server's Lua can no longer make the RTX fixes write outside the game or contact another computer**
+    ([ADR 0112](docs/decisions/0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md)). ToPBR's
+    output folder stays inside `~gmod_topbr\textures`; texture, VMT and model paths, Remix material and
+    light textures, RTX Water's materials and the Remix options that name files must stay in the game's
+    folders. A network path (`\\host\share`) made Windows offer the player's login to that host. ToPBR
+    and imported game maps work only while the player's `rtx_topbr_enabled` and `rtx_topbr_game_maps` are
+    on. The material editor's bridge refuses network, device and drive-relative texture paths before it
+    touches the disk, and answers alike for a file outside the game whether it exists or not.
+  - **The dance tool works on yourself only** (Character Motion Importer). A player could select another
+    player, which hid them and locked their movement until they died. Now only an admin may select, pose,
+    build on or dance another player; Force Reset and death unfreeze or show only a player the add-on froze
+    or hid; "stop all" stops your own NPC dances; a leaver's dances stop.
+  - **A release stays on the Workshop.** After a release uploaded from GitHub (`publish_workshop.py
+    --from-ci`), the next commit on `main` no longer uploads a development build over it while the
+    packaging inputs are the release's, and `--from-ci` fails when the package workflow has no run for the
+    commit.
+  - **The RTX guard installs only in an RTX session.** An RTX start holds
+    `garrysmod/data/native-loader/rtx-session.txt` until the game exits, so a later start with
+    `-nonativeloader` no longer installs the guard from the previous session's report. The player README
+    says that `"remix": {"enabled": false}` is the way to play without RTX.
+  - Smaller fixes:
+    - **Loader:**
+      - a file an uninstall left in `backup/originals` no longer blocks every later deployment;
+      - uninstall keeps its journal while files remain to delete;
+      - a package that fails its checks leaves no staged bytes;
+      - a file changed during extraction fails the run instead of being kept under a wrong hash;
+      - a rollback refuses while a root file both generations share is missing or changed;
+      - declared sizes can no longer wrap the free-space check;
+      - a module dependency that failed to load is tried again at the next load;
+      - module overrides work with the caller's search flags;
+      - the exit observer forwards winmm calls;
+      - `nlctl scan` reports folders it cannot list.
+    - **Runtime:**
+      - option strings the menus read are copied under the update lock;
+      - a texture two materials share takes the stronger preload;
+      - the middle cloud deck finds its patches along grazing rays, and its moon shadows follow them;
+      - float options refuse NaN and infinities;
+      - a config saved through a link keeps a backup until the rewrite completes.
+    - **Material editor:** the sync snapshot is encoded once per state, and no handshake resets the RTX
+      profile limit.
+    - **Bodygroup tool:**
+      - crafted dupes paste without errors;
+      - the client's region cache is bounded;
+      - tool actions are paced;
+      - another player's model is editable only by that player or an admin.
+    - **Bodygroup destruction:**
+      - settings that default to on (damage, materials, no-cull, UV seams and others) can be turned off
+        again;
+      - refused settings log one line per player every 10 s.
+    - **Model Hotloader:**
+      - only a character's owner or an admin removes or replaces it;
+      - prop attachments need the target within reach;
+      - collision meshes are paced on the server;
+      - a model reads files only inside its folder, the tex and textures folders near it, or its Workshop
+        item;
+      - loads check free memory first and stop when the map changes;
+      - remote collision shapes are evicted;
+      - its build fetches its dependencies with git.
+    - **Motion importer:**
+      - the RPE and skirt add-ons' settings it turns off come back after a map change, a quit or a crash;
+      - built animations have a byte budget, and each player's builds are capped.
+    - **Glass:**
+      - a joining player's pane snapshots are paced;
+      - another player's shots move your broken glass only when you can see them or are within 1,024
+        units;
+      - the glass module checks a map's compressed lumps before inflating them, caps static props across
+        entries and bounds the world walk;
+      - quitting or changing map cancels a map import in progress.
+    - **RTX fixes:**
+      - RTX Water skips a malformed polygon;
+      - the RTX flashlight no longer leaks a light on a repeated "on", paces toggles, and gives no
+        flashlight to the dead or where the gamemode refuses one.
+    - **Companion:** the eye-white cache deletes only its own files.
+    - **Tools and CI:**
+      - the release job passes the tag through the environment;
+      - only the package job may delete artifacts;
+      - `inputs.py` refuses Windows path aliases;
+      - `gmapack.py` caps LZMA output;
+      - Pillow is pinned;
+      - the vanilla-copy tool reports unhashed files;
+      - `pins.json` records the patched fixes' tree ids, and RTX Water has patches of its own.
+
 ### R18
 
 - **R17's sky limits addressed** (the user's request; [ADR 0110](docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md),
