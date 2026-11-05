@@ -1,0 +1,85 @@
+{
+  "about": "What the RTX package's GitHub workflow builds its native binaries from (R16, ADR 0106): sources, commits and tools, all reachable from a GitHub runner, and the files it fetches because no workflow can compile them. tools/ci/README.md explains each.",
+  "garrysmod_common": {
+    "repository": "https://github.com/danielga/garrysmod_common.git",
+    "commit": "a854f237b79087826aa9a98a05de5e0d2b4502b6",
+    "submodules": {
+      "detouring": "3e0b0388f6d886f6c44038ce537871b5397e9468",
+      "detouring/minhook": "e2a49551a5c8b372cb962720997dc5c43df6b4b9",
+      "premake/premake-export-compile-commands": "d22b7d1c86b0ca453fdde2ac731627f0b947f636",
+      "scanning": "d505081818ebd418af1966be64c09998babc6483",
+      "sourcesdk-minimal": "61bf02ea6eaedcabf66784dfb0e54c9e3feefdcc"
+    }
+  },
+  "premake": {
+    "version": "5.0.0-beta2",
+    "url": "https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-windows.zip",
+    "archive_sha256": "87cfa10ed52fd1f4e835f738ac1033ff302035758671400fec078b700c622c54"
+  },
+  "fixes": {
+    "repository": "https://github.com/SheepyLord/garrys-mod-rtx-remixed.git",
+    "base": "f28bd5a91eeab50081b204bb333924ecd4713a88",
+    "patches": [
+      "packages/fixes/licenses/oversized-skinning/oversized-hw-skinning.patch",
+      "packages/fixes/licenses/oversized-skinning/memory-limits/no-memory-limits.patch",
+      "packages/fixes/licenses/oversized-skinning/backrooms/backrooms-native.patch",
+      "packages/fixes/licenses/oversized-skinning/autopbr/autopbr.patch"
+    ],
+    "patch_paths": ["source/*", "premake5.lua", "public/*"],
+    "patched_commit": "913bb6b83fc0830f901cbe54904e843cef8ea61d",
+    "rtxwater_commit": "b5c194ec8db59b714f01de197cbe7601949d2d0d",
+    "rtxwater_why": "native RTX Water Version 4 as shipped; the base's source/rtx_water is Version 5 (SetCameraInWater), a behaviour change"
+  },
+  "rtxdebug": {
+    "source": "packages/fixes/licenses/rtxdebug/checkout",
+    "repository": "https://github.com/SheepyLord/garrys-mod-rtx-debug-module.git",
+    "commit": "359b51bcd15eef18dfdb45482367ef43ffcf71c7"
+  },
+  "advmat_bridge": {
+    "source": "packages/advanced-material-editor/source/rtx_bridge",
+    "repository": "https://github.com/SheepyLord/-advanced_material_editor.git",
+    "commit": "8ece14155d771f0465dfac32ff6dd6a0e1f8aa96"
+  },
+  "repository_builds": [
+    {"part": "fixes", "path": "modules/gmsv_nlrtxclient_win64.dll", "from": "out/build/win64-release/loader/client/gmsv_nlrtxclient_win64.dll", "target": "nl_rtx_client"},
+    {"part": "glass", "path": "bin/gmcl_nlglass_win64.dll", "from": "out/build/win64-release/glass/native/gmcl_nlglass_win64.dll", "target": "nl_glass_client"}
+  ],
+  "fetched": [
+    {
+      "name": "reshade-setup",
+      "part": "reshade",
+      "path": "ReShade_Setup_6.8.0.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe",
+      "size": 4075064,
+      "sha256": "207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4",
+      "contains": {"ReShade64.dll": "b2945c29e7095491a901746b400e58db9b1592ab092bacf2a888ce37f02d08da"},
+      "repository": "https://github.com/crosire/reshade",
+      "commit": "v6.8.0",
+      "why": "ReShade's signed setup from its author (reshade.me); the package takes ReShade64.dll out of it, checked by tools/package_reshade.py"
+    },
+    {
+      "name": "stdshader_dx6",
+      "part": "fixes",
+      "path": "garrysmod/bin/win64/stdshader_dx6.dll",
+      "url": "https://raw.githubusercontent.com/SheepyLord/garrys-mod-rtx-remixed/d958da61cc7be04efbb17abf38aa1cbacc300019/garrysmod/bin/win64/stdshader_dx6.dll",
+      "size": 437248,
+      "sha256": "4bf218dbafc6b27514dd77141f9163a154f5ecb13713a5af8774dd9a9a4ab5a5",
+      "repository": "https://github.com/SheepyLord/garrys-mod-rtx-remixed",
+      "commit": "d958da61cc7be04efbb17abf38aa1cbacc300019",
+      "why": "the RTX fixes' Obsoletium shader DLL as committed in the public fixes repository (also Xenthio/garrys-mod-rtx-remixed 74d9f3b6); its author never published the source of this build"
+    },
+    {
+      "name": "coacd",
+      "part": "model-hotloader",
+      "path": "bin/lib_coacd.dll",
+      "url": "https://files.pythonhosted.org/packages/5f/28/edbc4d6766fb3504bf15dabe7340e5686c72b9e3be030b3c8c40469e7af6/coacd-1.0.14-cp39-abi3-win_amd64.whl",
+      "archive_sha256": "6b548f44d9a4694cde594dc8cc8fefa678fb7c88153583be4e8b2c707de8fbbd",
+      "member": "lib_coacd.dll",
+      "size": 6169600,
+      "sha256": "a32e801d260b774ebc723edfc05e45e179c09d0d2355592c64cbff490698e806",
+      "repository": "https://github.com/SarahWeiii/CoACD",
+      "commit": "1401ce2a7ae1ed89c65ab958b48d489350c233c7",
+      "why": "CoACD 1.0.14 as its own CI built it, from its PyPI wheel (MIT): the file the Model Hotloader's scripts/bootstrap.py takes, whose hash its native_policy.lua pins"
+    }
+  ]
+}

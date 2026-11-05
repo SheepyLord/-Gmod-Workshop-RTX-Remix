@@ -16,6 +16,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
   is put back at once whenever it sets it again; following the map still keeps the add-on's sky. Other
   maps were not affected: a new game, a map change and a listen server applied the sky at the start in
   the traces of this round.
+- **The RTX package is built on GitHub, its native binaries included, and every run reports its
+  hashes** (the user's item 45; [ADR 0106](docs/decisions/0106-the-rtx-package-built-on-github.md)).
+  `package.yml` builds the Remix runtime from the fork with `runtime/patches`, the RTX fixes' modules,
+  the debug module and the material editor's bridge from pinned sources
+  ([`tools/ci`](tools/ci/README.md)), and this repository's modules; ReShade, the fixes'
+  `stdshader_dx6.dll` and CoACD are downloaded from their publishers against pinned SHA-256 hashes. The
+  run's summary lists the `.gma`'s SHA-256 and every file's, and where each native binary came from
+  ([`tools/package_report.py`](tools/package_report.py.md)); `rtx-package-report` keeps it. Only the
+  newest `.gma` artifact is kept. The Workshop gets exactly that `.gma`: the pre-push hook waits for the
+  run and checks the file against its report (`publish_workshop.py --from-ci`); commits and merges no
+  longer publish, and a package built locally is no longer uploaded unless the user asks. The Model
+  Hotloader's four natives still come from `packages/` (their source is uncommitted in its author's
+  working tree). The material editor's bridge source is vendored in
+  `packages/advanced-material-editor/source` (not shipped).
 
 ### R15
 

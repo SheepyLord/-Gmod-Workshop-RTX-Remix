@@ -16,7 +16,10 @@ param(
     # Bound memory use while compiling the large runtime translation units.
     [ValidateRange(1, 64)] [int] $Jobs = 4,
     # Check the worktree against runtime\base.json and the patches, show its built d3d9.dll; build nothing.
-    [switch] $Verify
+    [switch] $Verify,
+    # After compiling, also run Meson's install for the tag "output": d3d9.dll, the vendor DLLs and the
+    # USD files into <Worktree>\_output (R16: the RTX package's workflow collects them from there).
+    [switch] $Install
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -90,7 +93,9 @@ if (-not (Test-Path $Worktree)) {
     if ($Verify) { throw "$Worktree does not exist" }
     Invoke-Git $Fork worktree add --detach $Worktree $base.commit | Out-Null
     Invoke-Git $Worktree am --3way --keep-cr @($patches.FullName) | Out-Null
-    Invoke-Git $Worktree submodule update --init --recursive | Out-Null
+    # Blobs are fetched for the recorded commits only, not for the submodules' whole histories (R16:
+    # the workflow's runner has little disk).
+    Invoke-Git $Worktree submodule update --init --recursive --filter=blob:none | Out-Null
     foreach ($path in $submodules.Keys) {
         $at = Join-Path $Worktree $path
         if ($submodules[$path].commit) { Invoke-Git $at checkout --quiet --detach $submodules[$path].commit | Out-Null }
@@ -98,7 +103,7 @@ if (-not (Test-Path $Worktree)) {
     }
     foreach ($path in $clones.Keys) {
         $at = Join-Path $Worktree $path
-        Invoke-Git $Worktree clone --quiet $clones[$path].url $at | Out-Null
+        Invoke-Git $Worktree clone --quiet --filter=blob:none --no-checkout $clones[$path].url $at | Out-Null
         Invoke-Git $at checkout --quiet --detach $clones[$path].commit | Out-Null
     }
     $needsSetup = $true
@@ -197,6 +202,11 @@ foreach ($pass in 1, 2) {
 }
 $sha = (Get-FileHash $dll -Algorithm SHA256).Hash.ToLower()
 "d3d9.dll $((Get-Item $dll).Length) bytes, SHA-256 $sha"
+if ($Install) {
+    python -m mesonbuild.mesonmain install -C $build --tags output --quiet
+    if ($LASTEXITCODE) { throw "meson install --tags output failed: $LASTEXITCODE" }
+    "installed: $(Join-Path $Worktree '_output')"
+}
 if (-not $NoImport) {
     python (Join-Path $repo 'tools\inputs.py') import runtime --file "$dll=files/d3d9.dll"
     if ($LASTEXITCODE) { throw "inputs.py import failed: $LASTEXITCODE" }

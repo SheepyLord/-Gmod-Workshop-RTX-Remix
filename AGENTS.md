@@ -79,15 +79,18 @@ patched copy of GMod managed by RTXLauncher.
    - Making an item public, or publishing another real package, still needs the user's go-ahead.
    - **Item 3829070317 is the project's distribution item** (the user, 2026-10-28;
      [ADR 0016](docs/decisions/0016-one-workshop-item-kept-current.md)). It holds the combined RTX
-     package, and commits, merges and pushes of `main` keep it current: git hooks run
-     [`tools/publish_workshop.py`](tools/publish_workshop.py.md) in the background. That update needs
-     no asking. A commit on `main` therefore publishes whatever its packaging inputs hold, so test
-     those changes on a branch first. The build checks the package with the **main checkout's** built
-     `nlctl.exe`: after a manifest change (a new key or kind), run `tools\build.ps1 -Config Release`
-     there before the merge, or the publish fails. Install the hooks once per clone:
+     package that GitHub's package workflow builds, native binaries included, and pushes of `main` keep
+     it current: the pre-push hook runs [`tools/publish_workshop.py`](tools/publish_workshop.py.md)
+     `--from-ci` in the background, which waits for the run of the pushed commit and uploads its `.gma`
+     after checking it against the run's hash report
+     ([ADR 0106](docs/decisions/0106-the-rtx-package-built-on-github.md)). That update needs no asking.
+     A push of `main` therefore publishes whatever its packaging inputs build, so test those changes on
+     a branch first. Never upload a package built on this machine (`--local-upload`) unless the user
+     asks. Install the hooks once per clone:
      `python tools\publish_workshop.py --install-hooks` (they also run Git LFS's hooks; a push without
-     git-lfs is refused). The package is built from `packages/` alone, so a part changes only by an
-     import committed here; the add-ons' own repositories do not reach the item.
+     git-lfs is refused). The package's content comes from `packages/` and its native binaries from
+     the sources `runtime/`, `tools/ci/pins.json` and this repository name, so a part changes only by a
+     change committed here; the add-ons' own repositories do not reach the item.
 6. **No binaries in git, except the RTX package's inputs in `packages/`** (the user, 2026-10-30;
    [ADR 0033](docs/decisions/0033-one-repository-package-inputs-in-git-lfs.md)): there every binary is
    stored xz-compressed in Git LFS, and only through `tools\inputs.py import`, which indexes it. No game

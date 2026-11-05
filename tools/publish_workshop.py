@@ -1,12 +1,13 @@
-"""Keeps the project's Workshop item up to date (ADR 0016): builds the combined RTX package from the
-inputs in tools/workshop.json, and uploads it with GMod's gmpublish when its content changed.
+"""Keeps the project's Workshop item up to date (ADR 0016) with the combined RTX package that GitHub's
+package workflow builds (ADR 0106): --from-ci waits for that workflow's run of a commit, downloads the
+.gma and its hash report, checks the .gma's SHA-256 against the report, and uploads exactly that file
+with GMod's gmpublish. The git hooks this script installs (--install-hooks) run it in the background
+before every push of main; they also run Git LFS's own hook steps.
 
-The parts are built from this repository alone: packages/ holds their inputs (ADR 0033), unpacked
-into out/inputs/ before every build (tools/inputs.py). The git hooks this script installs
-(--install-hooks) run it in the background after every commit or merge on main and before every push
-of main, so a commit updates the item and a push updates GitHub and the item; they also run Git
-LFS's own hook steps. A run that finds its inputs unchanged since the last upload stops at once; a
-run whose build matches the uploaded content (same digest) uploads nothing. See publish_workshop.py.md.
+Without --from-ci it builds the package here from the inputs in tools/workshop.json (packages/ holds
+them, ADR 0033, unpacked into out/inputs/ by tools/inputs.py) and compares it with the uploaded content;
+such a local build is uploaded only with --local-upload, which ADR 0106 leaves to the user's explicit
+request. See publish_workshop.py.md.
 """
 from __future__ import annotations
 
@@ -58,7 +59,10 @@ BACKGROUND_FLAGS = 0x08000000 | 0x00000200  # CREATE_NO_WINDOW | CREATE_NEW_PROC
 REPO_INPUTS = ('companion', 'packages', 'tools/inputs.py', 'tools/package_fixes.py', 'tools/package_runtime.py',
                'tools/package_workshop.py', 'tools/package_content.py', 'tools/package_reshade.py', 'third_party/reshade',
                'tools/gmapack/gmapack.py', 'tools/workshop.json', 'tools/companion_i18n.py', 'LICENSE',
-               'third_party/gmod/LICENSE', '.gitattributes', 'glass/addon', 'third_party/jolt/LICENSE')
+               'third_party/gmod/LICENSE', '.gitattributes', 'glass/addon', 'third_party/jolt/LICENSE',
+               # R16 (ADR 0106): the package workflow builds the native binaries from these.
+               'runtime', 'loader', 'glass/native', 'third_party', 'CMakeLists.txt', 'CMakePresets.json', 'tools/ci',
+               'tools/build.ps1', 'tools/lib', 'tools/build_package.py')
 BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
             'package_content': 'tools/package_content.py', 'package_reshade': 'tools/package_reshade.py'}
 LOCK_WAIT = 2 * 60 * 60
@@ -216,15 +220,17 @@ def input_parts(config: dict) -> list[str]:
     return sorted(names)
 
 
-def build(config: dict, version: str, work: Path, log, dest: Path | None = None) -> dict:
+def build(config: dict, version: str, work: Path, log, dest: Path | None = None, overlay: Path | None = None,
+          keep_packaged: tuple[str, ...] = ()) -> dict:
     """Unpacks the packages/ parts the config reads into out/inputs/, builds the parts (runs the
     packagers for "build" parts) and combines them into one .gma in `dest` (default: this checkout's
-    shared out/workshop). Relative paths in the config are relative to this repository."""
+    shared out/workshop). Relative paths in the config are relative to this repository. With an
+    overlay, the native binaries come from that build folder (tools/inputs.py unpack, ADR 0106)."""
     import inputs  # tools/inputs.py, beside this script
     names = input_parts(config)
     if names:
         try:
-            inputs.unpack(names, log=log)
+            inputs.unpack(names, log=log, overlay=overlay, keep_packaged=keep_packaged)
         except inputs.InputsError as error:
             raise PublishError(f'unpacking packages/: {error}') from None
     parts = []
@@ -393,10 +399,123 @@ def publish(config: dict, args, log) -> dict:
     if args.dry_run:
         log(f'dry run: {gma} ({summary["gma_bytes"]} bytes) would be uploaded')
         return {**print_state, 'result': 'dry-run', 'version': version, 'digest': summary['digest'], 'gma': str(gma)}
+    if not getattr(args, 'local_upload', False):
+        # ADR 0106: the item gets the package GitHub built, with its binaries (--from-ci).
+        log(f'built here, not uploaded: {gma} (the item gets the package GitHub builds; --from-ci)')
+        return {**print_state, 'result': 'built-not-uploaded', 'version': version, 'digest': summary['digest'], 'gma': str(gma)}
     changes = f'{version} from {head}' + (f' ({args.reason})' if args.reason else '')
     upload(config, gma, changes, log)
     published_file.write_text(json.dumps(record, indent=1), encoding='utf-8')
     return {**print_state, 'result': 'uploaded', 'version': version, 'digest': summary['digest'], 'gma': str(gma)}
+
+
+# ---------------------------------------------------------------- the package GitHub built (ADR 0106)
+
+WORKFLOW = 'package.yml'
+RUN_APPEARS = 5 * 60      # a push's run exists within seconds; none after this means the push did not touch the package
+RUN_FINISHES = 6 * 60 * 60
+RUN_POLL = 60
+
+
+def gh(*args: str) -> str:
+    done = subprocess.run(['gh', *args], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',
+                          stdin=subprocess.DEVNULL)
+    if done.returncode:
+        raise PublishError(f'gh {" ".join(args[:3])}: {(done.stderr or done.stdout).strip()[-800:]}')
+    return done.stdout
+
+
+def package_runs(sha: str) -> list[dict]:
+    """The package workflow's runs of this commit, newest first."""
+    data = json.loads(gh('api', f'repos/{{owner}}/{{repo}}/actions/workflows/{WORKFLOW}/runs?head_sha={sha}&per_page=20'))
+    return sorted(data.get('workflow_runs', []), key=lambda run: run.get('run_number', 0), reverse=True)
+
+
+def wait_for_run(sha: str, log, sleep=time.sleep, clock=time.monotonic) -> dict | None:
+    """The newest package run of this commit once it has finished; None if no run appears."""
+    start, said = clock(), None
+    while True:
+        runs = package_runs(sha)
+        if runs and runs[0].get('status') == 'completed':
+            return runs[0]
+        if runs:
+            state = f"package run {runs[0].get('html_url')}: {runs[0].get('status')}"
+            if state != said:
+                log(state)
+                said = state
+            if clock() - start > RUN_FINISHES:
+                raise PublishError(f'the package run of {sha[:8]} did not finish in {RUN_FINISHES // 3600} hours')
+        elif clock() - start > RUN_APPEARS:
+            return None
+        sleep(RUN_POLL)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, 'rb') as handle:
+        for block in iter(lambda: handle.read(1 << 22), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def download_package(run_id: int, dest: Path, log) -> tuple[Path, dict, dict]:
+    """The run's package and its report (artifacts rtx-package and rtx-package-report), with the .gma
+    checked against the report's size and SHA-256."""
+    shutil.rmtree(dest, ignore_errors=True)  # only the newest download is kept (about 1.8 GB)
+    dest.mkdir(parents=True)
+    gh('run', 'download', str(run_id), '-n', 'rtx-package-report', '-D', str(dest / 'report'))
+    report = json.loads((dest / 'report' / 'package-report.json').read_text(encoding='utf-8'))
+    summary = read_json(dest / 'report' / 'package-summary.json') or {}
+    log(f"downloading {report['gma']['name']} ({report['gma']['bytes']:,} bytes) from run {run_id}")
+    gh('run', 'download', str(run_id), '-n', 'rtx-package', '-D', str(dest / 'package'))
+    gmas = sorted((dest / 'package').glob('*.gma'))
+    if len(gmas) != 1:
+        raise PublishError(f'run {run_id}: expected one .gma in its rtx-package artifact, found {len(gmas)}')
+    gma = gmas[0]
+    if gma.name != report['gma']['name'] or gma.stat().st_size != report['gma']['bytes'] or sha256_file(gma) != report['gma']['sha256']:
+        raise PublishError(f'run {run_id}: {gma.name} is not the package its report describes (name, size or SHA-256)')
+    return gma, report, summary
+
+
+def publish_from_ci(config: dict, args, log) -> dict:
+    """Uploads the package the package workflow built for a commit (default HEAD): waits for that run,
+    downloads its artifacts, checks the .gma's SHA-256 against the run's report, and uploads exactly that
+    file. A commit with no package run (its changes do not touch the package) uploads nothing."""
+    STATE.mkdir(parents=True, exist_ok=True)
+    published_file = STATE / 'published.json'
+    published = read_json(published_file) or {}
+    sha = git('rev-parse', '--verify', (getattr(args, 'commit', None) or 'HEAD') + '^{commit}')
+    state = {'item': str(config['item']), 'commit': sha}
+    run = wait_for_run(sha, log)
+    if run is None:
+        log(f'no package run of {sha[:8]}: its changes do not touch the package, nothing to upload')
+        return {**state, 'result': 'no-run'}
+    state['run'] = run.get('html_url')
+    if run.get('conclusion') == 'cancelled':
+        log(f"{run.get('html_url')} was cancelled (a newer push's run replaces it): nothing uploaded")
+        return {**state, 'result': 'cancelled'}
+    if run.get('conclusion') != 'success':
+        raise PublishError(f"the package run {run.get('html_url')} ended {run.get('conclusion')}: nothing uploaded")
+    if not args.force and published.get('item') == str(config['item']) and published.get('run_id') == run['id']:
+        log('this run\'s package is the uploaded one: nothing to do')
+        return {**state, 'result': 'unchanged', 'version': published.get('version')}
+    gma, report, summary = download_package(run['id'], STATE / 'ci', log)
+    version = summary.get('version') or gma.stem
+    state.update(version=version, gma=str(gma), gma_sha256=report['gma']['sha256'])
+    if args.dry_run:
+        log(f'dry run: {gma.name} ({report["gma"]["bytes"]:,} bytes, SHA-256 {report["gma"]["sha256"]}) would be uploaded')
+        return {**state, 'result': 'dry-run'}
+    subject = git('log', '-1', '--format=%h %s', sha)
+    changes = (f'{version} built on GitHub from {subject} ({run.get("html_url")}); .gma SHA-256 {report["gma"]["sha256"]}'
+               + (f' ({args.reason})' if args.reason else ''))
+    upload(config, gma, changes, log)
+    record = {'item': str(config['item']), 'version': version, 'digest': summary.get('digest'), 'gma': str(gma),
+              'gma_bytes': report['gma']['bytes'], 'gma_sha256': report['gma']['sha256'], 'commit': subject,
+              'source': 'github', 'run_id': run['id'], 'run_url': run.get('html_url'),
+              'native_binaries': {key: report.get(key) for key in ('binaries', 'compiled', 'fetched', 'from_packages')},
+              'reason': args.reason, 'utc': _dt.datetime.now(_dt.timezone.utc).isoformat(timespec='seconds')}
+    published_file.write_text(json.dumps(record, indent=1), encoding='utf-8')
+    return {**state, 'result': 'uploaded'}
 
 
 # ---------------------------------------------------------------- hooks
@@ -408,18 +527,15 @@ LFS_MISSING = ('printf >&2 "\\nThis repository keeps packages/ in Git LFS, and g
                'Install Git LFS (https://git-lfs.com) and run: python tools/publish_workshop.py --install-hooks\\n"')
 
 POST_COMMIT = f"""#!/bin/sh
-{HOOK_MARKER}: a commit on main updates the Workshop item in the background (tools/publish_workshop.py).
+{HOOK_MARKER}: Git LFS's post-commit step. The Workshop item follows pushes of main, with the package
+# GitHub builds for them (ADR 0106; see pre-push).
 command -v git-lfs >/dev/null 2>&1 && git lfs post-commit "$@"
-[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
-python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$(git rev-parse HEAD)" --reason "commit $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
 POST_MERGE = f"""#!/bin/sh
-{HOOK_MARKER}: a merge into main (how milestone branches land) updates the Workshop item too.
+{HOOK_MARKER}: Git LFS's post-merge step. The Workshop item follows pushes of main (see pre-push).
 command -v git-lfs >/dev/null 2>&1 && git lfs post-merge "$@"
-[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
-python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$(git rev-parse HEAD)" --reason "merge $(git rev-parse --short HEAD)" || true
 exit 0
 """
 
@@ -430,7 +546,8 @@ git lfs post-checkout "$@"
 """
 
 PRE_PUSH = f"""#!/bin/sh
-{HOOK_MARKER}: a push of main also brings the Workshop item up to date, in the background.
+{HOOK_MARKER}: a push of main also brings the Workshop item up to date, in the background: with the
+# package GitHub's package workflow builds for the pushed commit (ADR 0106), once that run has finished.
 # Git LFS uploads the large files of packages/ first; without git-lfs the push stops.
 command -v git-lfs >/dev/null 2>&1 || {{ {LFS_MISSING}; exit 2; }}
 refs=$(cat)
@@ -440,8 +557,7 @@ fi
 printf '%s\\n' "$refs" | while read local_ref local_sha remote_ref remote_sha; do
   [ "$remote_ref" = "refs/heads/main" ] || continue
   case "$local_sha" in *[!0]*) ;; *) continue ;; esac  # all zeros: main is being deleted
-  # The script builds in the checkout that has the pushed commit checked out, not necessarily this one.
-  python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --commit "$local_sha" --reason "push $(git rev-parse --short "$local_sha")" || true
+  python "$(git rev-parse --show-toplevel)/tools/publish_workshop.py" --background --from-ci --commit "$local_sha" --reason "push $(git rev-parse --short "$local_sha")" || true
 done
 exit 0
 """
@@ -493,8 +609,14 @@ def main(argv=None) -> int:
     parser.add_argument('--dry-run', action='store_true', help='build and compare, upload nothing')
     parser.add_argument('--force', action='store_true', help='build and upload even if nothing changed')
     parser.add_argument('--allow-dirty', action='store_true', help='publish although packaging inputs have uncommitted changes')
-    parser.add_argument('--commit', metavar='SHA', help='publish this commit, from whichever checkout has it checked out '
-                                                         '(what the hooks pass); nothing if none has')
+    parser.add_argument('--commit', metavar='SHA', help='publish this commit (what the hook passes): with --from-ci the '
+                                                         'package GitHub built for it; otherwise a build in whichever checkout '
+                                                         'has it checked out, nothing if none has')
+    parser.add_argument('--from-ci', action='store_true',
+                        help="upload the package the package workflow built for the commit, after checking it against the "
+                             "run's report (ADR 0106; what the pre-push hook runs)")
+    parser.add_argument('--local-upload', action='store_true',
+                        help='upload a package built on this machine (ADR 0106 leaves this to an explicit request of the user)')
     parser.add_argument('--background', action='store_true', help='run detached, logging to out/workshop/logs (what the hooks use)')
     parser.add_argument('--install-hooks', action='store_true', help='install the post-commit and pre-push hooks, then stop')
     parser.add_argument('--uninstall-hooks', action='store_true', help='remove this script\'s hooks, then stop')
@@ -530,7 +652,7 @@ def main(argv=None) -> int:
         def log(text: str) -> None:
             print(f'[{_dt.datetime.now().strftime("%H:%M:%S")}] {text}', flush=True)
 
-        if args.commit:
+        if args.commit and not args.from_ci:
             # A push of main from another worktree (R3-004): the build belongs to the checkout of the
             # pushed commit, with that checkout's own script and inputs.
             target = checkout_at(args.commit)
@@ -547,7 +669,7 @@ def main(argv=None) -> int:
         if lock is None:
             raise PublishError('another publish has held the lock for two hours')
         try:
-            result = publish(config, args, log)
+            result = publish_from_ci(config, args, log) if args.from_ci else publish(config, args, log)
         finally:
             release_lock(lock)
     except (PublishError, OSError, subprocess.SubprocessError, ValueError) as error:

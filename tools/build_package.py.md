@@ -8,7 +8,8 @@ Builds the combined RTX package, what Workshop item 3829070317 carries, from thi
 git lfs pull
 python tools\build_package.py                                        # into out\dist
 python tools\build_package.py --compare out\workshop\published.json  # and say whether the content changed
-python tools\build_package.py --require-nlctl --json                 # what CI runs
+python tools\build_package.py --require-nlctl --json                 # without the workflow's binaries
+python tools\build_package.py --require-nlctl --built out\ci\built --keep-packaged <part/path> --json   # what CI runs
 ```
 
 | Option | Meaning |
@@ -19,6 +20,8 @@ python tools\build_package.py --require-nlctl --json                 # what CI r
 | `--require-nlctl` | Fail unless a built `out\build\win64-release` or `-debug` `nlctl.exe` checks the parts and the result. Without it, a checkout with no loader build skips that check and says so |
 | `--compare RECORD` | A publish record (`out\workshop\published.json` or `build.json`): report whether this build has the same content digest. Exit 3 if not |
 | `--keep-work` | Keep the built part folders in `out\tmp\package-work` |
+| `--built DIR` | R16 ([ADR 0106](../docs/decisions/0106-the-rtx-package-built-on-github.md)): the native binaries a workflow built or fetched, as `<part>\<path in the part>` ([`tools/ci`](ci/README.md)). They replace the stored files (whose Git LFS content need not be there), and every `.dll`/`.exe` a part indexes must come from there ([`inputs.py`](inputs.py.md) `unpack --overlay`); the summary records the folder |
+| `--keep-packaged PART/PATH` | With `--built`: a native binary (or a folder, ending in `/`) still taken from `packages\` (repeatable) |
 | `--json` | Print the summary as JSON (progress goes to stderr) |
 
 ## What it does

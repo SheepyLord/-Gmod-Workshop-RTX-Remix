@@ -6,7 +6,7 @@ stores files there (text as it is, everything else xz-compressed for Git LFS), i
 them into `out\inputs\<part>\` for the packagers, and checks the stored files against the index.
 
 ```powershell
-python tools\inputs.py unpack [--part NAME ...] [--dest out\inputs]
+python tools\inputs.py unpack [--part NAME ...] [--dest out\inputs] [--overlay out\ci\built [--keep-packaged PART/PATH ...]]
 python tools\inputs.py verify [--part NAME ...] [--deep]
 python tools\inputs.py import PART [--inventory FILE] [--root SRC=DST ...] [--file SRC=DST ...] [--prune]
 python tools\inputs.py list
@@ -59,5 +59,11 @@ repository, origin URL, commit and whether the source had local changes, and `im
 - **`list`**: each part's file count, size and stored size.
 
 **Exit:** 0 on success; 1 on an error (`inputs: ...` on stderr) or, for `verify`, on any problem.
+- **`unpack --overlay DIR`** (R16, [ADR 0106](../docs/decisions/0106-the-rtx-package-built-on-github.md)):
+  the files a workflow built or fetched, as `DIR\<part>\<path in the part>`, are copied in place of the
+  stored ones, which are not read (their Git LFS content need not be there). Each must be a file the
+  index lists, and every `.dll`/`.exe` the index lists must come from the overlay unless
+  `--keep-packaged` names it (`part/path`, or a folder ending in `/`); otherwise it stops and names them.
+
 **Writes:** `packages\<part>\` (import), `out\inputs\` (unpack). Reads only the given sources.
 Tests: [`tests/test_inputs.py`](tests/test_inputs.py.md).

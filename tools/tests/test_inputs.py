@@ -85,6 +85,44 @@ class InputsTests(unittest.TestCase):
         again = inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=2)
         self.assertEqual(again['p']['written'], 0)
 
+    def test_a_build_overlay_replaces_the_stored_binaries_without_reading_them(self):
+        # R16 (ADR 0106): the workflow's binaries replace the stored ones, whose LFS content is not there.
+        self.store_all()
+        stored = self.packages / 'p' / 'bin/gmcl_x_win64.dll.xz'
+        stored.write_bytes(b'version https://git-lfs.github.com/spec/v1\noid sha256:00\nsize 1\n')
+        overlay = self.root / 'built'
+        (overlay / 'p' / 'bin').mkdir(parents=True)
+        (overlay / 'p' / 'bin' / 'gmcl_x_win64.dll').write_bytes(b'MZ built in CI')
+        result = inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=2, overlay=overlay)
+        self.assertEqual(result['p']['built'], ['bin/gmcl_x_win64.dll'])
+        self.assertEqual((self.dest / 'p' / 'bin/gmcl_x_win64.dll').read_bytes(), b'MZ built in CI')
+        self.assertEqual((self.dest / 'p' / 'addon/lua/a.lua').read_bytes(), self.files['addon/lua/a.lua'])
+        # Without the overlay the stored file is needed again (and here it is only a pointer).
+        with self.assertRaisesRegex(inputs.InputsError, 'Git LFS pointer'):
+            inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1)
+
+    def test_with_an_overlay_every_native_binary_must_come_from_the_build(self):
+        self.store_all()
+        overlay = self.root / 'built'
+        (overlay / 'p').mkdir(parents=True)
+        with self.assertRaisesRegex(inputs.InputsError, 'did not provide: bin/gmcl_x_win64.dll'):
+            inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1, overlay=overlay)
+        # Unless it is named as still taken from packages/ (a file, or a folder ending in /).
+        for keep in (('p/bin/gmcl_x_win64.dll',), ('p/bin/',)):
+            result = inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1, overlay=overlay,
+                                   keep_packaged=keep)
+            self.assertEqual(result['p']['built'], [])
+            self.assertEqual((self.dest / 'p' / 'bin/gmcl_x_win64.dll').read_bytes(), self.files['bin/gmcl_x_win64.dll'])
+
+    def test_an_overlay_file_the_index_does_not_list_is_refused(self):
+        self.store_all()
+        overlay = self.root / 'built'
+        (overlay / 'p' / 'bin').mkdir(parents=True)
+        (overlay / 'p' / 'bin' / 'gmcl_x_win64.dll').write_bytes(b'MZ')
+        (overlay / 'p' / 'bin' / 'extra.dll').write_bytes(b'MZ')
+        with self.assertRaisesRegex(inputs.InputsError, 'does not list: bin/extra.dll'):
+            inputs.unpack(['p'], self.packages, self.dest, log=quiet, workers=1, overlay=overlay)
+
     def test_unpack_refuses_content_that_does_not_match(self):
         self.store_all()
         (self.packages / 'p' / 'addon/lua/a.lua').write_bytes(b'print("changed")\r\n')

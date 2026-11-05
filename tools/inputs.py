@@ -37,6 +37,8 @@ PLAIN_LIMIT = 1 << 20
 CHUNK = 1 << 20
 XZ_PRESET = 6
 LFS_POINTER = b'version https://git-lfs.github.com/spec/v1'
+# Native code: with a build overlay, each such file must come from the build (R16, ADR 0106).
+NATIVE = ('.dll', '.exe', '.so', '.sys')
 # Never imported: version-control metadata and Explorer/Finder files (the packagers skip them too).
 JUNK = {'.git', '.gitattributes', '.gitignore', '.gitkeep', '.gitmodules', '.ds_store', 'desktop.ini', 'thumbs.db'}
 
@@ -356,11 +358,43 @@ def unpack_file(stored: Path, target: Path, entry: dict) -> None:
     os.utime(target, ns=(entry['mtime_ns'], entry['mtime_ns']))
 
 
+def overlay_files(overlay: Path, part: str, index: dict) -> dict[str, Path]:
+    """The files a build provides for a part (overlay/<part>/<path in the part>), by their indexed path.
+    Each must be a file the index lists: a build replaces inputs, it never adds to a part."""
+    top = overlay / part
+    if not top.is_dir():
+        return {}
+    listed = {rel.lower(): rel for rel in index['files']}
+    found, unknown = {}, []
+    for path in sorted(top.rglob('*')):
+        if path.is_file():
+            rel = path.relative_to(top).as_posix()
+            if rel.lower() in listed:
+                found[listed[rel.lower()]] = path
+            else:
+                unknown.append(rel)
+    if unknown:
+        raise InputsError(f'{part}: the build provides files {INDEX} does not list: {", ".join(unknown)}')
+    return found
+
+
+def kept_packaged(part: str, rel: str, keep: tuple[str, ...] | list[str]) -> bool:
+    """Whether part/rel is named (exactly, or by a folder ending in "/") as taken from packages/ although
+    a build overlay is used."""
+    key = f'{part}/{rel}'.lower()
+    return any(key == k.lower() or (k.endswith('/') and key.startswith(k.lower())) for k in keep)
+
+
 def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path = INPUTS, log=print,
-           workers: int | None = None) -> dict:
+           workers: int | None = None, overlay: Path | None = None, keep_packaged: tuple[str, ...] = ()) -> dict:
     """Builds dest/<part>/ from packages/<part>/ for every part (or the named ones): files whose size,
     time and SHA-256 already match are kept, others are written and checked against the index, and
-    files the index does not list are removed. Refuses links and junctions in dest (refuse_links)."""
+    files the index does not list are removed. Refuses links and junctions in dest (refuse_links).
+
+    With an overlay (R16, ADR 0106: the binaries a workflow built or fetched, as overlay/<part>/<path>),
+    those files are copied in place of the stored ones, which are not read (their Git LFS content need
+    not be there), and every native binary the index lists must come from the overlay unless
+    keep_packaged names it."""
     result = {}
     if is_link(dest):
         raise InputsError(f'{dest} is a link or junction; unpacking writes and deletes only in real folders')
@@ -368,8 +402,16 @@ def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path
         index = read_index(part, packages)
         base, out = part_dir(part, packages), dest / part
         refuse_links(out)
+        built = overlay_files(overlay, part, index) if overlay is not None else {}
+        if overlay is not None:
+            missing = [rel for rel in index['files'] if rel.lower().endswith(NATIVE) and rel not in built
+                       and not kept_packaged(part, rel, keep_packaged)]
+            if missing:
+                raise InputsError(f'{part}: native binaries the build did not provide: {", ".join(missing)}')
         todo, kept = [], []
         for rel, entry in index['files'].items():
+            if rel in built:
+                continue
             target = out / check_rel(rel)
             try:
                 info = target.stat()
@@ -387,6 +429,10 @@ def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers or max(1, (os.cpu_count() or 2) - 2)) as pool:
             for future in [pool.submit(unpack_file, *job) for job in todo]:
                 future.result()
+        for rel, source in built.items():
+            target = out / check_rel(rel)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
         listed = {os.path.normcase(str(out / rel)) for rel in index['files']}
         stale = 0
         if out.is_dir():
@@ -398,8 +444,11 @@ def unpack(names: list[str] | None = None, packages: Path = PACKAGES, dest: Path
                         stale += 1
                 if folder != str(out) and not os.listdir(folder):
                     os.rmdir(folder)
-        log(f'{part}: {len(index["files"])} files, {len(todo)} written, {len(kept)} checked, {stale} stale removed')
+        log(f'{part}: {len(index["files"])} files, {len(todo)} written, {len(kept)} checked, {stale} stale removed'
+            + (f', {len(built)} from the build' if overlay is not None else ''))
         result[part] = {'files': len(index['files']), 'written': len(todo), 'removed': stale}
+        if overlay is not None:
+            result[part]['built'] = sorted(built)
     return result
 
 
@@ -477,6 +526,10 @@ def main(argv=None) -> int:
     p = sub.add_parser('unpack', help='build out/inputs/<part>/ from packages/<part>/')
     p.add_argument('--part', action='append', help='only this part (repeatable)')
     p.add_argument('--dest', type=Path, default=INPUTS)
+    p.add_argument('--overlay', type=Path, help='a build folder (<part>/<path>) whose files replace the stored ones; '
+                                                'every native binary must then come from it')
+    p.add_argument('--keep-packaged', action='append', default=[], metavar='PART/PATH',
+                   help='with --overlay: a native binary (or a folder, ending in /) still taken from packages/')
     p = sub.add_parser('verify', help='check packages/ against the indexes')
     p.add_argument('--part', action='append')
     p.add_argument('--deep', action='store_true', help='also decompress xz content and check it')
@@ -492,7 +545,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == 'unpack':
-            unpack(args.part, dest=args.dest)
+            unpack(args.part, dest=args.dest, overlay=args.overlay, keep_packaged=tuple(args.keep_packaged))
         elif args.command == 'verify':
             problems = verify(args.part, deep=args.deep)
             for problem in problems:

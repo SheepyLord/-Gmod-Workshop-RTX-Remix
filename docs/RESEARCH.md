@@ -5075,3 +5075,82 @@ three companion files it holds 354.
 **Client modules.** `nativeloader_eye_whites.lua` `include`s `nativeloader/eye_white_names.lua` and
 `eye_white_vtf.lua`, which no `AddCSLuaFile` sent; a client joining a server did not have them. R15's
 `nativeloader_i18n.lua` sends them with its own two rule modules.
+
+## R16: the sky at a map's start (2026-11-04, Claude)
+
+- Remix API option writes go to the **User layer**: `remixapi_SetConfigVariable` calls
+  `option->readOption(newSetting, RtxOptionLayer::getUserLayer())` (fork `c6b48ed1`,
+  `src/dxvk/rtx_render/rtx_remix_api.cpp:1730`). The layers, weakest first: dxvk.conf, the built-in
+  per-application config, rtx.conf, a base game mod's rtx.conf, the derived, environment and quality
+  layers, then the User layer (user.conf), the strongest (`rtx_option_layer.cpp:637-690`). So a value
+  saved in `rtx.conf` never outranks the companion's live writes; one in `user.conf` is in the same
+  layer and is replaced by the next write.
+- `rtx.autoUnblockOptionEdits` concerns only edits made in the Remix menu that a stronger layer
+  overrides: they clear the stronger value instead of asking (`rtx_option_blocking_popup.cpp:92`).
+- The RTX fixes' light updater (`rtx_lightupdater 1`) writes `rtx.ignoreGamePointLights`,
+  `...SpotLights` and `...DirectionalLights` `False` 0.5 s after InitPostEntity
+  (`cl_rtx_settings.lua:307-354`); their map configs (`data/remix_map_configs/<map>.txt` or
+  `default.txt`) load 1 s after it (`cl_remix_map_configs.lua:437-455`). The companion's own 5 s re-send
+  puts the directional lights back to `True` for the physical sky.
+- A trace of every sky option write (time, value, result, caller; `out/r16/skytrace` in the main
+  checkout) with the field player's settings showed the sky sent at InitPostEntity (2.1-2.6 s after the
+  client's Lua started) and kept on a new game, a map change, a listen server and with the field's
+  `rtx.conf`; in the field on gm_construct too. On `modern_house`, Modern House RTX loads after
+  InitPostEntity (`MHRTX_Config` absent then), sets its afternoon 3 s after its own start (5.8 s in the
+  trace: sun 21 degrees at 222, its clouds and fog) and again 20, 40 and 60 s later; its
+  `M.Start` calls `M.ApplySettings()` through the table, so a wrapper installed before then sees every
+  call.
+
+## R16: where the package's binaries come from (2026-11-04, Claude)
+
+The survey behind [ADR 0106](decisions/0106-the-rtx-package-built-on-github.md) (full notes:
+`out/r16/binary-sources.md` in the main checkout). `packages/` indexes 54 native binaries: 41 in the
+runtime (1.03 GB), 5 in the fixes, 5 of the Model Hotloader, one each of ReShade, the glass and the
+material editor.
+
+- **RTX fixes module** (5,491,712 bytes, `447b9dde...`): built from the fixes fork's unpushed commit
+  `913bb6b` (`claude/r13-maps`, 23 local commits above the pushed `f28bd5a9`). The four GPL patches in
+  `packages/fixes/licenses/oversized-skinning` (`oversized-hw-skinning.patch`, `memory-limits/`,
+  `backrooms/`, `autopbr/`), applied to the index of public `f28bd5a9` with
+  `--include=source/* --include=premake5.lua --include=public/*` (their `README.md` hunks do not apply),
+  give `913bb6b`'s `source/`, `premake5.lua` and `public/` exactly. Built with premake 5.0.0-beta2 (5.0.0
+  is incompatible with garrysmod_common `a854f237`) and MSBuild `ReleaseWithSymbols`/x64: garrysmod_common's
+  configuration with optimisation off, which is what ships. The fork's `.gitmodules` points
+  `source/debug` at the private debug module's repository, so a recursive checkout needs a token;
+  `premake5.lua` builds the debug project only when `source/debug/premake_project.lua` exists.
+- **RTX Water module** (274,944 bytes): byte-identical to the fixes checkout's
+  `x86_64\Release\gmcl_rtxwater_win64.dll` of 2026-10-26 16:41; native Version 4, first committed in
+  `b5c194ec` 10 minutes later. The base `f28bd5a9` has Version 5 (`SetCameraInWater`; only `rtxwater.cpp`
+  differs), which the packaged Lua would detect and use: a behaviour change.
+- **Debug module**: the complete source copy in `packages/fixes/licenses/rtxdebug/checkout` builds it;
+  under a path with `!` the pinned generator writes a wrong absolute IntDir (build the helper libraries,
+  then the module with `BuildProjectReferences=false -p:IntDir=obj\Release\`).
+- **Material editor bridge** (316,416 bytes, `aeb5de42...`): byte-identical to a local build of the
+  private repository's `native/rtx_bridge` at `8ece1415` (CMake, Visual Studio 17 2022, Release). Its
+  writer test fails once `%TEMP%` is longer than about 75 characters (74 passes, 78 fails, measured with
+  the R16 build): the test's game root lives under `%TEMP%`, and the material with every texture role
+  then passes MAX_PATH in the bridge (`aperture152Apply.ok` false, `writer_tests.cpp:1097`). A real game
+  root of up to about 115 characters is safe by the same measure.
+- **`stdshader_dx6.dll`** (437,248 bytes, `4bf218db...`, Obsoletium 1.3.2.1081, linked 2026-08-11):
+  built by sambow23 from source that was never pushed (sambow23/obsolete-source-engine was last pushed
+  2026-03-21); the binary is committed in Xenthio/garrys-mod-rtx-remixed `74d9f3b6` and SheepyLord's fork
+  `d958da61`. Valve's Source 1 SDK licence.
+- **Model Hotloader natives**: byte-identical to the build in `ipg\!GMHLVK\wt-full-textures-props`
+  (branch `feat/gravity-buoyancy-settings` at the pushed `ecd7c426`) of 2026-10-26, whose 41 staged,
+  uncommitted changes hold `SetSecondaryWater`, `SetSecondaryBuoyancy` and `secondaryGravity`, which the
+  shipped DLL exports and the packaged Lua uses; no commit has them. The add-on's `native_policy.lua` and
+  `mmdhl-native-release.json` pin the four natives' and `lib_coacd.dll`'s SHA-256, so a rebuild needs
+  new records there too. `lib_coacd.dll` (`a32e801d...`) is the file in CoACD 1.0.14's PyPI wheel
+  `coacd-1.0.14-cp39-abi3-win_amd64.whl` (`6b548f44...`), as the hotloader's `scripts/bootstrap.py`
+  takes it.
+- **Runtime**: the fork's `_output` (`meson install --tags output`) holds all 189 files the runtime part
+  ships under `files/` (except `files/atmosphere/`) and nothing else besides symbols: `d3d9.dll` and the
+  two Remix USD plugins compiled, 38 vendor binaries brought by packman, submodules and clones. A full
+  local build is 8.9 GB (`_CompRelease_x64`) plus 1.07 GB of `_output`. `meson setup` runs
+  `scripts-common/update-deps.cmd`, which pulls every dependency of `packman-external.xml` into
+  `PM_PACKAGES_ROOT`. The build finds `vulkan-1.lib` and the Vulkan headers in the fork's own `lib` and
+  `include`, and glslang, slang and spirv-val in packman's `external/`.
+- **GitHub runners**: `windows-2022` has Visual Studio Enterprise 2022 17.14 (MSVC folder 14.44.35207),
+  Windows SDK 10.0.26100.0, CMake 3.31, Ninja 1.13, Python 3.12, Git LFS, `core.autocrlf true` in the
+  system git config, no Vulkan SDK and no premake. A private repository's standard runner has 2 cores,
+  8 GB and about 14 GB of SSD for the workspace.
