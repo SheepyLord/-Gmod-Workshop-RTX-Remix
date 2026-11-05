@@ -19,6 +19,9 @@ tools\ci\build_hotloader.ps1 -Source <a source tree> -Vendor <the add-on's boots
 | `-RunUrl` | Recorded with each file |
 | `-Jobs` | Parallel MSBuild projects (default 2) |
 
+Relative `-Out`, `-Work`, `-Source` and `-Vendor` folders are taken from where the script is started (R19: before,
+they broke the build once it changed into the source copy).
+
 ## What it does
 
 1. Writes the source to `<Work>\src`: `tools\inputs.py extract model-hotloader --prefix source/mmdhl/`

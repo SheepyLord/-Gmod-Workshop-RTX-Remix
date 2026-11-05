@@ -30,6 +30,14 @@ Import-Module (Join-Path $repo 'tools\lib\VsDevEnv.psm1') -Force
 $pins = (Get-Content (Join-Path $PSScriptRoot 'pins.json') -Raw | ConvertFrom-Json).hotloader
 if (-not $Out) { $Out = Join-Path $repo 'out\ci\built' }
 if (-not $Work) { $Work = Join-Path $repo 'out\ci\work-hotloader' }
+# Relative folders are taken from where the script was started, as given, before the build changes
+# directory into the source copy (R19: a relative -Work, -Out or -Source broke the build there).
+# (Path.Combine keeps a rooted second path as it is; Join-Path would append it.)
+$here = (Get-Location).ProviderPath
+$Out = [IO.Path]::GetFullPath([IO.Path]::Combine($here, $Out))
+$Work = [IO.Path]::GetFullPath([IO.Path]::Combine($here, $Work))
+if ($Source) { $Source = [IO.Path]::GetFullPath([IO.Path]::Combine($here, $Source)) }
+if ($Vendor) { $Vendor = [IO.Path]::GetFullPath([IO.Path]::Combine($here, $Vendor)) }
 $src = Join-Path $Work 'src'
 New-Item -ItemType Directory -Force $Out, $Work, (Join-Path $Work 'tmp') | Out-Null
 # Compiler and tool scratch stays inside the work folder (AGENTS.md rule 9).
