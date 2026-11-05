@@ -24,6 +24,7 @@
 #else
 #include "posix.hpp"
 #include "release.hpp"
+#include <dlfcn.h>
 #include <unistd.h>
 #endif
 #include <future>
@@ -56,7 +57,10 @@ struct SharedExport{fs::path path;std::future<fs::path> preparing;bool discarded
 struct PackageJob{std::shared_ptr<PackageProgress> progress;std::future<Json> future;Json result;bool finished=false;};
 // finished: when a poll or a later start first saw the scan done (GetTickCount64).
 struct AddonScan{std::future<Json> future;std::shared_ptr<std::atomic_bool> cancel;uint64_t finished=0;};
-struct Context{std::map<uint64_t,PackageJob> packages;std::map<uint64_t,AddonScan> addonScans;std::map<uint64_t,std::future<void>> assetChecks;fs::path root;SceneShare sceneShare;std::map<uint64_t,SharedExport> exports;std::map<uint64_t,std::future<bool>> commits;std::map<uint64_t,std::shared_ptr<SharedTransfer>> transfers;std::unique_ptr<World> runtime=std::make_unique<World>();fs::path bin,cache;uint64_t sequence=1;std::map<uint64_t,Job> jobs;std::map<std::string,std::shared_ptr<Model>> assets;std::map<std::string,std::future<std::shared_ptr<Model>>> loading;std::map<std::string,std::future<Rig>> fitting;std::map<std::string,Rig> fitted;PreviewQueue previews;std::unique_ptr<World> preview;std::map<uint64_t,std::unique_ptr<World>> editors;std::unique_ptr<FileAccess> files;std::unique_ptr<PickedModels> picked;};
+struct Context{std::map<uint64_t,PackageJob> packages;std::map<uint64_t,AddonScan> addonScans;std::map<uint64_t,std::future<void>> assetChecks;fs::path root;SceneShare sceneShare;std::map<uint64_t,SharedExport> exports;std::map<uint64_t,std::future<bool>> commits;std::map<uint64_t,std::shared_ptr<SharedTransfer>> transfers;std::unique_ptr<World> runtime=std::make_unique<World>();fs::path bin,cache;uint64_t sequence=1;std::map<uint64_t,Job> jobs;std::map<std::string,std::shared_ptr<Model>> assets;std::map<std::string,std::future<std::shared_ptr<Model>>> loading;std::map<std::string,std::future<Rig>> fitting;std::map<std::string,Rig> fitted;PreviewQueue previews;std::unique_ptr<World> preview;std::map<uint64_t,std::unique_ptr<World>> editors;std::unique_ptr<FileAccess> files;std::unique_ptr<PickedModels> picked;
+ // Set when the module closes: loads and checks still running stop at their next step, so the
+ // close (a map change) waits only for the step each is in (R19, review MH-06).
+ std::shared_ptr<std::atomic_bool> closing=std::make_shared<std::atomic_bool>(false);};
 std::unique_ptr<Context> context;
 std::future<Json> installationProbe;
 void pruneSharedWork(){
@@ -236,7 +240,7 @@ FUNCTION(CancelJob) {auto it=context->jobs.find(number(LUA,1));if(it!=context->j
 FUNCTION(CancelJob) {auto it=context->jobs.find(number(LUA,1));if(it!=context->jobs.end()){auto& j=it->second;j.child.kill();j.process=false;
 #endif
 j.result={{"state","cancelled"}};retireJob(j);}LUA->PushBool(true);return 1;} END_FUNCTION
-FUNCTION(RequestAsset) {auto id=stringArg(LUA,1);if(!validId(id))throw std::runtime_error("Invalid asset ID");if(!fs::exists(context->cache/L"assets"/wide(id)/L"manifest.json"))throw std::runtime_error("Model was deleted; import it again");if(!context->assets.contains(id)&&!context->loading.contains(id)){auto cache=context->cache;context->loading[id]=std::async(std::launch::async,[cache,id]{return loadAsset(cache,id);});}LUA->PushBool(true);return 1;} END_FUNCTION
+FUNCTION(RequestAsset) {auto id=stringArg(LUA,1);if(!validId(id))throw std::runtime_error("Invalid asset ID");if(!fs::exists(context->cache/L"assets"/wide(id)/L"manifest.json"))throw std::runtime_error("Model was deleted; import it again");if(!context->assets.contains(id)&&!context->loading.contains(id)){auto cache=context->cache;context->loading[id]=std::async(std::launch::async,[cache,id,closing=context->closing]{return loadAsset(cache,id,closing.get());});}LUA->PushBool(true);return 1;} END_FUNCTION
 std::shared_ptr<Model> asset(const std::string& id){if(context->assets.contains(id))return context->assets.at(id);auto it=context->loading.find(id);if(it!=context->loading.end()&&it->second.wait_for(std::chrono::seconds(0))==std::future_status::ready){auto pending=std::move(it->second);context->loading.erase(it);auto m=pending.get();for(auto old=context->assets.begin();old!=context->assets.end()&&context->assets.size()>=8;)if(old->second.use_count()==1)old=context->assets.erase(old);else ++old;context->assets[id]=m;return m;}return {};}
 // Plus each part's soft triangles (classified at load, so outside the manifest and the asset's identity).
 FUNCTION(AssetInfo) {auto m=asset(stringArg(LUA,1));if(!m){LUA->PushNil();return 1;}auto info=m->info();for(size_t i=0;i<m->materials.size()&&i<info["materials"].size();i++)info["materials"][i]["softTriangles"]=m->materials[i].softTriangles;push(LUA,info);return 1;} END_FUNCTION
@@ -248,8 +252,9 @@ FUNCTION(StartAssetCheck) {
  auto kind=stringArg(LUA,1),id=stringArg(LUA,2);if(!validId(id)||(kind!="character"&&kind!="static"))throw std::runtime_error("Invalid asset check");
  if(context->assetChecks.size()>=8)throw std::runtime_error("Earlier asset checks are still running or waiting to be polled");
  auto cache=context->cache;auto handle=context->sequence++;
- context->assetChecks.emplace(handle,std::async(std::launch::async,[cache,kind,id]{
-  if(kind=="character"){loadAsset(cache,id);return;}
+ context->assetChecks.emplace(handle,std::async(std::launch::async,[cache,kind,id,closing=context->closing]{
+  if(kind=="character"){loadAsset(cache,id,closing.get());return;}
+  if(closing->load())throw std::runtime_error("The check stopped: the map is changing");
   auto limits=props::fullTextureLimits();auto bundle=props::decode(props::readFile(cache/L"static"/L"assets"/wide(id+".gmdl"),limits.packageBytes),limits);if(bundle.id!=id)throw std::runtime_error("Prop SHA-256 mismatch");}));
  LUA->PushNumber(double(handle));return 1;
 } END_FUNCTION
@@ -297,8 +302,9 @@ FUNCTION(ExportSecondaryScene) {unsigned kinds=Collide::All;if(LUA->IsType(4,Gar
  push(LUA,context->sceneShare.describe(vector(LUA,1),float(LUA->GetNumber(2)),LUA->IsType(3,GarrysMod::Lua::Type::Number)?uint64_t(LUA->GetNumber(3)):0,kinds));return 1;} END_FUNCTION
 FUNCTION(ReadSceneChunk) {auto b=context->sceneShare.chunk(stringArg(LUA,1),number(LUA,2),number(LUA,3));LUA->PushString(reinterpret_cast<const char*>(b.data()),unsigned(b.size()));return 1;} END_FUNCTION
 FUNCTION(AcceptSceneGeometry) {auto b=stringArg(LUA,2);context->sceneShare.accept(stringArg(LUA,1),std::span(reinterpret_cast<const unsigned char*>(b.data()),b.size()));LUA->PushBool(true);return 1;} END_FUNCTION
-FUNCTION(PublishRemoteScene) {context->sceneShare.publish(world(),json(LUA,1));LUA->PushBool(true);return 1;} END_FUNCTION
-FUNCTION(ClearRemoteScene) {context->sceneShare.imported.clear();world().externalScene.store({});return 0;} END_FUNCTION
+// true, then the shapes the client should forget and ask for again when a frame names them (JSON).
+FUNCTION(PublishRemoteScene) {auto forget=context->sceneShare.publish(world(),json(LUA,1));LUA->PushBool(true);push(LUA,forget);return 2;} END_FUNCTION
+FUNCTION(ClearRemoteScene) {context->sceneShare.clear();world().externalScene.store({});return 0;} END_FUNCTION
 FUNCTION(GetSharedManifest) {push(LUA,sharedManifest(context->cache,stringArg(LUA,1),json(LUA,2),LUA->GetBool(3)));return 1;} END_FUNCTION
 FUNCTION(GetMountablePackage) {auto path=mountablePackage(context->cache,stringArg(LUA,1));LUA->PushString(path.c_str());return 1;} END_FUNCTION
 FUNCTION(SharedFileMatches) {auto path=sharedPath(context->cache,stringArg(LUA,1));auto size=number(LUA,2);auto digest=stringArg(LUA,3);LUA->PushBool(fs::is_regular_file(path)&&fs::file_size(path)==size&&hash(readFile(path))==digest);return 1;} END_FUNCTION
@@ -703,9 +709,38 @@ c.store=fileAccessStore();c.policy=FilePolicy::system(context->root);context->fi
  return *context->files;
 }
 #define END_FILE_FUNCTION catch(const FileAccessError& e){LUA->PushNil();LUA->PushString(e.what());LUA->PushString(e.code.c_str());return 3;}catch(const std::exception& e){return failure(LUA,e);} }
+// The Lua file that asked (R19, review MH-02): the first Lua function on the stack outside
+// Model Hotloader's own file access wrapper, as the VM recorded it (its chunk name), never
+// what the caller passes. Remembered folders are keyed on it. Through lua_shared's own
+// lua_getstack and lua_getinfo, which Lua cannot replace; empty when they cannot be found.
+struct LuaDebugRecord{int event;const char* name;const char* namewhat;const char* what;const char* source;int currentline;int nups;int linedefined;int lastlinedefined;char short_src[60];int i_ci;};
+std::string luaCaller(GarrysMod::Lua::ILuaBase* LUA){
+ using GetStack=int(*)(lua_State*,int,LuaDebugRecord*);using GetInfo=int(*)(lua_State*,const char*,LuaDebugRecord*);
+ static const auto api=[]{
+#ifdef _WIN32
+  auto library=GetModuleHandleW(L"lua_shared.dll");
+  return std::pair<GetStack,GetInfo>{library?reinterpret_cast<GetStack>(GetProcAddress(library,"lua_getstack")):nullptr,library?reinterpret_cast<GetInfo>(GetProcAddress(library,"lua_getinfo")):nullptr};
+#else
+  return std::pair<GetStack,GetInfo>{reinterpret_cast<GetStack>(dlsym(RTLD_DEFAULT,"lua_getstack")),reinterpret_cast<GetInfo>(dlsym(RTLD_DEFAULT,"lua_getinfo"))};
+#endif
+ }();
+ auto state=LUA->GetState();if(!api.first||!api.second||!state)return {};
+ for(int level=1;level<64;level++){
+  // Room to spare after the record: LuaJIT's lua_Debug is this size, a larger one stays harmless.
+  struct{LuaDebugRecord record;char spare[256];} frame{};
+  if(!api.first(state,level,&frame.record))break;
+  if(!api.second(state,"S",&frame.record)||!frame.record.what||!frame.record.source)continue;
+  std::string_view what=frame.record.what,source=frame.record.source;
+  if(what!="Lua"&&what!="main")continue;
+  if(source.ends_with("mmdhl/file_access.lua")||source.ends_with("/hook.lua"))continue;
+  if(source.starts_with("@"))source.remove_prefix(1);
+  return std::string(source.substr(0,160));
+ }
+ return {};
+}
 FUNCTION(FileAccessInfo) {if(!localServerRealm()){push(LUA,{{"version",1},{"available",false},{"reason","no_local_server"},{"local",false}});return 1;}push(LUA,files().info());return 1;} END_FILE_FUNCTION
-FUNCTION(FileAccessPick) {LUA->PushNumber(double(files().pick(json(LUA,1))));return 1;} END_FILE_FUNCTION
-FUNCTION(FileAccessRequest) {LUA->PushNumber(double(files().request(json(LUA,1))));return 1;} END_FILE_FUNCTION
+FUNCTION(FileAccessPick) {LUA->PushNumber(double(files().pick(json(LUA,1),luaCaller(LUA))));return 1;} END_FILE_FUNCTION
+FUNCTION(FileAccessRequest) {LUA->PushNumber(double(files().request(json(LUA,1),luaCaller(LUA))));return 1;} END_FILE_FUNCTION
 FUNCTION(FileAccessPoll) {push(LUA,files().poll(number(LUA,1)));return 1;} END_FILE_FUNCTION
 FUNCTION(FileAccessRead) {LUA->PushNumber(double(files().read(stringArg(LUA,1),json(LUA,2))));return 1;} END_FILE_FUNCTION
 FUNCTION(FileAccessPollRead) {auto r=files().pollRead(number(LUA,1));if(!r){LUA->PushBool(false);return 1;}LUA->PushString(r->data.data(),unsigned(r->data.size()));push(LUA,r->info);return 2;} END_FILE_FUNCTION
@@ -775,6 +810,8 @@ if(context){
  // goes away (an unscoped world() would create a fresh singleton after shutdown).
  {WorldScope realm(context->runtime.get());clearPhysicsBridge();}
 #endif
+ // Loads and checks still running stop at their next step: the futures below wait only for that.
+ *context->closing=true;
  #ifdef _WIN32
  for(auto& [id,job]:context->packages)job.progress->cancel=true;for(auto& [id,scan]:context->addonScans)*scan.cancel=true;for(auto& [id,j]:context->jobs){if(j.group){TerminateJobObject(j.group,1);CloseHandle(j.group);}if(j.process)CloseHandle(j.process);}context.reset();
  #else

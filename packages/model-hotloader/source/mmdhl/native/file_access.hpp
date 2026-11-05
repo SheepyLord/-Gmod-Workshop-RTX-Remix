@@ -48,9 +48,14 @@ ResolvedFile resolveFile(const fs::path& path);
 bool insideFolder(const fs::path& path,const fs::path& folder);
 // Shown to Lua instead of paths: the user profile folder becomes "~".
 std::string displayPath(const fs::path& path);
-// Remembered "always allow" answers: per requester label and folder. Labels are what
-// a script reports, so this is a convenience, not a boundary between local addons.
-struct FileGrant {std::string id,requester;fs::path folder;int64_t created=0,used=0;};
+// Remembered "always allow" answers: per requester label, the requesting script and folder.
+// The script is where the module found the call on the Lua stack (module.cpp luaCaller),
+// not what the caller says, so an addon that only reuses another addon's label no longer
+// inherits its folders silently (R19, review MH-02). Lua in the same state can still name
+// its chunks after another addon's file on purpose (CompileString): this keeps addons
+// apart, it is not a boundary between them. A grant from before R19 has no script and
+// answers only a caller the module could not identify either ("").
+struct FileGrant {std::string id,requester,script;fs::path folder;int64_t created=0,used=0;};
 struct FileGrantStore {
  fs::path file;bool enabled=true;std::vector<FileGrant> grants;
  // The store a file's text describes; entries that fail the policy are dropped. false: the
@@ -58,7 +63,7 @@ struct FileGrantStore {
  bool parse(std::string_view text,const FilePolicy& policy);
  // Writes the whole store; returns the text written.
  std::string save() const;
- const FileGrant* covering(const std::string& requester,const fs::path& path) const;
+ const FileGrant* covering(const std::string& requester,const std::string& script,const fs::path& path) const;
 };
 // The store file's text: nullopt when there is none; throws while it cannot be read.
 std::optional<std::string> readGrantStore(const fs::path& file);
@@ -83,10 +88,12 @@ public:
  FileAccess(const FileAccess&)=delete;
  FileAccess& operator=(const FileAccess&)=delete;
  Json info();
- uint64_t pick(const Json& options);
+ // caller: the requesting script as the Lua VM records it (module.cpp luaCaller); it keys
+ // remembered folders and is what the dialogs show. Empty when it could not be found.
+ uint64_t pick(const Json& options,const std::string& caller={});
  // options "noDialog": the installation check does not allow the worker that shows the
  // windows: only a remembered folder answers, anything else is refused "worker_unavailable".
- uint64_t request(const Json& options);
+ uint64_t request(const Json& options,const std::string& caller={});
  Json poll(uint64_t id);
  uint64_t read(const std::string& handle,const Json& options);
  std::optional<FileReadResult> pollRead(uint64_t id);

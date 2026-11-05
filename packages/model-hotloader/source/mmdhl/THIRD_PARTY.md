@@ -1,6 +1,6 @@
 # Third-party components
 
-Exact source revisions are recorded in `dependencies.lock.json`; bootstrap records each downloaded archive's SHA-256 under `vendor/`. Source archives are fetched from the original GitHub repositories. Release ZIPs carry the applicable notices in `licenses/`; the drop-in packages carry them in `GarrysMod/bin/win64/LICENSES` (DXVK's in `DXVK-LICENSES` beside it), the Linux packages in `GarrysMod/garrysmod/lua/bin/LICENSES` with those of `licenses/linux` (the `-linux64-vulkan` package's renderer notices in `GarrysMod/bin/linux64/DXVK-LICENSES`). The source of every release is this repository.
+Exact source revisions are recorded in `dependencies.lock.json`; bootstrap fetches each of them with git from the original GitHub repositories, which checks every object it receives against the locked commit's hash. Release ZIPs carry the applicable notices in `licenses/`; the drop-in packages carry them in `GarrysMod/bin/win64/LICENSES` (DXVK's in `DXVK-LICENSES` beside it), the Linux packages in `GarrysMod/garrysmod/lua/bin/LICENSES` with those of `licenses/linux` (the `-linux64-vulkan` package's renderer notices in `GarrysMod/bin/linux64/DXVK-LICENSES`). The source of every release is this repository.
 
 | Component | Use | License |
 |---|---|---|

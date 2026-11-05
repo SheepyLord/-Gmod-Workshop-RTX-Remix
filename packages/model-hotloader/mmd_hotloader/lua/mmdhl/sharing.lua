@@ -189,6 +189,15 @@ if SERVER then
   if hook.Run('MMDHLCanEdit',p,ent,property)==false then return false end
   return gamemode.Call('CanProperty',p,property or 'bodygroups',ent)~=false
  end
+ -- Removing or replacing a character is its owner's business (R19, review L-02), as the
+ -- static props' owns() decides: prop protection's owner (CPPI) or else its creator; a
+ -- character nobody owns (a map's, a save's) stays with CanProperty. Admins may act on any.
+ function mmdhl.OwnsEntity(p,ent)
+  if not IsValid(p) or not IsValid(ent) then return false end
+  if ent:IsPlayer() then return ent==p or p:IsAdmin() end
+  local owner=ent.CPPIGetOwner and ent:CPPIGetOwner() or ent:GetCreator()
+  return not IsValid(owner) or owner==p or p:IsAdmin()
+ end
  local function save() file.CreateDir('mmd_hotloader') file.Write('mmd_hotloader/approved.json',util.TableToJSON(approved,true)) end
  function mmdhl.ForgetPublishedAssets(ids)
   for _,id in ipairs(ids) do

@@ -32,10 +32,13 @@ void textureResolverTests(){
     // written. Its bytes would go into the cache and to other players with the model.
     fs::create_directories(dir/L"outside");writeAtomic(dir/L"outside"/L"secret.png",data);writeAtomic(dir/L"secret.png",data);
     TextureResolver confined(dir/L"model",DependencyScope::Reach::Confined);
-    // A static prop reads what it read in 2.2 (Reach::Local): a reference that climbs out still
-    // resolves as written; a root- or drive-relative one and an alternate data stream do not.
-    {TextureResolver local(dir/L"model");auto out=local.resolve("../outside/secret.png");
-     check(out.path==dir/L"outside"/L"secret.png"&&!out.repaired,"a static prop's texture outside its folder no longer resolves as in 2.2");
+    // A static prop reads only inside its import root too (Reach::Local; R19, review MH-01): a
+    // reference that climbs out is looked up by its file name in the model's folders instead,
+    // and a root- or drive-relative one and an alternate data stream are not read either.
+    {TextureResolver local(dir/L"model");
+     check(local.refuses("../outside/secret.png")&&local.outside("../outside/secret.png")&&!local.outside("\\secret.png"),"a static prop's texture outside its folder is refused as outside it");
+     rejects([&]{local.resolve("../outside/secret.png");},"a static prop's texture outside its folder was read");
+     check(local.resolve("tex/../body.png").path==dir/L"model"/L"body.png","a static prop's reference that stays in its folder no longer resolves");
      rejects([&]{local.resolve("\\secret.png");},"a root-relative texture was read");}
     for(auto escape:{std::string("../secret.png"),std::string("..\\outside\\secret.png"),std::string("tex/../../outside/secret.png"),std::string("C:secret.png"),std::string("\\secret.png"),
         utf8((dir/L"outside"/L"secret.png").wstring()),utf8((dir/L"secret.png").wstring()),utf8((dir/L"outside"/L"secret.png").generic_wstring())})
@@ -83,12 +86,13 @@ void textureResolverTests(){
      Options options;
      auto beside=importModel(dir/L"model"/L"beside.gltf",options,{});
      check(beside.vertices.size()==4&&beside.indices.size()==12,"a glTF buffer beside the model no longer imports");
-     // As in 2.2, a static prop's buffers may lie outside its folder or behind a junction.
-     check(importModel(dir/L"model"/L"escape.gltf",options,{}).vertices.size()==4,"a static prop's glTF buffer outside its folder no longer imports as in 2.2");
+     // A static prop's buffers come from its import root (R19, review MH-01): one outside its
+     // folder fails the import; behind a junction the player made inside it, as in 2.2, still imports.
+     rejects([&]{importModel(dir/L"model"/L"escape.gltf",options,{});},"a static prop's glTF buffer outside its folder was read");
      check(importModel(dir/L"model"/L"linked.gltf",options,{}).vertices.size()==4,"a static prop's glTF buffer behind a junction no longer imports as in 2.2");
-     // A .gmodel.json sidecar's textures are read like the prop's own (2.2's reach): one outside
-     // the model's folder still applies, one in a denied place is left out with a warning naming
-     // only the file and the rest of the override still applies; one that is nowhere still fails.
+     // A .gmodel.json sidecar's textures are read like the prop's own: one outside the model's
+     // folder or in a denied place is left out with a warning naming only the file and the rest
+     // of the override still applies; one that is nowhere still fails.
      const Bytes png={137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,16,0,0,0,16,8,6,0,0,0,31,243,255,97,0,0,0,26,73,68,65,84,120,156,99,184,179,37,234,63,37,152,97,212,128,81,3,70,13,24,46,6,0,0,157,55,233,31,202,232,213,231,0,0,0,0,73,69,78,68,174,66,96,130};
      writeAtomic(dir/L"outside"/L"fix.png",png);writeAtomic(dir/L"model"/L"paint.png",png);
      auto painted=[&](const std::string& name,const Json& skin){auto j=Json::parse(gltf("shape.bin"));j["materials"]={{{"name","skin"}}};j["meshes"][0]["primitives"][0]["material"]=0;
@@ -96,18 +100,21 @@ void textureResolverTests(){
      auto warned=[](const Asset& a,const std::string& text){for(auto& w:a.manifest["warnings"])if(w.get<std::string>()==text)return true;return false;};
      auto skin=[](const Asset& a){for(auto& m:a.manifest["materials"])if(m.value("name","")=="skin")return m;return Json();};
      const std::string refused="Material override texture in a protected location was not used: fix.png";
+     const std::string elsewhere="Material override texture outside the model's folder was not used: fix.png";
      for(auto ref:{utf8((dir/L"outside"/L"fix.png").wstring()),std::string("../outside/fix.png")}){
          auto a=importModel(painted("outside.gltf",{{"base_texture",ref},{"color",{1,0,0,1}}}),options,{});
-         check(!warned(a,refused)&&!skin(a).value("base_texture","").empty(),"a sidecar texture outside the model's folder no longer applies as in 2.2");}
+         check(warned(a,elsewhere)&&skin(a).value("base_texture","").empty()&&skin(a)["color"][1]==0,"a sidecar texture outside the model's folder was read, or dropped the rest of the override");}
+     // A denied file inside the model's folder: the protected-location warning.
+     writeAtomic(dir/L"model"/L"fix.png",png);
      setDependencyDenylist([](const fs::path& p){return p.filename()==L"fix.png";});
-     {auto a=importModel(painted("denied.gltf",{{"base_texture","../outside/fix.png"},{"color",{1,0,0,1}}}),options,{});
+     {auto a=importModel(painted("denied.gltf",{{"base_texture","fix.png"},{"color",{1,0,0,1}}}),options,{});
       check(warned(a,refused)&&skin(a).value("base_texture","").empty()&&skin(a)["color"][1]==0,"a sidecar texture in a denied place failed the import, was read or dropped the rest of the override");
       for(auto& w:a.manifest["warnings"])check(w.get<std::string>().find(utf8(dir.wstring()))==std::string::npos,"a sidecar warning names a folder on this computer");}
      setDependencyDenylist({});
      auto inside=importModel(painted("inside.gltf",{{"base_texture","paint.png"}}),options,{});
      check(!skin(inside).value("base_texture","").empty()&&!warned(inside,refused),"a sidecar texture beside the model no longer repairs the material");
      setDependencyDenylist([](const fs::path& p){return p.filename()==L"fix.png";});
-     auto masked=importModel(painted("masked.gltf",{{"base_texture","paint.png"},{"opacity_texture","../outside/fix.png"}}),options,{});
+     auto masked=importModel(painted("masked.gltf",{{"base_texture","paint.png"},{"opacity_texture","fix.png"}}),options,{});
      setDependencyDenylist({});
      check(!skin(masked).value("base_texture","").empty()&&warned(masked,refused),"a sidecar's denied opacity texture was read, or lost the base texture");
      rejects([&]{importModel(painted("nowhere.gltf",{{"base_texture","nowhere.png"}}),options,{});},"a sidecar texture that is nowhere no longer fails the import");

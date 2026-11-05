@@ -403,28 +403,33 @@ bool FileGrantStore::parse(std::string_view text,const FilePolicy& policy){
    FileGrant grant;grant.id=g.at("id").get<std::string>();grant.requester=g.at("requester").get<std::string>();
    if(grant.id.size()!=16||!std::all_of(grant.id.begin(),grant.id.end(),[](char c){return std::isxdigit((unsigned char)c)&&!std::isupper((unsigned char)c);}))continue;
    if(grant.requester.empty()||cleanLabel(grant.requester,64)!=grant.requester)continue;
+   // The requesting script (R19); a grant saved before has none.
+   if(g.contains("script")){if(!g["script"].is_string())continue;grant.script=g["script"].get<std::string>();if(cleanLabel(grant.script,160)!=grant.script)continue;}
    // Text checks only: a grant on an unplugged drive stays for when it returns.
    grant.folder=drivePath(g.at("folder").get<std::string>());if(policy.deniedPath(grant.folder)||policy.broadFolder(grant.folder))continue;
    grant.created=g.value("created",int64_t(0));grant.used=g.value("used",int64_t(0));
-   bool duplicate=false;for(auto& other:grants)duplicate|=other.id==grant.id||(other.requester==grant.requester&&sameText(trimmed(other.folder),trimmed(grant.folder)));
+   bool duplicate=false;for(auto& other:grants)duplicate|=other.id==grant.id||(other.requester==grant.requester&&other.script==grant.script&&sameText(trimmed(other.folder),trimmed(grant.folder)));
    if(!duplicate&&grants.size()<256)grants.push_back(std::move(grant));
   }catch(...){}
  }
  return true;
 }
 std::string FileGrantStore::save() const {
- Json list=Json::array();for(auto& g:grants)list.push_back({{"id",g.id},{"requester",g.requester},{"folder",utf8(g.folder.wstring())},{"created",g.created},{"used",g.used}});
+ Json list=Json::array();for(auto& g:grants){Json entry={{"id",g.id},{"requester",g.requester},{"folder",utf8(g.folder.wstring())},{"created",g.created},{"used",g.used}};if(!g.script.empty())entry["script"]=g.script;list.push_back(entry);}
  auto text=Json({{"schema",1},{"enabled",enabled},{"grants",list}}).dump(2);
  fs::create_directories(ioPath(file.parent_path()));writeAtomic(file,std::span(reinterpret_cast<const unsigned char*>(text.data()),text.size()));return text;
 }
-const FileGrant* FileGrantStore::covering(const std::string& requester,const fs::path& path) const {
- for(auto& g:grants)if(g.requester==requester&&insideFolder(path,g.folder))return &g;
+// A remembered folder answers only the label and the script it was given to (R19, review MH-02).
+const FileGrant* FileGrantStore::covering(const std::string& requester,const std::string& script,const fs::path& path) const {
+ for(auto& g:grants)if(g.requester==requester&&g.script==script&&insideFolder(path,g.folder))return &g;
  return nullptr;
 }
-struct FileAccess::Item {std::string name,requester,grant;fs::path root;bool folder=false;uint64_t size=0;};
+struct FileAccess::Item {std::string name,requester,script,grant;fs::path root;bool folder=false;uint64_t size=0;};
 struct FileAccess::Request {
  enum Kind{Pick,Path,Enable} kind=Path;
- std::string requester,script,purpose,title,language;Json filters=Json::array(),result;bool multiple=false,folder=false;
+ // caller: the requesting script as the Lua VM recorded it (it keys remembered folders);
+ // script: what the dialog shows, the caller when known.
+ std::string requester,caller,script,purpose,title,language;Json filters=Json::array(),result;bool multiple=false,folder=false;
 #ifdef _WIN32
  fs::path path,dir,rememberFolder;HANDLE process=nullptr,group=nullptr;
 #else
@@ -694,7 +699,7 @@ void FileAccess::turnedOff(){
 // listings no longer deliver: also the ones a smaller folder answered before a larger one
 // replaced it (that keeps them while it stays, in every process). Allowed once: until the map changes.
 void FileAccess::prune(){
- auto ended=[&](const Item& i){return !i.grant.empty()&&!store.covering(i.requester,i.root);};
+ auto ended=[&](const Item& i){return !i.grant.empty()&&!store.covering(i.requester,i.script,i.root);};
  std::erase_if(items,[&](const auto& entry){return ended(*entry.second);});
  for(auto& [id,t]:tasks)if(t->item&&ended(*t->item))halt(*t,TaskRevoked);
 }
@@ -725,18 +730,20 @@ void FileAccess::available(const std::string& requester,bool worker){
  // Labels are free to change, so a script cannot ask forever under new names either.
  if(refusals>=FileRefusalLimit)refuse("auto_denied_session","The player refused or closed ten requests; addons can ask again after the map changes");
 }
-static void common(FileAccess::Request& r,const Json& o){
+static void common(FileAccess::Request& r,const Json& o,const std::string& caller){
  if(!o.is_object())refuse("invalid_options","File access options must be an object");
  r.requester=text(o,"requester",64);if(r.requester.empty())refuse("invalid_options","Name the requesting addon (requester)");
- r.script=text(o,"script",160);r.purpose=text(o,"purpose",120);r.language=language(o);
+ // The dialog names the script the module found on the Lua stack; what Lua reports only when it found none.
+ r.caller=cleanLabel(caller,160);r.script=r.caller.empty()?text(o,"script",160):r.caller;
+ r.purpose=text(o,"purpose",120);r.language=language(o);
 }
-uint64_t FileAccess::pick(const Json& o){
- auto r=std::make_unique<Request>();r->kind=Request::Pick;common(*r,o);
+uint64_t FileAccess::pick(const Json& o,const std::string& caller){
+ auto r=std::make_unique<Request>();r->kind=Request::Pick;common(*r,o,caller);
  r->title=text(o,"title",80);r->multiple=flag(o,"multiple");r->folder=flag(o,"folder");r->filters=filters(o);
  available(r->requester);return enqueue(std::move(r));
 }
-uint64_t FileAccess::request(const Json& o){
- auto r=std::make_unique<Request>();r->kind=Request::Path;common(*r,o);r->folder=flag(o,"folder");
+uint64_t FileAccess::request(const Json& o,const std::string& caller){
+ auto r=std::make_unique<Request>();r->kind=Request::Path;common(*r,o,caller);r->folder=flag(o,"folder");
  // Set by installation.lua's guard while its check does not allow mmdhl_worker.exe, which shows the windows.
  bool noDialog=flag(o,"noDialog");
  if(!o.contains("path")||!o["path"].is_string())refuse("invalid_options","Give the path to request");
@@ -746,9 +753,9 @@ uint64_t FileAccess::request(const Json& o){
  // would let a script learn silently which drives or user folders this computer has.
  if(auto problem=driveProblem(r->path,true))r->problem=problem;else if(policy->deniedPath(r->path))r->problem="denied_location";
  // A remembered folder answers without asking, once the path proves to lead inside it.
- if(r->problem.empty()&&store.covering(r->requester,r->path))try{
+ if(r->problem.empty()&&store.covering(r->requester,r->caller,r->path))try{
   auto target=resolveFile(r->path);
-  if(target.folder==r->folder&&!policy->deniedPath(target.path))if(auto g=store.covering(r->requester,target.path))r->result=grant(*r,target,g->id);
+  if(target.folder==r->folder&&!policy->deniedPath(target.path))if(auto g=store.covering(r->requester,r->caller,target.path))r->result=grant(*r,target,g->id);
  }catch(const FileAccessError& e){if(e.code=="disabled")throw;}  // turned off meanwhile in another game process: no window either
  // Without the worker nothing else can answer. The same refusal whatever the path is, so it tells a script nothing about it.
  if(noDialog&&r->result.is_null())refuse("worker_unavailable","Model Hotloader's installation check does not allow the worker that shows file access windows");
@@ -793,7 +800,7 @@ void FileAccess::start(Request& r){
    else r.target=t;
   }catch(const FileAccessError& e){r.problem=e.code;}
   if(r.target){
-   if(auto g=store.covering(r.requester,r.target->path)){r.result=grant(r,*r.target,g->id);return;}
+   if(auto g=store.covering(r.requester,r.caller,r.target->path)){r.result=grant(r,*r.target,g->id);return;}
    r.rememberFolder=r.folder?r.target->path:r.target->path.parent_path();
    r.canRemember=!policy->broadFolder(r.rememberFolder)&&!policy->deniedPath(r.rememberFolder);
   }
@@ -814,8 +821,8 @@ Json FileAccess::grant(Request& r,const ResolvedFile& target,std::string grantId
  // Saving read the newest store: another game process may have turned file access off, or
  // revoked the folder (an item it answered lasts only while a remembered folder covers it).
  if(!store.enabled)refuse("disabled","The player turned file access for other addons off");
- if(!grantId.empty()&&!store.covering(r.requester,target.path))refuse("released","The player revoked this folder; ask for it again");
- auto entry=std::make_shared<Item>();entry->root=target.path;entry->folder=target.folder;entry->size=target.size;entry->requester=r.requester;entry->grant=grantId;
+ if(!grantId.empty()&&!store.covering(r.requester,r.caller,target.path))refuse("released","The player revoked this folder; ask for it again");
+ auto entry=std::make_shared<Item>();entry->root=target.path;entry->folder=target.folder;entry->size=target.size;entry->requester=r.requester;entry->script=r.caller;entry->grant=grantId;
  entry->name=utf8(target.path.filename().empty()?target.path.wstring():target.path.filename().wstring());
  auto handle=randomHex(16);items[handle]=entry;
  Json item={{"handle",handle},{"name",entry->name},{"folder",entry->folder},{"remembered",!grantId.empty()},{"displayPath",displayPath(target.path)}};
@@ -853,9 +860,10 @@ void FileAccess::finish(Request& r,const Json& answer){
  // The target is checked again when it is read; "always" is kept only where the dialog offered it.
  std::string grantId;bool saved=true;
  if(said=="always"&&r.canRemember){
-  FileGrant g;g.id=randomHex(8);g.requester=r.requester;g.folder=r.rememberFolder;g.created=g.used=now();grantId=g.id;
+  FileGrant g;g.id=randomHex(8);g.requester=r.requester;g.script=r.caller;g.folder=r.rememberFolder;g.created=g.used=now();grantId=g.id;
   saved=persist([g](FileGrantStore& s){
-   std::erase_if(s.grants,[&](const FileGrant& o){return o.requester==g.requester&&insideFolder(o.folder,g.folder);});
+   // It replaces this addon's smaller folders, and those saved before R19 without a script.
+   std::erase_if(s.grants,[&](const FileGrant& o){return o.requester==g.requester&&(o.script==g.script||o.script.empty())&&insideFolder(o.folder,g.folder);});
    if(s.grants.size()>=256)s.grants.erase(s.grants.begin());
    s.grants.push_back(g);});
  }
@@ -935,7 +943,7 @@ std::optional<Json> FileAccess::pollList(uint64_t id){
 void FileAccess::release(const std::string& handle){items.erase(handle);}
 Json FileAccess::grants(){
  localOnly();refresh();
- Json list=Json::array();for(auto& g:store.grants)list.push_back({{"id",g.id},{"requester",g.requester},{"folder",displayPath(g.folder)},{"created",g.created},{"used",g.used}});
+ Json list=Json::array();for(auto& g:store.grants)list.push_back({{"id",g.id},{"requester",g.requester},{"script",g.script},{"folder",displayPath(g.folder)},{"created",g.created},{"used",g.used}});
  return {{"enabled",store.enabled},{"grants",list}};
 }
 bool FileAccess::revoke(const std::string& id){
