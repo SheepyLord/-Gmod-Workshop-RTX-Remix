@@ -149,4 +149,6 @@ away from the sun and toward the horizon is where grazing rays take the most pro
 - **Actions storage.** The per-push build bundles fill the 2 GB in about two weeks at the current pace.
   R19-T proposes `retention-days: 7`; that is the user's call. After the release the user chose two
   days for every artifact, the loader's bundle included
-  ([ADR 0113](../decisions/0113-every-actions-artifact-expires-after-two-days.md)).
+  ([ADR 0113](../decisions/0113-every-actions-artifact-expires-after-two-days.md)). At the user's word
+  the 152 artifacts uploaded before that (1,222 MiB, the release's package among them) were deleted the
+  same day; one bundle with the two-day expiry remained.
