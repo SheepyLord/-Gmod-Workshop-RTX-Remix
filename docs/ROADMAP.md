@@ -14,6 +14,15 @@ publisher and `RemixConfig.GetUpscalingState()` report effective settings and de
 Both builds, live edits through all supported backends, older-runtime nil fallback and exact PoC
 restoration pass; the module is imported once. Runtime 0040 awaits the combined R20 integration
 import ([report](handover/R20-E-report.md), [ADR 0123](decisions/0123-live-upscaling-readback.md)).
+R20-B (items 45 and 49) is **in progress** on `r20-qol`: the running 20-minute sky defaults and
+one-time preservation-aware migration are implemented, with the translated startup hint consumer
+and checkbox. The hint's required native live snapshot does not exist in the packaged API; its
+integration remains open under [ADR 0117](decisions/0117-startup-upscaling-hint-and-sky-defaults.md).
+
+R20-B's [handover](handover/R20-B-report.md) records item 49 done and the hint consumer validated:
+fresh/migrated 20-minute sky panels, the checkbox, simulated off/on states and once-per-process
+behavior across maps, plus waiting for the first-run guide to close. Release checks pass. Item 45's
+native live readback and actual off/on integration acceptance remain open; production hints stay silent.
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader

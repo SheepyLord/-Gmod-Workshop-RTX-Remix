@@ -1,5 +1,12 @@
 # test_companion_sky.py
 
+R20-B also loads the real defaults autorun before the sky. The new defaults scenario checks both
+fresh `1`/`20` and migrated `0`/`30` profiles: one real minute advances the clock by 1.2 game hours,
+while Modern House's sky remains under its add-on with zero companion writes until a player edit.
+Other scenarios explicitly stop time to inspect fixed sky/weather behavior, independent of the
+new moving default. The separate [QoL harness](companion_qol_harness.lua.md) checks preservation and
+marker lifetime across maps/restarts.
+
 Runs the companion's sky under LuaJIT. Two parts are tested:
 
 - the arithmetic, [`sky_model.lua`](../../companion/nativeloader/lua/nativeloader/sky_model.lua.md);

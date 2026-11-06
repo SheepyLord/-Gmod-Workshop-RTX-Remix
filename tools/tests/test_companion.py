@@ -23,7 +23,8 @@ def lua_value(value):
     if isinstance(value, (int, float)):
         return repr(value)
     if isinstance(value, str):
-        return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+        return '"' + (value.replace('\\', '\\\\').replace('"', '\\"')
+                      .replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')) + '"'
     if isinstance(value, list):
         return '{' + ','.join(lua_value(v) for v in value) + '}'
     return '{' + ','.join('[' + lua_value(k) + ']=' + lua_value(v) for k, v in value.items()) + '}'

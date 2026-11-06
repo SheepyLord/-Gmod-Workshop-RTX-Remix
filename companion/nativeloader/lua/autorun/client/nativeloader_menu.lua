@@ -300,6 +300,9 @@ local function remix_settings(panel)
         end
         -- A label holds about 100 pixels; what does not fit goes below the control.
         if option[6] then panel:ControlHelp(L(option[6])) end
+        if option[1] == "frame_generation" then
+            panel:CheckBox(L("Show upscaling and frame generation hint at startup"), "nativeloader_upscaling_hint")
+        end
     end
     panel:ControlHelp(L("A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."))
     panel:Button(L("Clear this panel's overrides"), "nativeloader_remix_reset")

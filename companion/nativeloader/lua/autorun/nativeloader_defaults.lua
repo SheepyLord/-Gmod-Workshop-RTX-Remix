@@ -20,6 +20,27 @@ local function same(a, b)
     return a == b
 end
 
+-- R20: saved copies of both old sky defaults move together once. Run synchronously, just after
+-- the sky creates its ConVars and before it installs callbacks/starts its clock: this is a default
+-- migration, not a player edit that takes a map add-on's sky over. SetString is immediate, unlike
+-- queued RunConsoleCommand. A skipped pair is marked too, preserving every later player choice.
+if CLIENT then
+    hook.Add("NativeLoaderSkyDefaults", "nativeloader_defaults", function()
+        local skyMarker = MARKER_FOLDER .. "/sky_defaults_client_v1.txt"
+        if file.Exists(skyMarker, "DATA") then return end
+        local passes = GetConVar("nativeloader_sky_time_passes")
+        local minutes = GetConVar("nativeloader_sky_day_minutes")
+        if not passes or not minutes then return end
+        local changed = tonumber(passes:GetString()) == 0 and tonumber(minutes:GetString()) == 30
+        if changed then
+            passes:SetString("1")
+            minutes:SetString("20")
+        end
+        file.CreateDir(MARKER_FOLDER)
+        file.Write(skyMarker, changed and "migrated 0/30 to 1/20\n" or "kept player settings\n")
+    end)
+end
+
 -- Sets the classic values; only those still at the add-on's default unless `all`. Returns how many
 -- settings changed and how many of the table's settings exist in this session.
 local function apply(all)

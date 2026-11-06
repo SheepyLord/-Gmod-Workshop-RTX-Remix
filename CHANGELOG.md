@@ -20,6 +20,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
   flags from runtime patch 0040 after presets/callbacks resolve. Old runtimes return `nil` safely.
   The runtime patch awaits the combined integration import; a hash-pinned pending-patch record keeps
   source changes separate from unchanged shipped DLL provenance ([ADR 0123](docs/decisions/0123-live-upscaling-readback.md)).
+- **A running sky day by default** (R20-B, item 49): Time passes starts on, with a whole day in
+  20 real minutes. A saved pair still at the old off/30-minute defaults migrates once; changed pairs
+  and later player choices stay. Panel help and guide text match, in all six translations.
+- **Startup upscaling advice prepared** (R20-B, item 45): a translated opt-out beside Frame
+  generation, separate capability-aware sandbox hints, and a once-per-game marker across maps.
+  The packaged native API has no live option getter, so the consumer safely remains silent until
+  the documented live snapshot is supplied ([ADR 0117](docs/decisions/0117-startup-upscaling-hint-and-sky-defaults.md)).
+  The first-run guide and other menus defer its decision until the map is visible; closing a menu
+  reads the current settings, so advice cannot be left behind that window or queued before an edit.
 
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main

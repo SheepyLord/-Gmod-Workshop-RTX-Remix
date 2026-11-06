@@ -44,6 +44,32 @@ malformed, missing, oversized, failed and unterminated reads. `test_pending_runt
 proves only declared hash-pinned new suffix patches may await import; shipped input checks remain.
 Both run in `tools/test.ps1 -Config Release`. Build/PoC receipts live in this worktree's `out/r20e`
 (ADR 0123); the runtime DLL is tested locally without a package import.
+## R20-B: startup hints and the running sky defaults
+
+`python -I -m unittest discover -s tools/tests -p test_companion_qol.py -v` runs the real hint and
+defaults autoruns under LuaJIT: every upscaler/frame-generation combination, RTX 20/30/40/50 and
+unsupported/mixed/unknown adapters, per-backend capability flags, unreadable/malformed state,
+`cl_showhints 0`, the opt-out, bounded retries, delayed first drawing, two maps and another game
+start, and waiting for the first-run guide, pause/spawn menus or Alt+X to close before a fresh
+decision. It traps use of the file-only getter and settings writes. The migration checks old/fresh/
+changed pairs, missing ConVars and marker persistence after a skipped or successful migration.
+`test_companion_sky.py` exercises the actual defaults/sky startup together: 20 real minutes per
+day, migration before startup and Modern House ownership preserved. Existing fixed-sky tests
+explicitly stop time rather than depending on the old default.
+
+PoC acceptance under the shared lock: capture fresh and migrated Sky and weather panels and the
+hint checkbox. Verify native API absence gives no hint; injected off/on snapshots may exercise
+notification layout and consumer lifetime but must be labeled as simulated. **Full live off/on
+acceptance is open** until the runtime/native module supplies the effective post-preset snapshot
+in [ADR 0117](decisions/0117-startup-upscaling-hint-and-sky-defaults.md). Never use the old file-only
+getter as live evidence or save Remix settings. Evidence belongs in this worktree's `out/r20b`.
+
+R20-B acceptance: four normal RTX processes, seven map loads, fifteen 1600x900 captures; fresh and
+migrated profiles show `1`/`20`. Simulated off gives one hint after the guide closes and no repeat at
+the next map; simulated on gives none on either map. `out/r20b/acceptance.json` labels the simulated
+states explicitly. The final clean visibility run and SHA-256 restoration of 1,471 retained files are
+in `out/r20b/poc`; the preceding profile/on cases are in `poc-before-ui-fix`. All 27 native and 688
+Python tests pass (two optional-environment skips). Details: [R20-B report](handover/R20-B-report.md).
 
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,

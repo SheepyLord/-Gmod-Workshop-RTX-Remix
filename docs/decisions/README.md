@@ -13,6 +13,7 @@ someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules chang
 
 | # | Decision | Status |
 |---|---|---|
+| [0117](0117-startup-upscaling-hint-and-sky-defaults.md) | Capability-aware startup hint consumer and a once-migrated running 20-minute sky day | Accepted 2026-11-06 for Lua; native live readback open |
 | [0094](0094-reimported-carrier-metadata-and-state.md) | Restore prepared carrier metadata and forget deleted entry state | Accepted 2026-11-03 (R12-A) |
 | [0086](0086-inert-shader-effects-and-safe-guard-fallbacks.md) | Non-throwing guard fallbacks and inert GShader-style effects under RTX | Accepted 2026-11-01 |
 | [0081](0081-mmd-alpha-texture-category.md) | Scoped MMD alpha cutoff and opaque blend coverage, joined transient character texture tags | Accepted 2026-11-01 |

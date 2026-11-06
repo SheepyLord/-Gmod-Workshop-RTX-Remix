@@ -1,5 +1,11 @@
 # nativeloader_sky.lua
 
+R20-B: Time passes defaults on and a day lasts 20 real minutes. The defaults autorun migrates only
+the untouched old `0`/`30` pair once, before this file installs callbacks or starts its clock
+([ADR 0117](../../../../docs/decisions/0117-startup-upscaling-hint-and-sky-defaults.md)). Reset uses
+`1`/`20` too. The slider remains 2–240 minutes; 20 is within that range. A map's starting sun and
+R16's sky-add-on ownership rules below are preserved.
+
 R14-H rewords four help lines of the Sky and weather panel (Follow the map's sun, Day length, Sky
 update interval, Weather) in the guide's terms; the controls and their behaviour are unchanged.
 
@@ -34,8 +40,8 @@ Saved client settings, shown in the RTX Remix tab under "Sky and weather":
 | `nativeloader_sky_follow_map` | `1` | The time and the sun's direction come from the map's own sun |
 | `nativeloader_sky_hour` | `14.5` | Time of day, 0-24. Following the map, it shows the map's time |
 | `nativeloader_sky_direction` | `0` | Turns the sun's path around the sky (the map's north bearing), in degrees |
-| `nativeloader_sky_time_passes` | `0` | The clock runs |
-| `nativeloader_sky_day_minutes` | `30` | Real minutes for a whole day while the clock runs |
+| `nativeloader_sky_time_passes` | `1` | The clock runs |
+| `nativeloader_sky_day_minutes` | `20` | Real minutes for a whole day while the clock runs |
 | `nativeloader_sky_season` | `summer` | `spring`, `summer`, `autumn`, `winter`: how high the sun climbs and how long the day is |
 | `nativeloader_sky_moon` | `full` | Moon phase: `new`, `waxingCrescent`, `firstQuarter`, `waxingGibbous`, `full`, `waningGibbous`, `lastQuarter`, `waningCrescent` |
 | `nativeloader_sky_eclipse` | (empty) | `lunar` or `solar`; empty for none. An eclipse sets the moon's phase (full, new) |

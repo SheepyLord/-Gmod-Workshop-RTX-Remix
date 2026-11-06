@@ -48,6 +48,42 @@
   module build failed with C1083/D8040; a temporary `subst W:` pointing into this worktree's `out`
   gives correct paths. The unchanged build script then built the 5,515,264-byte module, SHA-256
   `53da14f9269f042869510fe8be56b8b055263acd7c80a54d3e6178dbbfa94e73`.
+## R20-B: startup readback and sky defaults (2026-11-06)
+
+- Live QA exposed the first-run guide covering the stock hint notification. The guide opens at
+  eight seconds (`nativeloader_guide.lua:452-456`); the original hint attempted at twelve. The hint
+  now defers the whole decision while [vgui.CursorVisible](https://wiki.facepunch.com/gmod/vgui.CursorVisible),
+  [gui.IsGameUIVisible](https://wiki.facepunch.com/gmod/gui.IsGameUIVisible) or Remix's existing live
+  `RemixConfig.GetUIState` says a menu is open. It does not spend native-readiness attempts or read
+  DATA/snapshots while obscured. Closing the window reads current settings, avoiding stale advice
+  if the player enabled both features in that menu. Four LuaJIT scenarios cover the wait and edit.
+- The runtime's `rtx_fork_upscaler_ui.cpp:167-174` adopts legacy DLFG/FSR enable flags when the
+  selector is None. The future native snapshot must resolve this consistency too, or report not
+  ready; a zero selector alone cannot prove that a legacy backend is off. This is part of the
+  documented snapshot provider's responsibility, not a file-based inference in Lua.
+
+- The packaged fixes' `packages/fixes/licenses/oversized-skinning/memory-limits/source/remixapi/remixapi.cpp:1111`
+  reads `rtx.conf` directly and returns empty when a key is absent. The binding exposes it as
+  `RemixConfig.GetConfigVariable`; no live option readback is exposed. The tab itself warns that its
+  drafts are not live (`nativeloader_menu.lua`, `remix_settings`). This contradicts the R20-B brief's
+  assumption, so a reliable startup hint needs a native read-only snapshot.
+- In the recorded runtime source (`dxvk-remix-gmod/.claude/worktrees/remix-i18n`),
+  `src/dxvk/rtx_render/rtx_options.h:1482` resolves initialization callbacks with `device = nullptr`,
+  then logs at 1485. Device-dependent `updateGraphicsPresets` is in `rtx_options.cpp:411`; the log
+  therefore cannot stand in for the later effective state. No runtime files were modified.
+- The current tab offers None/DLSS/NIS/TAA-U/XeSS/FSR and Off/DLSS-G/FSR 3
+  (`nativeloader_menu.lua:76-82`). NVIDIA's
+  [support table](https://www.nvidia.com/en-us/geforce/technologies/dlss/) distinguishes DLSS on
+  RTX 20/30/40/50 from DLSS frame generation on 40/50. The hint also requires explicit live backend
+  support, especially for FSR 3; the adapter's name alone cannot prove driver/backend availability.
+- Stock sandbox `garrysmod/gamemodes/sandbox/gamemode/cl_hints.lua:32-34` uses NOTIFY_HINT and
+  `ambient/water/drip1.wav` through `drip4.wav`. `lua/includes/modules/notification.lua:177-191`
+  sizes its label to content without word wrap, so the new hints use three translated short lines.
+- [Facepunch's ConVar:SetString reference](https://wiki.facepunch.com/gmod/ConVar%3ASetString)
+  confirms immediate writes for Lua-created ConVars. The migration runs at sky ConVar creation,
+  before callbacks, avoiding a false player takeover on Modern House. LuaJIT's real sky startup
+  harness measures a 1.2-hour advance per 60 seconds for fresh/migrated 20-minute days, and zero sky
+  writes before/after 60 seconds when Modern House's add-on owns the sky.
 
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 

@@ -1,5 +1,16 @@
 # nativeloader_defaults.lua
 
+R20-B additionally migrates the sky defaults independently of the classic table's version. On
+the client it registers `NativeLoaderSkyDefaults`; the sky autorun calls it immediately after
+creating its ConVars, before callbacks or clock startup. If both current values are numerically
+`nativeloader_sky_time_passes = 0` and `nativeloader_sky_day_minutes = 30`, immediate `ConVar:SetString`
+writes `1` and `20`. A changed value in either preserves both. The DATA marker
+`nativeloader_companion/sky_defaults_client_v1.txt` records migration or preservation; future choices
+are never migrated again. Missing ConVars leave the marker absent. This does not run server-side,
+reapply other classic settings or count as a deliberate takeover of a map add-on's sky. See
+[ADR 0117](../../../../docs/decisions/0117-startup-upscaling-hint-and-sky-defaults.md). Inputs are the
+two client ConVars and marker; outputs are those two values and marker. No exit code (game Lua).
+
 The companion's first-run defaults for the RTX add-ons' settings
 ([ADR 0020](../../../../docs/decisions/0020-classic-rtx-settings-as-defaults.md)). Shared: it runs
 on the server and on the client.
