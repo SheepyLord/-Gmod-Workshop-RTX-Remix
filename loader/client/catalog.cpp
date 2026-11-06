@@ -16,7 +16,9 @@ bool same_path(const std::filesystem::path& a, const std::filesystem::path& b) {
   return lower(fs::utf8(std::filesystem::absolute(a).lexically_normal())) ==
          lower(fs::utf8(std::filesystem::absolute(b).lexically_normal()));
 }
-bool allowed_source(const std::filesystem::path& root, const config::Config& config, const journal::Package& package) {
+}
+bool allowed_runtime_source(const std::filesystem::path& root, const config::Config& config, const journal::Package& package) {
+  if (package.id != kPackage) return false;
   const auto location = fs::join(root, package.location);
   if (package.source == "local" || package.source == "dev_folder") {
     const auto& allowed = package.source == "local" ? config.local : config.dev_folders;
@@ -30,7 +32,6 @@ bool allowed_source(const std::filesystem::path& root, const config::Config& con
       lower(fs::utf8(content.parent_path().filename())) != "workshop") return false;
   return fs::utf8(item.filename()) == "3829070317" && fs::utf8(item.parent_path().filename()) == "4000" &&
     std::find(config.workshop.begin(), config.workshop.end(), "3829070317") != config.workshop.end();
-}
 }
 
 bool native_bootstrap_present(const journal::Generation& generation) {
@@ -78,7 +79,7 @@ Catalog prepare(const std::filesystem::path& root, const config::Config& config,
       owner = &package;
     }
   }
-  if (!owner || !owner->remix || !owner->requires_remix || !allowed_source(root, config, *owner))
+  if (!owner || !owner->remix || !owner->requires_remix || !allowed_runtime_source(root, config, *owner))
     throw std::runtime_error("RTX client payload has no allowlisted runtime owner");
   if (!native_bootstrap_present(generation)) throw std::runtime_error("RTX client bootstrap was not deployed by its owner");
   Catalog out;

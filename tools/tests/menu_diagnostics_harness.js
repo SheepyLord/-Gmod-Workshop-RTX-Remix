@@ -8,8 +8,10 @@ const calls = [];
 let tick;
 class Element {
   constructor(tag) { this.tag = tag; this.children = []; this.style = {}; this.textContent = ''; }
-  appendChild(child) { this.children.push(child); return child; }
-  removeChild(child) { this.children.splice(this.children.indexOf(child), 1); }
+  appendChild(child) { this.children.push(child); child.parentNode = this; return child; }
+  removeChild(child) { this.children.splice(this.children.indexOf(child), 1); child.parentNode = null; }
+  setAttribute(key, value) { this[key] = value; }
+  focus() { this.focused = true; }
   get firstChild() { return this.children[0]; }
   set innerHTML(_) { throw Error('Raw HTML must never be used'); }
 }
@@ -220,3 +222,133 @@ const bounded = noticeCase('en', false, '#/', {now: () => now, parse: Date.parse
 for (let i = 0; i < 200; i++) { now += 1000; bounded.tick(); }
 assert.equal(bounded.requests.length, 120, 'bounded retries if local status/snapshot never become readable');
 console.log('PASS menu diagnostics');
+
+// The real RTX modal and Angular route listener, including navigation by code and a pause menu.
+function menuCase(options = {}) {
+  const doc = makeDocument(), requests = [], intervals = [], handlers = {}, ready = [];
+  if (options.loading) { doc.readyState = 'loading'; doc.addEventListener = (_, fn) => ready.push(fn); }
+  const scope = {Language: options.language || 'en', InGame: !!options.inGame};
+  let route = options.route || '/', proposed = route;
+  const loc = {path: () => decodeURIComponent(proposed.split('?')[0]),
+    url(value) {
+      if (value === undefined) return proposed;
+      proposed = value;
+      let cancelled = false;
+      if (handlers.$locationChangeStart) handlers.$locationChangeStart({preventDefault() { cancelled = true; }});
+      if (!cancelled) route = value;
+      proposed = route;
+    }};
+  const r = {$on(name, fn) { handlers[name] = fn; }, $evalAsync: options.noDigest ? undefined : function (fn) { fn(); }};
+  const released = options.release === undefined ? '0.16.0' : options.release;
+  const diagnostic = {...data, rtx_active: options.active !== false, session_token: 'start-123',
+    loader: {...data.loader, version: options.current || '0.15.0'},
+    released_loader: typeof released === 'string' ? {version: released,
+      url: 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v' + released} : released};
+  const win = {NativeLoaderDiagnostics: diagnostic, NativeLoaderDiagnosticLabels: labels,
+    NativeLoaderMenuChoices: 'choices-reader', location: {hash: '#/'},
+    setInterval(fn) { intervals.push(fn); },
+    lua: options.bridge === false ? null : {Run(...args) {
+      requests.push(args);
+      if (options.brokenBridge) throw Error('bridge changed');
+    }}};
+  const ctx = {window: win, document: doc, gScope: scope, App: {run(parts) { parts[parts.length - 1](r, loc); }}};
+  vm.runInNewContext(source, ctx);
+  const view = {doc, win, requests, scope, loc, ctx, tick: () => intervals.forEach(fn => fn()), route: () => route,
+    ready: () => ready.forEach(fn => fn()), hasRouteHandler: () => !!handlers.$locationChangeStart,
+    receive(value = {}) { win.NativeLoaderReceiveMenuState({session_token: 'start-123', ...value}); },
+    modal: () => doc.getElementById('native-loader-modal'),
+    click(key) {
+      const caption = labels[scope.Language][key];
+      const btn = all(view.modal()).find(n => n.tag === 'button' && n.textContent === caption);
+      assert(btn, key); btn.onclick();
+    }};
+  return view;
+}
+for (const code of Object.keys(labels)) {
+  const view = menuCase({language: code});
+  view.receive();
+  assert(view.modal());
+  assert(all(view.modal()).some(n => n.textContent === labels[code].update_title));
+  assert(all(view.modal()).some(n => n.textContent.includes('0.15.0') && n.textContent.includes('0.16.0')));
+  view.click('update_open');
+  assert.equal(view.modal(), undefined);
+  assert(view.requests.some(call => call[0] === 'gui.OpenURL( %s )' && call[1].endsWith('/v0.16.0')));
+}
+for (const [running, latest, expected] of [
+  ['0.15.0', '0.15.0', false], ['0.16.0', '0.15.0', false], ['0.15.0', '0.16.0', true],
+  ['1.0.0-rc.2', '1.0.0-rc.10', true], ['1.0.0-rc.10', '1.0.0-rc.2', false],
+  ['1.0.0-rc.1', '1.0.0', true], ['1.0.0', '1.0.0-rc.1', false],
+  ['1.0.0-alpha', '1.0.0-alpha.1', true], ['1.0.0-9', '1.0.0-alpha', true],
+  ['1.0.0-a', '1.0.0-b', true], ['1.0.0', '01.1.0', false], ['1.0.0', '1.0.1-01', false],
+  ['1.0.0', '1.0.1+build', false], ['1.0.0', '1.0.1-a..b', false],
+  ['1.0.0', '18446744073709551616.0.0', false], ['1.0.0', '1.0.1\n', false]
+]) {
+  const view = menuCase({current: running, release: latest}); view.receive();
+  assert.equal(!!view.modal(), expected, running + ' versus ' + latest);
+}
+for (const release of [{version: '9.0.0', url: 'https://evil.test/'}, {version: '9.0.0', url: 'javascript:bad()'},
+  {version: '9.0.0', url: 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v8.0.0'},
+  {version: '9.0.0', url: 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v9.0.0', extra: true}, null]) {
+  const view = menuCase({release}); view.receive(); assert(!view.modal());
+}
+const laterUpdate = menuCase(); laterUpdate.receive(); laterUpdate.click('update_later'); laterUpdate.tick();
+assert(!laterUpdate.modal(), 'Later is for this start');
+assert(!laterUpdate.requests.some(call => call[0].includes('cookie.Set')), 'Later writes no preference');
+const ignoredUpdate = menuCase(); ignoredUpdate.receive();
+all(ignoredUpdate.modal()).find(n => n.tag === 'button' && n.textContent.includes('0.16.0')).onclick();
+assert(ignoredUpdate.requests.some(call => call[0].includes('cookie.Set("nativeloader.loader-update-ignored"') && call[1] === '0.16.0'));
+for (const [remembered, hidden] of [['0.16.0', true], ['0.15.0', false]]) {
+  const view = menuCase(); view.receive({ignored_version: remembered}); assert.equal(!view.modal(), hidden);
+}
+const reloadedMenu = menuCase(); reloadedMenu.receive({update_seen: true}); assert(!reloadedMenu.modal());
+const wrongToken = menuCase(); wrongToken.receive({session_token: 'another-start'}); assert(!wrongToken.modal());
+const away = menuCase({route: '/addons/'}); away.receive(); assert(!away.modal());
+away.loc.url('/'); away.tick(); assert(away.modal(), 'wait for home before consuming reminder');
+const pause = menuCase({inGame: true}); pause.receive(); assert(!pause.modal(), 'no menu update reminder during gameplay');
+const loading = menuCase({loading: true, release: null});
+assert(loading.hasRouteHandler(), 'register App.run before DOM-ready Angular bootstrap');
+loading.ready(); loading.receive(); loading.loc.url('/servers/'); assert(loading.modal());
+for (const inGame of [false, true]) {
+  for (const target of ['/servers/', '/servers', '/servers/history?sort=ping', '/%73ervers/']) {
+    const view = menuCase({inGame, release: null}); view.receive();
+    view.loc.url(target); assert(view.modal(), target); assert.equal(view.route(), '/');
+    view.click('multiplayer_back'); assert.equal(view.route(), '/'); assert(!view.modal());
+    view.loc.url(target); view.click('multiplayer_continue'); assert.equal(view.route(), target); assert(!view.modal());
+    view.loc.url('/'); view.loc.url(target); assert(view.modal(), 'without checkbox, warn on next visit');
+  }
+}
+for (const code of Object.keys(labels)) {
+  const view = menuCase({language: code, release: null}); view.receive(); view.loc.url('/servers/');
+  for (const key of ['multiplayer_title', 'multiplayer_rules', 'multiplayer_performance', 'multiplayer_risk', 'multiplayer_remember'])
+    assert(all(view.modal()).some(n => n.textContent === labels[code][key]));
+}
+const rememberServer = menuCase({release: null}); rememberServer.receive(); rememberServer.loc.url('/servers/');
+all(rememberServer.modal()).find(n => n.tag === 'input').checked = true;
+rememberServer.click('multiplayer_continue');
+assert(rememberServer.requests.some(call => call[0].includes('cookie.Set("nativeloader.multiplayer-warning-dismissed"')));
+rememberServer.loc.url('/'); rememberServer.loc.url('/servers/'); assert(!rememberServer.modal());
+const restarted = menuCase({release: null}); restarted.receive({multiplayer_dismissed: true});
+restarted.loc.url('/servers/'); assert(!restarted.modal()); assert.equal(restarted.route(), '/servers/');
+const backNeverSaves = menuCase({release: null}); backNeverSaves.receive(); backNeverSaves.loc.url('/servers/');
+all(backNeverSaves.modal()).find(n => n.tag === 'input').checked = true;
+backNeverSaves.click('multiplayer_back');
+assert(!backNeverSaves.requests.some(call => call[0].includes('cookie.Set')));
+for (const options of [{bridge: false}, {brokenBridge: true}, {active: false}]) {
+  const view = menuCase({release: null, ...options}); view.loc.url('/servers/');
+  assert.equal(view.route(), '/servers/', 'fail open or RTX off: ' + JSON.stringify(options)); assert(!view.modal());
+}
+const brokenDom = menuCase({release: null}); brokenDom.receive();
+brokenDom.doc.createElement = () => { throw Error('menu DOM changed'); };
+brokenDom.loc.url('/servers/'); assert.equal(brokenDom.route(), '/servers/'); assert(!brokenDom.modal());
+const earlyClick = menuCase({release: null}); earlyClick.loc.url('/servers/');
+all(earlyClick.modal()).find(n => n.tag === 'input').checked = true;
+earlyClick.click('multiplayer_continue'); assert.equal(earlyClick.route(), '/servers/');
+const lateState = menuCase({release: null}); lateState.loc.url('/servers/'); lateState.receive({multiplayer_dismissed: true});
+assert(!lateState.modal()); assert.equal(lateState.route(), '/servers/');
+for (const noDigest of [false, true]) {
+  const view = menuCase({release: null, noDigest}); view.receive(); view.loc.url('/servers/');
+  if (!noDigest) view.loc.url = function () { throw Error('location API changed'); };
+  view.click('multiplayer_continue');
+  assert(!view.modal()); assert.equal(view.win.location.hash, '#/servers/', 'direct hash fallback when Angular navigation fails');
+}
+console.log('PASS loader reminders and multiplayer routes');

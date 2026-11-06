@@ -60,6 +60,16 @@ Install
      scripts no longer run twice on servers that already send them.
    - Loader 0.14.0 starts the guard only in a start that runs RTX. A start with -nonativeloader
      right after an RTX session used to get it from that session's old report.
+   - Loader 0.15.0 shows a main-menu reminder when the Workshop package knows a newer loader
+     release. Older loaders show it after a map loads. Close Garry's Mod, download winmm.dll
+     from the release page, replace bin\win64\winmm.dll in the game folder, then restart.
+     The Workshop package updates automatically; the loaded DLL needs this manual replacement.
+     Later skips this start; Don't remind me remembers only that release, so a newer one asks again.
+   - Before opening the multiplayer browser, RTX sessions warn that servers may forbid RTX Remix
+     or ReShade and may kick or ban users. Check each server's rules. Online performance and
+     stability are not guaranteed, especially without that map's PBR/RTX content. Use this add-on
+     on servers at your own risk; its developers take no responsibility for any consequences.
+     Continue opens the browser; Back returns home. Don't show this again is saved on Continue.
    - With RTX the game opens as a borderless window covering your main screen. Exclusive fullscreen
      crashes the RTX Remix runtime. For another size, add -w <width> -h <height> to the game's launch
      options in Steam; a -windowed or -fullscreen of yours there is used as it is.

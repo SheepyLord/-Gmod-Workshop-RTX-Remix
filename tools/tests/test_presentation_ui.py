@@ -16,6 +16,27 @@ LUAJIT = shutil.which('luajit') or next((str(p) for p in [
 
 class PresentationUITests(unittest.TestCase):
     @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')
+    def test_r20_lua_reminders_and_menu_choices(self):
+        for harness, source, marker in [
+            ('loader_update_harness.lua', 'companion/nativeloader/lua/autorun/client/nativeloader.lua', 'PASS companion loader reminders'),
+            ('menu_choices_harness.lua', 'loader/proxy/ui/menu_choices.lua', 'PASS menu choices')
+        ]:
+            with self.subTest(harness=harness):
+                result = subprocess.run([LUAJIT, str(Path(__file__).with_name(harness)), str(REPO / source)],
+                                        cwd=REPO, capture_output=True, text=True, timeout=15)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn(marker, result.stdout)
+
+    def test_released_loader_record_tracks_a_published_version_separately(self):
+        record = json.loads((REPO / 'companion/nativeloader/resource/loader-release.json').read_text(encoding='utf-8'))
+        self.assertEqual(set(record), {'version', 'url'})
+        self.assertRegex(record['version'], r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$')
+        self.assertEqual(record['url'], 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v' + record['version'])
+        cmake = re.search(r'\bVERSION (\d+\.\d+\.\d+)', (REPO / 'CMakeLists.txt').read_text()).group(1)
+        # CMake releases are stable; any prerelease at the same core has lower precedence.
+        self.assertLessEqual(tuple(map(int, record['version'].split('-')[0].split('.'))), tuple(map(int, cmake.split('.'))))
+
+    @unittest.skipUnless(LUAJIT, 'LuaJIT is not installed')
     def test_mainmenu_local_notice_reader(self):
         result = subprocess.run([LUAJIT, str(Path(__file__).with_name('menu_notices_harness.lua')),
                                  str(REPO / 'loader/proxy/ui/read_notices.lua')],

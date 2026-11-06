@@ -1,5 +1,12 @@
 # Components
 
+R20-A adds `loader/proxy/loader_release.h` / `.cpp` (bounded published-release record and native
+runtime ownership checks), `loader/proxy/ui/menu_choices.lua` (bounded local menu preferences),
+and `loader/proxy/tests/test_loader_release.cpp`. The ordinary companion resource
+`companion/nativeloader/resource/loader-release.json` is shared with older-loader in-game reminders.
+`tools/tests/loader_update_harness.lua` and `menu_choices_harness.lua`, plus the existing menu JS
+harness, cover trust, version ordering, choices, lifecycle and server routes.
+
 R14-H splits the companion's guide into its window ([`nativeloader_guide.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_guide.lua.md))
 and its pages ([`guide_pages.lua`](../companion/nativeloader/lua/nativeloader/guide_pages.lua.md)). The
 guide's pictures are made by [`tools/guide_annotate.py`](../tools/guide_annotate.py.md) from the spec

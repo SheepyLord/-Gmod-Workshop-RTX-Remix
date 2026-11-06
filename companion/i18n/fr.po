@@ -281,64 +281,90 @@ msgstr "Ciel et météo"
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "Le paquet RTX %s a été mis à jour : redémarrez Garry's Mod pour l'utiliser"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
+#: nativeloader/lua/autorun/client/nativeloader.lua:360
+msgid "A loader update is available"
+msgstr "Une mise à jour du chargeur est disponible"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:378
+#, c-format
+msgid "You are running loader %s. The latest release is %s."
+msgstr "Vous utilisez le chargeur %s. La dernière version publiée est %s."
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:379
+msgid "Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."
+msgstr "Téléchargez winmm.dll depuis la page de la version, remplacez bin\\win64\\winmm.dll dans le dossier du jeu, puis redémarrez Garry's Mod. Le paquet Workshop se met à jour automatiquement ; seul ce fichier doit être mis à jour manuellement."
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:397
+msgid "Open the download page"
+msgstr "Ouvrir la page de téléchargement"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:398
+msgid "Later"
+msgstr "Plus tard"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:399
+#, c-format
+msgid "Don't remind me about %s"
+msgstr "Ne plus me rappeler la version %s"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Choose eye-white materials"
 msgstr "Choisir les matériaux du blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:408
 msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."
 msgstr "Choisissez ici un personnage présent, ou regardez-en un avant d'ouvrir cette fenêtre. Vos choix sont enregistrés pour ce personnage et s'appliquent immédiatement à toutes ses copies, sans le faire réapparaître. « Stabiliser le blanc des yeux des personnages importés » et « Luminosité du blanc des yeux » restent actifs."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Choose a spawned character"
 msgstr "Choisir un personnage présent"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:414
 msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
 msgstr "Faites d'abord apparaître un personnage importé depuis « Modèles externes ». Seuls les matériaux des personnages importés peuvent être sélectionnés."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:418
 msgid "Previous materials"
 msgstr "Matériaux précédents"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:412
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:419
 msgid "Next materials"
 msgstr "Matériaux suivants"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:431
 msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
 msgstr "Les matériaux cochés sont traités comme le blanc des yeux. « Utiliser la détection automatique » efface votre choix pour ce matériau. Lorsque les yeux partagent une texture avec le visage, l'image montre aussi le visage ; seul le matériau coché change."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:482
 msgid "Eye white"
 msgstr "Blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:477
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:484
 msgid "Use automatic detection"
 msgstr "Utiliser la détection automatique"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: eye white"
 msgstr "Choix : blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: ordinary material"
 msgstr "Choix : matériau ordinaire"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: eye white"
 msgstr "Automatique : blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: ordinary material"
 msgstr "Automatique : matériau ordinaire"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:498
 msgid "Texture not available"
 msgstr "Texture indisponible"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:503
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
 msgstr "Impossible d'enregistrer votre choix : le personnage a peut-être été supprimé, ou le fichier des choix enregistrés a été modifié ou est illisible. Aucun fichier n'a été écrasé."
 

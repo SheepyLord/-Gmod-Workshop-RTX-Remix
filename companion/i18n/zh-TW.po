@@ -281,64 +281,90 @@ msgstr "天空與天氣"
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "RTX 套件 %s 已更新：請重新啟動 Garry's Mod 以使用新版本"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
+#: nativeloader/lua/autorun/client/nativeloader.lua:360
+msgid "A loader update is available"
+msgstr "載入器有新版本可用"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:378
+#, c-format
+msgid "You are running loader %s. The latest release is %s."
+msgstr "你正在執行載入器 %s，最新發行版本為 %s。"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:379
+msgid "Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."
+msgstr "從發行頁面下載 winmm.dll，替換遊戲資料夾中的 bin\\win64\\winmm.dll，然後重新啟動 Garry's Mod。工作坊套件會自動更新，只有這個檔案需要手動更新。"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:397
+msgid "Open the download page"
+msgstr "開啟下載頁面"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:398
+msgid "Later"
+msgstr "稍後提醒"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:399
+#, c-format
+msgid "Don't remind me about %s"
+msgstr "不再提醒我更新至 %s"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Choose eye-white materials"
 msgstr "選擇眼白材質"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:408
 msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."
 msgstr "在此選擇已生成的角色，或先看向角色再開啟此視窗。選擇會依角色儲存，並立即套用至其所有實例，無需重新生成。「匯入角色的穩定眼白」和「眼白亮度」仍然適用。"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Choose a spawned character"
 msgstr "選擇已生成的角色"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:414
 msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
 msgstr "請先從「外部模型」生成一個匯入的角色。只能選擇匯入角色的材質。"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:418
 msgid "Previous materials"
 msgstr "上一頁材質"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:412
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:419
 msgid "Next materials"
 msgstr "下一頁材質"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:431
 msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
 msgstr "勾選的材質將作為眼白。「使用自動辨識」可清除該材質的手動選擇。眼睛與臉部共用紋理時，圖片也會顯示臉部；只有勾選的材質會改變。"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:482
 msgid "Eye white"
 msgstr "眼白"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:477
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:484
 msgid "Use automatic detection"
 msgstr "使用自動辨識"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: eye white"
 msgstr "手動：眼白"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: ordinary material"
 msgstr "手動：一般材質"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: eye white"
 msgstr "自動：眼白"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: ordinary material"
 msgstr "自動：一般材質"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:498
 msgid "Texture not available"
 msgstr "紋理無法使用"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:503
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
 msgstr "無法儲存選擇：角色可能已移除，或儲存選擇的檔案已遭修改或無法讀取。沒有覆寫任何檔案。"
 

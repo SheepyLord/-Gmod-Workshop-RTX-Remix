@@ -3,6 +3,7 @@
 #include "nl/journal.h"
 #include "nl/activate.h"
 #include "nl/performance.h"
+#include "loader_release.h"
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -23,6 +24,8 @@ struct System {
   std::uint64_t memory = 0;
   std::vector<GraphicsAdapter> graphics;
   std::optional<performance::Selection> performance_tier;
+  bool rtx_active = false;
+  std::optional<loader_release::Record> released_loader;
 
   std::uint32_t process_id = 0;
   std::string session_token;

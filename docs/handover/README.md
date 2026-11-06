@@ -1,5 +1,11 @@
 # Handovers
 
+R20-A's local implementation and QA are recorded in [R20-A-report.md](R20-A-report.md), including
+the real menu engine fixes, release procedure and the 4K RTX map/depot-fixture acceptance limits.
+
+R20-A implements the loader update reminder and multiplayer warning on `r20-menu`; its brief is
+[R20-A-loader-menu.md](R20-A-loader-menu.md), under [R20-plan.md](R20-plan.md).
+
 The latest round is R19, the pre-release review's findings fixed and release v0.14.0: [R19-report.md](R19-report.md), with its [plan](R19-plan.md) and the [verified review](R19-review.md); before it R18, R17's sky limits addressed (thin decks that close, a middle deck with its own patches, sun dogs and the other ice halos, a milky haze, a longer twilight): [R18-report.md](R18-report.md); before it R17, a sky that fits the weather (cloud genera for each weather, a sun disc, a high cloud layer) and the package workflow started by hand: [R17-report.md](R17-report.md); before it R16, the sky at a map's start and the RTX package built on GitHub with every native binary and a hash report: [R16-report.md](R16-report.md); and R15, imported characters' painted shadows and solid hair, then the loader's release candidate: [R15-report.md](R15-report.md).
 
 The latest QoL batch fixes [player bodies, arms and shadows](../decisions/0043-player-body-viewmodel-and-shadows.md).

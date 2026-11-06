@@ -1,5 +1,10 @@
 # menu_diagnostics_harness.js
 
+R20-A also executes the actual update/multiplayer modals against an Angular navigation fixture:
+SemVer prerelease ordering and bounds, invalid/foreign URLs, all seven languages, Later/ignore,
+page/start state, every server-route form in main/pause menus, Continue/Back/remember, delayed
+preferences, missing/broken bridge, failed DOM and unchanged RTX-off navigation.
+
 R7-B checks the full RTX package version/hash alongside a single content-package count,
 with zero/one/four content packages in all seven languages, both displayed and copied.
 The failure-summary loop includes the explicitly uncertain `likely_out_of_memory` reason.
