@@ -31,5 +31,8 @@ changes made while disabled. InitPostEntity and a zero-delay callback cover nati
 a Lua mixer call. Skip foreign shaders/Subrect parents safely; never alter their shared variables.
 Snapshots use the canonical material name, because distinct Lua userdata wrappers may refer to one
 engine material (the original shapes' model VMTs are shared by engine subrects and the mixer).
+Keep the original ITexture reference but rebind its saved name on restore. The four-state native
+PoC probe found that ITexture-valued restoration left stock engine decals invisible under RTX;
+name-valued restoration preserves their draws, including master off and after a blue scheme.
 Off does not unmount packaged materials/PBR or clear existing decals. Impact off/amount zero only
 controls extra impacts; master off disables schemes and the mixer too.

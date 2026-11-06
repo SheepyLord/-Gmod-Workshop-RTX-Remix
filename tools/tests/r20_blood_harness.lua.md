@@ -28,3 +28,5 @@ shader/base texture/vector reads so restoration is exercised with non-white init
 The stock scenario returns distinct proxy wrappers with shared backing material state, matching
 engine userdata aliasing. It checks restoration of a model material used by both a stock subrect
 and the mixer, which must have exactly one original snapshot.
+Texture doubles expose ITexture-style GetName, exercising filename snapshots and rebindings with
+the same interface as the game rather than returning a raw string from GetTexture.

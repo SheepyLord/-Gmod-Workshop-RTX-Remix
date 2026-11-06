@@ -6,11 +6,22 @@ for _, name in ipairs({ "bloodoverhaul_enable", "bloodoverhaul_scheme", "bloodov
     "nativeloader_blood_impacts", "nativeloader_blood_amount", "cl_drawhud", "r_drawviewmodel" }) do
     saved[name] = GetConVar(name):GetString()
 end
-local function emit(name, value) print("R21A_" .. name .. " " .. util.TableToJSON(value)) end
+local function emit(name, value)
+    local text = util.TableToJSON(value)
+    if #text < 3500 then print("R21A_" .. name .. " " .. text) return end
+    local total = math.ceil(#text / 3000)
+    for i = 1, total do
+        print("R21A_CHUNK " .. name .. " " .. i .. "/" .. total .. " " .. text:sub((i - 1) * 3000 + 1, i * 3000))
+    end
+end
 local function add(fn) steps[#steps + 1] = fn end
-local function shot(name) label = name timer.Simple(.8, function() print("NL_SHOT " .. name) end) end
+local function shot(name, delay) label = name timer.Simple(delay or .8, function() print("NL_SHOT " .. name) end) end
 -- Console commands are queued. Use synchronous client convar writes before inspecting state.
-local function set(name, value) GetConVar(name):SetString(value) end
+local function set(name, value)
+    -- Engine convars cannot use SetString; only the blood convars need synchronous inspection.
+    if name == "cl_drawhud" or name == "r_drawviewmodel" then RunConsoleCommand(name, value)
+    else GetConVar(name):SetString(value) end
+end
 local function ground(x, y)
     local tr = util.TraceLine({ start = Vector(x, y, 500), endpos = Vector(x, y, -700), mask = MASK_SOLID_BRUSHONLY })
     assert(tr.HitWorld and not tr.HitSky, "grid must hit the actual map surface")
@@ -56,7 +67,7 @@ local function check_source(records)
 end
 local grid = true
 hook.Add("CalcView", "r21a", function()
-    if grid then return { origin = Vector(-220, -580, 300), angles = Angle(90, 0, 0), fov = 75, drawviewer = false } end
+    if grid then return { origin = Vector(-220, -580, 300), angles = Angle(90, 90, 0), fov = 75, drawviewer = false } end
     local target = Vector(-200, -500, -100)
     for _, e in ipairs(ents.GetAll()) do if e:GetNWBool("r20c_target") then target = e:WorldSpaceCenter() break end end
     return { origin = Vector(-360, -645, -55), angles = (target - Vector(-360, -645, -55)):Angle(), fov = 65, drawviewer = false }
@@ -79,9 +90,13 @@ assert(panels == 1, "expected one blood settings panel")
 emit("START", { shapes = #BO.Shapes, schemes = #BO.Schemes, remix = RemixMaterial ~= nil,
     panels = panels, decal_wrapper = debug.getinfo(util.DecalEx, "S").source, materials = materials() })
 
-local function clear() RunConsoleCommand("r_cleardecals") end
+local function clear(after)
+    RunConsoleCommand("r_cleardecals")
+    -- Clearing is queued too: stamping now would erase the new decals on the next frame.
+    if after then timer.Simple(.2, after) end
+end
 local function original_grid()
-    clear()
+    clear(function()
     for row, code in ipairs({ 0, 1, 2, 6 }) do
         for i = 1, 8 do
             assert(BO.Shapes[i].key == "bo_blood" .. i)
@@ -90,8 +105,10 @@ local function original_grid()
             util.DecalEx(m, tr.Entity, tr.HitPos, tr.HitNormal, color_white, 1, 1)
         end
     end
+    shot("eight_originals_four_families")
+    end)
 end
-add(function() original_grid() shot("eight_originals_four_families") end)
+add(function() RunConsoleCommand("r21a_grid") timer.Simple(.6, original_grid) end)
 for _, scheme in ipairs(BO.Schemes) do
     local id = scheme.id
     add(function()
@@ -106,7 +123,8 @@ for _, scheme in ipairs(BO.Schemes) do
     end)
 end
 add(function()
-    clear() set("bloodoverhaul_enable", "0")
+    clear(function()
+    set("bloodoverhaul_enable", "0")
     local baseline = materials()
     check_source(baseline)
     set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
@@ -121,22 +139,27 @@ add(function()
         end
     end
     emit("RESTORED", { equal = true, materials = restored })
-    -- C++ util.Decal bypasses the Lua mixer, as do NPC Blood/YellowBlood decals.
-    for i = 1, 8 do
-        local pos = ground(-500 + (i - 1) * 80, -620).HitPos
-        util.Decal("Blood", pos + Vector(0, 0, 4), pos - Vector(0, 0, 4))
-        pos = ground(-500 + (i - 1) * 80, -500).HitPos
-        util.Decal("YellowBlood", pos + Vector(0, 0, 4), pos - Vector(0, 0, 4))
-    end
-    shot("engine_blood_yellow_master_off")
+    -- Server util.Decal broadcasts the engine decal, matching native NPC bleeding dispatch.
+    RunConsoleCommand("r21a_native")
+    shot("engine_blood_yellow_master_off", 3)
+    end)
 end)
 add(function()
     set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
     shot("engine_blood_yellow_blue")
 end)
+add(function()
+    set("bloodoverhaul_enable", "0")
+    local restored = materials()
+    check_source(restored)
+    emit("NATIVE_RESTORED", { equal = true, materials = restored })
+    shot("engine_blood_yellow_restored", 2)
+end)
 if ABL and ABL.Drops and ABL.Pools then
     add(function()
-        clear() grid = false
+        clear(function()
+        grid = false
+        set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "realistic")
         local floor = ground(-220, -500).HitPos
         ABL.Pools.Create(floor.x, floor.y, floor.z + .1, 0, 0, 1, 60)
         for i = 1, 12 do
@@ -155,11 +178,12 @@ if ABL and ABL.Drops and ABL.Pools then
             if NativeLoaderEffectCategories then NativeLoaderEffectCategories.Status() end
             shot("physics_blood_drops_pools_stains")
         end)
+        end)
     end)
 end
 local function combat(class)
     add(function()
-        grid = false clear() set("bloodoverhaul_scheme", "realistic")
+        grid = false clear() set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "realistic")
         RunConsoleCommand("r20c_spawn", class)
         timer.Simple(1, function() label = class RunConsoleCommand("r20c_fire", "weapon_pistol", "r21a_" .. class) end)
     end)
