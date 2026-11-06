@@ -7,5 +7,9 @@ autorun. With the screen part present its thirteen initialization modules run on
 standalone/package autoruns reach them. Language includes remain repeatable for language changes.
 Other includes, hooks and add-ons are unaffected. Restart to refresh an initialization module.
 
+If a remote server sent the old standalone before verified local loading, retire its known
+`bloodoverhaul` callbacks/menu/apply hooks. Unwrap a mixer/emitter only when its function's exact
+source is the old `bloodoverhaul/cl_core.lua`; preserve other add-ons' intervening wrappers.
+
 No files, network messages or server gameplay changes. Missing parts are a no-op. No exit code.
 See ADR 0118 and the R20-C Lua harness for both precedence orders and repeated initialization.

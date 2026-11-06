@@ -39,6 +39,26 @@ function include(path, ...)
 end
 
 if blood then
+    -- A remote server can have sent the old standalone before the verified local payload loads.
+    -- Retire only that add-on's named registrations and directly identified wrappers, preserving
+    -- any intervening add-on's wrapper. Normal startup reaches this before those modules run.
+    local previous = BloodOverhaul
+    if previous and not previous.Packaged then
+        for name in pairs(previous.ConVars or {}) do
+            if cvars.RemoveChangeCallback then cvars.RemoveChangeCallback("bloodoverhaul_" .. name, "bloodoverhaul") end
+        end
+        hook.Remove("InitPostEntity", "bloodoverhaul_apply")
+        hook.Remove("AddToolMenuCategories", "bloodoverhaul_menu")
+        hook.Remove("PopulateToolMenu", "bloodoverhaul_menu")
+        local function legacy_wrapper(fn)
+            local ok, info = pcall(debug.getinfo, fn, "S")
+            local path = ok and info and (info.source or ""):gsub("\\", "/"):lower()
+            return path and path:sub(-#"/bloodoverhaul/cl_core.lua") == "/bloodoverhaul/cl_core.lua"
+        end
+        if previous.OrigDecalEx and legacy_wrapper(util.DecalEx) then util.DecalEx = previous.OrigDecalEx end
+        local emitter = FindMetaTable("CLuaEmitter")
+        if emitter and previous.OrigEmitterAdd and legacy_wrapper(emitter.Add) then emitter.Add = previous.OrigEmitterAdd end
+    end
     BloodOverhaul = { Packaged = true, Shapes = include("nlblood/shapes.lua") }
     include("nlblood/schemes.lua")
     include("nativeloader/blood_core.lua")

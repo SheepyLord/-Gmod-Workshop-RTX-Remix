@@ -281,132 +281,132 @@ msgstr "空と天気"
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "RTX パッケージ %s が更新されました。使用するには Garry's Mod を再起動してください。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:8
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
 msgid "Realistic"
 msgstr "リアル"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:8
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
 msgid "Fresh arterial"
 msgstr "鮮やかな動脈血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:8
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
 msgid "Dark venous"
 msgstr "暗い静脈血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
 msgid "Aged, dried"
 msgstr "乾いた古い血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
 msgid "Black ink"
 msgstr "黒インク"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
 msgid "Toxic green"
 msgstr "毒々しい緑"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
 msgid "Blue blood"
 msgstr "青い血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
 msgid "Violet"
 msgstr "紫"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
 msgid "Golden ichor"
 msgstr "黄金の体液"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
 msgid "Synthetic white"
 msgstr "合成の白い血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:12
 msgid "Rainbow"
 msgstr "虹色"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:12
 msgid "Custom colours"
 msgstr "カスタム色"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:23
 msgid "Enable Blood Overhaul RTX"
 msgstr "Blood Overhaul RTX を有効にする"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:23
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:24
 msgid "Eighteen new patterns and twelve colour schemes, with wet PBR surfaces under RTX. Crunchy's Blood Overhaul is optional."
 msgstr "18 種類の新しい模様と 12 種類の配色。RTX では濡れた PBR 表面を表現します。Crunchy の Blood Overhaul は任意です。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:24
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:25
 msgid "Realistic bullet impacts"
 msgstr "リアルな着弾効果"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:25
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
 msgid "Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."
 msgstr "方向性のある飛沫、短い血霧、小さな血痕を残す落下滴。オフにするとエンジン本来の着弾血液効果に戻ります。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
 msgid "Impact amount"
 msgstr "着弾効果の量"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
 msgid "Zero uses the stock impact. Detail reduces with viewing distance; the particle and stain limits always apply."
 msgstr "ゼロで標準の効果を使います。遠距離では詳細を減らし、粒子と血痕の上限は常に適用されます。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
 msgid "Colour scheme"
 msgstr "配色"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:30
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:31
 msgid "Mix all blood patterns"
 msgstr "すべての血痕模様を混ぜる"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:31
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
 msgid "Splat size"
 msgstr "血痕の大きさ"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
 msgid "Recolour flying droplets"
 msgstr "飛ぶ血滴にも配色を適用"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
 msgid "Custom colours apply when the Custom colours scheme is selected."
 msgstr "「カスタム色」の配色を選ぶと、以下の色が適用されます。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
 msgid "Red blood"
 msgstr "赤い血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
 msgid "Alien blood"
 msgstr "異星生物の血"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
 msgid "Limits: 640 particles per second, 512 alive; 48 new stains per second, 384 until map cleanup or Clear all decals. Existing stains stay when impacts are turned off."
 msgstr "上限：毎秒 640 粒子、同時に 512 粒子。血痕は毎秒 48 個、マップのクリーンアップまたは「すべてのデカールを消去」まで計 384 個。着弾効果をオフにしても既存の血痕は残ります。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
 msgid "Test splats where you look"
 msgstr "視線の先で血痕をテスト"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
 msgid "Clear all decals"
 msgstr "すべてのデカールを消去"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
 msgid "Reset blood settings"
 msgstr "血液設定をリセット"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
 msgid "New patterns made with an AI image model. Base and style credit: Crunchy's 2022 Blood Overhaul (2683396098); its original textures and derived maps are not bundled."
 msgstr "新しい模様は AI 画像モデルで制作。基礎とスタイルのクレジット：Crunchy の 2022 Blood Overhaul（2683396098）。元のテクスチャやその派生マップは同梱していません。"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:46
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:47
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
 msgid "Blood"
 msgstr "血液"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:49
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:50
 msgid "Blood and impacts"
 msgstr "血液と着弾効果"
 

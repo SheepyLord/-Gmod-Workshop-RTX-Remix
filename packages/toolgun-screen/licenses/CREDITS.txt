@@ -4,5 +4,7 @@ The add-on keeps its thirteen original language catalogs and shipped screen back
 screen_original.png was made by the author's make_original_bg.py from Garry's Mod's screen_bg:
 in-game screen artwork credit Valve/Facepunch; this derivative is part of the user's shipped add-on,
 not a newly claimed MIT original. No other game files are included.
-The RTX package adds the private package marker and coexistence bootstrap; the original add-on's
-Lua and image are unchanged. The companion moves the settings; the original source is read only.
+The RTX package adds the private package marker and coexistence bootstrap. A small autorun adapter
+skips an already initialized standalone client; the original initializer is retained verbatim under
+a private path. All other Lua and the image are unchanged. The companion moves the settings;
+the original source is read only.

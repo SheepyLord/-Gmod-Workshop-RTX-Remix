@@ -1,5 +1,8 @@
 # nativeloader_blood_menu.lua
 
+The BO table marks menu registration once, including when the verified multiplayer catalog sees
+identical companion/part virtual files under both owners.
+
 R20-C Blood and impacts panel in RTX Remix / Blood. Uses the companion's six gettext catalogs;
 without the complete companion a separately built blood part has an English fallback and creates
 the tab/category itself. The early bootstrap must have found the owned-pattern part.

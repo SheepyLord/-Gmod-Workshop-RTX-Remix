@@ -45,6 +45,7 @@ function RunConsoleCommand(name, value)
 end
 hook = {
     Add=function(event,id,fn) hooks[event]=hooks[event] or {} hooks[event][id]=fn end,
+    Remove=function(event,id) if hooks[event] then hooks[event][id]=nil end end,
     Run=function(event,...) for _,fn in pairs(hooks[event] or {}) do fn(...) end end,
 }
 concommand = {Add=function(name,fn) commands[name]=fn end}
@@ -59,6 +60,8 @@ function Material(name)
     mats[name]=mat return mat
 end
 CreateMaterial = function(name,shader,fields) local m=Material(name) for k,v in pairs(fields) do m[k]=v end return m end
+local emitter_meta = {Add=function(self,mat,pos,...) return {mat=mat,pos=pos,extra={...}} end}
+function FindMetaTable(name) if name=='CLuaEmitter' then return emitter_meta end end
 util = {
     DecalEx=function(...) calls.decals=calls.decals or {} table.insert(calls.decals,{...}) end,
     Effect=function(...) calls.effects=calls.effects or {} table.insert(calls.effects,{...}) end,
@@ -89,7 +92,18 @@ timer = {Simple=function(_,fn) end}
 spawnmenu = {AddToolMenuOption=function(...) calls.panels=calls.panels or {} table.insert(calls.panels,{...}) end,
     AddToolTab=function() end,AddToolCategory=function() end}
 
-if scenario=='budget' then
+if scenario=='dts_bootstrap' then
+    local count=0
+    include=function(path) assert(path=='dynamic_toolgun_screen/nl_original_init.lua') count=count+1 DTScreen={Loaded=true} end
+    dofile(source('nativeloader/dts_bootstrap.lua')) dofile(source('nativeloader/dts_bootstrap.lua'))
+    assert(count==1)
+    DTScreen={Loaded=true,Version='standalone'}
+    dofile(source('nativeloader/dts_bootstrap.lua')) assert(count==1 and DTScreen.Version=='standalone')
+    SERVER,CLIENT=true,false
+    AddCSLuaFile=function() end
+    dofile(source('nativeloader/dts_bootstrap.lua')) dofile(source('nativeloader/dts_bootstrap.lua'))
+    assert(count==2)
+elseif scenario=='budget' then
     local Budget=include('nativeloader/blood_budget.lua')
     local b=Budget.New(3,2)
     assert(b:Take(0,2) and b:Take(.1,2) and not b:Take(.2,2))
@@ -103,14 +117,22 @@ if scenario=='budget' then
     assert(map:Take(0,math.huge) and map:Take(.1,math.huge))
     assert(map:Take(10,math.huge) and not map:Take(1000,math.huge))
     map:Reset() assert(map:Take(1000,math.huge))
-elseif scenario=='coexist' or scenario=='absent' then
+elseif scenario=='coexist' or scenario=='absent' or scenario=='preloaded' then
     local loaded={}
-    file.Exists=function(path) return scenario=='coexist' and (path=='nlblood/shapes.lua' or path=='dynamic_toolgun_screen/nl_package.lua') end
+    file.Exists=function(path) return scenario~='absent' and (path=='nlblood/shapes.lua' or path=='dynamic_toolgun_screen/nl_package.lua') end
     include=function(path)
         loaded[path]=(loaded[path] or 0)+1
         if path=='nlblood/shapes.lua' then return {} end
     end
     local before=include
+    local original
+    if scenario=='preloaded' then
+        original=util.DecalEx
+        BloodOverhaul={OrigDecalEx=original,ConVars={enable={}}}
+        util.DecalEx=assert(loadstring('return function() error("old mixer ran") end','@lua/bloodoverhaul/cl_core.lua'))()
+        hook.Add('InitPostEntity','bloodoverhaul_apply',function() error('old apply ran') end)
+        hook.Add('AddToolMenuCategories','bloodoverhaul_menu',function() error('old category ran') end)
+    end
     dofile(source('autorun/!nativeloader_blood.lua'))
     if scenario=='absent' then assert(include==before and not BloodOverhaul) else
         assert(BloodOverhaul.Packaged and NativeLoaderBundledDTS)
@@ -126,6 +148,10 @@ elseif scenario=='coexist' or scenario=='absent' then
         include('other/addon.lua') include('other/addon.lua') assert(loaded['other/addon.lua']==2)
         local guarded=include dofile(source('autorun/!nativeloader_blood.lua')) assert(guarded==include)
         assert(loaded['nativeloader/blood_core.lua']==1 and loaded['nativeloader/blood_impacts.lua']==1)
+        if original then
+            assert(util.DecalEx==original)
+            assert(not hooks.InitPostEntity.bloodoverhaul_apply and not hooks.AddToolMenuCategories.bloodoverhaul_menu)
+        end
     end
 elseif scenario=='menu' then
     NativeLoaderBundledDTS=true
@@ -168,6 +194,8 @@ else
         local n=BO.ImpactPlan(2,100,1)
         assert(BO.ImpactPlan(2,2000,1)<n and BO.ImpactPlan(2,5000,1)==0)
         assert(BO.ImpactPlan(8,100,2)<=42 and BO.ImpactPlan(2,100,0)==0)
+        assert(BO.ImpactPlan(12,100,1)>BO.ImpactPlan(8,100,1))
+        assert(BO.ImpactPlan(60,100,1)>BO.ImpactPlan(40,100,1),'multiplayer amounts must remain distinct')
         assert(BO.ImpactPlan(0/0,0,1)>0 and BO.ImpactPlan(math.huge,0,1)>0)
         local pale=BO.Colour(1) local green=BO.Colour(2) assert(pale.g~=green.g)
         for _,scheme in ipairs(BO.Schemes) do
@@ -175,6 +203,11 @@ else
             for _,code in ipairs({0,1,2,4,5,6}) do assert(IsColor(BO.Colour(code,2))) assert(BO.Pattern(code,1)) end
         end
         assert(not BO.Colour(3) and not BO.Pattern(3,1))
+        local external=emitter_meta.Add({},'decals/blood1',Vector(),99)
+        assert(external.mat:GetName():find('nlfluid_',1,true) and external.extra[1]==99)
+        RunConsoleCommand('bloodoverhaul_droplets','0')
+        external=emitter_meta.Add({},'decals/blood1',Vector(),99)
+        assert(external.mat=='decals/blood1' and external.extra[1]==99)
         local original=Material('decals/blood1')
         RunConsoleCommand('bloodoverhaul_enable','0')
         util.DecalEx(original,'ent','pos','normal','colour',.7,.9)
@@ -204,6 +237,9 @@ else
         clock=clock+2 local first=#added+1 hit() land(first) assert(#calls.decals>384)
     elseif scenario=='blood_menu' then
         dofile(source('autorun/client/nativeloader_blood_menu.lua'))
+        local builder=BO.BuildMenu
+        dofile(source('autorun/client/nativeloader_blood_menu.lua'))
+        assert(BO.BuildMenu==builder,'repeat catalog owner must not reinitialize the menu')
         hook.Run('PopulateToolMenu')
         assert(#calls.panels==1 and calls.panels[1][1]=='RTX Remix' and calls.panels[1][2]=='Blood')
         assert(calls.panels[1][3]=='bloodoverhaul_settings')

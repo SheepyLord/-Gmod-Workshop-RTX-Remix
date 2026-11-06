@@ -1,5 +1,32 @@
 # Research notes
 
+## R20-C: owned blood assets and the stock dispatch (2026-11-06)
+
+- The blood project's `tools/shapes.py` identifies eighteen `CODEX_UNITS` patterns separately from
+  `bo_blood*`, `bo_yblood*`, flesh and stains. `tools/publish.py:197-203` makes the old droplet from
+  `work/maps/bo_blood8/neutral.png`, so even the nominal companion output contains a derivative that
+  cannot ship here. `tools/prepare_blood.py` selects 109 source files and excludes 270 output files;
+  the committed audit retains paths/hashes. The new index has 36 pattern VTFs, 72 DDSs, two original
+  analytic particle VTFs and 72 hash overrides. Added LFS: 55,518,444 blood bytes + 24,316 screen
+  bytes = 55,542,760 compressed bytes (52.97 MiB). No source PNGs/reference images are imported.
+- [Valve's `util_shared.cpp:714-744,822-831`](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/util_shared.cpp)
+  sends origin, incoming direction, blood colour and blood amount as `bloodimpact` CEffectData;
+  multiplayer multiplies amount by five before clamping it at 255. Amount is a proxy, not reliable
+  damage or exit-wound information. R20-C uses a square-root response around 12, capped .4–2.8, so
+  differing amounts retain differing spray sizes instead of all saturating at eight.
+- [Valve's callback](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/client/fx_blood.cpp)
+  selects red/green/yellow and episodic PCF systems, orienting them opposite the supplied direction.
+  [Facepunch documents](https://wiki.facepunch.com/gmod/util.Effect) `allowOverride=false` for
+  forwarding unchanged data to the engine. No PCF or stock material needs replacing.
+- `loader/client/bootstrap.lua:105-110` gives each verified file its own include environment.
+  The screen's packaged autorun adapter therefore also checks `DTScreen.Loaded`, covering a
+  server-delivered standalone before verified local loading. The early blood bootstrap retires
+  only legacy-owned callbacks/hooks and wrappers whose exact source is the old core. Other add-on
+  wrapper chains are preserved.
+- `tools/tests/test_render_guard_addons.py` inventories legacy exemptions. New screen/blood paths
+  intentionally receive none: R20-C uses ordinary particle/decal APIs for R20-D's generic policy.
+
+
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 
 Runtime source at `403b2336` (patch 0028); the patch, the A/B and its evidence are in the

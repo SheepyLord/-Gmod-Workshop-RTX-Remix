@@ -57,6 +57,26 @@ class BloodInputsTests(unittest.TestCase):
             self.assertGreater(max(alpha), 180)
             self.assertEqual(raw, prep.procedural_vtf(size, mist))
 
+    def test_imported_part_has_only_owned_texture_names_and_filtered_hashes(self):
+        import re
+        part = REPO / 'packages/blood-overhaul-rtx'
+        index = json.loads((part / 'files.json').read_text())['files']
+        vtfs = {p for p in index if p.endswith('.vtf')}
+        expected_vtfs = {f'nlblood/materials/decals/bloodoverhaul/tex/{key}{suffix}.vtf'
+                         for key in prep.PATTERNS for suffix in ('', '_n')}
+        expected_vtfs |= {f'nlblood/materials/particle/nlfluid/{name}.vtf' for name in ('drop', 'mist')}
+        self.assertEqual(vtfs, expected_vtfs)
+        dds = {Path(p).name for p in index if p.endswith('.dds')}
+        self.assertEqual(dds, {f'{key}{suffix}.rtex.dds' for key in prep.PATTERNS
+                              for suffix in ('.a', '_n.a', '.n', '.r')})
+        layer = (part / 'nl_blood_overhaul_rtx/replacements.usda').read_text()
+        self.assertEqual(len(re.findall(r'over "mat_[0-9A-F]{16}"', layer)), 72)
+        self.assertEqual(set(re.findall(r'@\./textures/([^@]+)@', layer)), dds)
+        self.assertNotIn('preload_textures = 1', layer)
+        audit = json.loads((part / 'licenses/provenance.json').read_text())
+        self.assertEqual(len(audit['selected']), 109)
+        self.assertIn('dist/addon_companion/materials/particle/bo_droplets/drop.vtf', audit['excluded'])
+
     def test_new_parts_are_local_package_content_without_new_trust(self):
         config = json.loads((REPO / 'tools/workshop.json').read_text())
         parts = {p['name']: p for p in config['parts']}
@@ -77,7 +97,7 @@ class BloodInputsTests(unittest.TestCase):
 @unittest.skipUnless(Path(LUA).is_file(), 'LuaJIT is not installed')
 class BloodLuaTests(unittest.TestCase):
     def test_controllers(self):
-        for scenario in ('budget', 'coexist', 'absent', 'menu', 'impacts', 'saturation', 'blood_menu'):
+        for scenario in ('budget', 'dts_bootstrap', 'coexist', 'preloaded', 'absent', 'menu', 'impacts', 'saturation', 'blood_menu'):
             with self.subTest(scenario=scenario):
                 run = subprocess.run([LUA, str(REPO / 'tools/tests/r20_blood_harness.lua'), str(REPO), scenario],
                                      cwd=REPO, capture_output=True, text=True, encoding='utf-8', timeout=20)

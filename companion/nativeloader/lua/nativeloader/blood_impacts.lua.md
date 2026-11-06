@@ -6,7 +6,9 @@ colours also use the engine. No PCFs, shared effects materials or bullet/damage 
 The documented stock red/yellow/green/antlion/zombie/worker colours use the chosen blood scheme.
 
 `nativeloader_blood_impacts` defaults on. `nativeloader_blood_amount` is 0–2, default 1. Effect scale
-(clamped .25–8) is a damage proxy, not a damage measurement. Detail reduces after 768/2048 units,
+(stock blood amount, clamped .5–255 and square-root normalized around 12, gain bounded .4–2.8)
+is a damage proxy, not a damage measurement. This preserves differing pistol/rifle amounts even
+when the engine scales multiplayer blood amount up. Detail reduces after 768/2048 units,
 and effects beyond 4096 units are culled. The impact direction comes from the event, never the
 observer's camera. A wider, slower reverse cone and narrower forward cone approximate spatter; the
 event cannot identify an exit wound. Every fifth particle is low-opacity mist lasting .10–.22 s;

@@ -76,6 +76,7 @@ for code, count in pairs({ [0] = 8, [1] = 6 }) do
     end
 end
 local original_decal = util.DecalEx
+BO.OrigDecalEx = original_decal
 function util.DecalEx(mat, ent, pos, normal, colour, w, h)
     local entry = mat and incoming[string.lower(mat:GetName())]
     if cv.enable:GetBool() and entry then
@@ -88,6 +89,20 @@ function util.DecalEx(mat, ent, pos, normal, colour, w, h)
         end
     end
     return original_decal(mat, ent, pos, normal, colour, w, h)
+end
+local emitter_meta = FindMetaTable("CLuaEmitter")
+if emitter_meta and emitter_meta.Add then
+    local original_add = emitter_meta.Add
+    BO.OrigEmitterAdd = original_add
+    emitter_meta.Add = function(self, mat, pos, ...)
+        local name = type(mat) == "string" and mat or (mat and mat:GetName())
+        local entry = name and incoming[string.lower(name)]
+        if entry and cv.enable:GetBool() and cv.droplets:GetBool() and BO.ParticleMaterial then
+            local index = cv.variety:GetBool() and math.random(#BO.Shapes) or 1
+            mat = BO.ParticleMaterial(entry[1], index, false)
+        end
+        return original_add(self, mat, pos, ...)
+    end
 end
 concommand.Add("bloodoverhaul_apply", BO.Apply)
 concommand.Add("bloodoverhaul_reset", function()

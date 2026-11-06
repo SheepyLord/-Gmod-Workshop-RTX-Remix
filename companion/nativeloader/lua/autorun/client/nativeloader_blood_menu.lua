@@ -1,6 +1,7 @@
 -- Settings shared by the RTX package and the standalone owned-pattern part.
 local BO = BloodOverhaul
-if not BO or not BO.Packaged then return end
+if not BO or not BO.Packaged or BO.MenuRegistered then return end
+BO.MenuRegistered = true
 local i18n = file.Exists("nativeloader/i18n.lua", "LUA") and include("nativeloader/i18n.lua")
 local function identity(text) return text end
 local L, N = i18n and i18n.L or identity, identity

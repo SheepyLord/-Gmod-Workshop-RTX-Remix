@@ -208,7 +208,13 @@
         "packages/toolgun-screen/LICENSE",
         "--add-to-addon",
         "nldynamic_toolgun_screen/CREDITS.txt",
-        "packages/toolgun-screen/licenses/CREDITS.txt"
+        "packages/toolgun-screen/licenses/CREDITS.txt",
+        "--addon-file",
+        "nldynamic_toolgun_screen/lua/autorun/dynamic_toolgun_screen.lua",
+        "companion/nativeloader/lua/nativeloader/dts_bootstrap.lua",
+        "--add-to-addon",
+        "nldynamic_toolgun_screen/lua/dynamic_toolgun_screen/nl_original_init.lua",
+        "out/inputs/toolgun-screen/dynamic_toolgun_screen/lua/autorun/dynamic_toolgun_screen.lua"
       ]
     },
     {

@@ -14,12 +14,14 @@ local function finite(value, fallback, low, high)
     return math.Clamp(value, low, high)
 end
 function BO.ImpactPlan(scale, distance, quality)
-    scale = finite(scale, 1, 0.25, 8)
+    -- Stock UTIL_BloodImpact carries blood amount (up to 255), not a 0..1 size multiplier.
+    -- A soft square-root response keeps pistol/rifle/pellet amounts distinct, also in multiplayer.
+    scale = math.Clamp(math.sqrt(finite(scale, 12, 0.5, 255) / 12), 0.4, 2.8)
     distance = finite(distance, 0, 0, 100000)
     quality = finite(quality, 1, 0, 2)
     if distance > 4096 or quality <= 0 then return 0, scale end
     local lod = distance > 2048 and 0.25 or (distance > 768 and 0.55 or 1)
-    return math.Clamp(math.floor((12 + 6 * math.sqrt(scale)) * quality * lod + 0.5), 1, 42), scale
+    return math.Clamp(math.floor((12 + 8 * scale) * quality * lod + 0.5), 1, 42), scale
 end
 
 local function material(code, index, mist)
@@ -37,6 +39,7 @@ local function material(code, index, mist)
     entry.mat:SetVector("$color", Vector(col.r / 255, col.g / 255, col.b / 255))
     return entry.mat
 end
+BO.ParticleMaterial = material
 hook.Add("NativeLoaderBloodColoursChanged", "nativeloader_blood", function()
     for _, entry in pairs(materials) do
         local col = BO.ConVars.droplets:GetBool() and BO.Colour(entry.code, entry.index) or BO.StockColour(entry.code)
@@ -93,6 +96,7 @@ function EFFECT:Init(data)
         return
     end
     local origin = data:GetOrigin()
+    stats.last_colour, stats.last_scale = code, data:GetScale()
     local count, scale = BO.ImpactPlan(data:GetScale(), EyePos():Distance(origin), amount:GetFloat())
     stats.impacts = stats.impacts + 1
     if count == 0 or not events:Take(CurTime(), 0) then stats.culled = stats.culled + 1 return end
@@ -105,7 +109,7 @@ function EFFECT:Init(data)
     local direction = data:GetNormal():GetNormalized()
     -- A zero direction gives no shooter information. Use a neutral upward spray, never EyePos.
     if direction:LengthSqr() < 0.1 then direction = Vector(0, 0, 1) end
-    local now, gain = CurTime(), math.sqrt(scale)
+    local now, gain = CurTime(), scale
     for i = #active, 1, -1 do if active[i].expires <= now then table.remove(active, i) end end
     for i = 1, count do
         local mist = i % 5 == 0

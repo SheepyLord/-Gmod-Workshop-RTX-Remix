@@ -1,5 +1,30 @@
 # Testing
 
+## R20-C: screen, owned blood PBR and client impacts
+
+`tools/tests/test_r20_blood.py` runs nine production-Lua scenarios through LuaJIT: rolling budgets,
+screen startup idempotence, standalone/packaged precedence, server-preloaded legacy cleanup, absent
+parts, moved panels, stock forwarding/colours/LOD, sustained particle/stain saturation and the blood
+panel. It also checks the final owned-only VTF/DDS inventory/72 hashes, original procedural texture
+coverage, isolated packager startup and source-filter refusals. New screen/blood callers deliberately
+stay out of the legacy guard exemptions; `test_render_guard_addons.py` enforces that boundary.
+
+`tools/tests/r20_blood_poc.lua` is a **test-only** local add-on for locked PoC sessions, never shipped.
+It fires actual stock pistol, shotgun and AR2 shots at citizens, Combine, zombies, antlions and
+ragdolls, plus a bot player in listen multiplayer. Frames compare stock and enhanced spray and
+custom schemes, and show both RTX panels. A remote NPC's `FireBullets` verifies observer dispatch;
+a dense synthetic-impact run reports median/p99 frame time and hard-budget counts. Cinematic shots
+temporarily slow simulation to capture the short-lived spray, then resume normal time. Performance
+measurement uses normal time. Run with `poc_session.py --addons --extra=-insecure --lua-shots 420`,
+Workshop disabled, a local package only, and the fixture's documented cheat controls.
+
+The worktree-local `out/r20c/poc_driver.py` waits on the shared lock, snapshots generated PoC roots,
+settings/bootstrap and Source's video registry, moves the old console log unread, and restores and
+hash-checks the snapshot after each session. It never writes the field or any `user.conf`. Test RTX
+on/off, no Crunchy/standalone copies, Crunchy's base alone and both legacy copies; restore the PoC
+and field/cloud settings before releasing each lock. Evidence belongs under `out/r20c/`; the final
+R20-C handover records exact sessions, image paths, measurements and remaining integration limits.
+
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.

@@ -60,7 +60,7 @@ if SERVER then
     end)
     concommand.Add("r20c_remote",function()
         local npc=ents.Create("npc_citizen") npc:SetModel(models.npc_citizen)
-        npc:SetPos(Vector(-650,-500,-143)) npc:Spawn()
+        npc:SetPos(Vector(-650,-560,-143)) npc:Spawn()
         if IsValid(target) then
             npc:FireBullets({Src=npc:EyePos(),Dir=(target:WorldSpaceCenter()-npc:EyePos()):GetNormalized(),
                 Spread=Vector(0,0,0),Num=1,Damage=10,AmmoType="Pistol"})
@@ -162,6 +162,7 @@ hook.Add("InitPostEntity","r20c",function()
         end
         local function next_step()
             RunConsoleCommand("r20c_resume")
+            if index>0 then emit("STEP",{index=index,stats=BO.ImpactStats}) end
             if IsValid(g_SpawnMenu) then g_SpawnMenu:Close() end
             index=index+1
             if not steps[index] then
