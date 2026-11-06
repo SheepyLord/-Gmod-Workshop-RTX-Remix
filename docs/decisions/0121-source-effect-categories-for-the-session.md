@@ -7,9 +7,13 @@
 ## Decision
 
 The companion observes the standard emitter Add, particle SetMaterial, sprite/beam draw and
-decal APIs, and inspects materials already present in the native draw tracker. Add-ons need
+DecalEx APIs, and inspects materials already present in the native draw tracker. Add-ons need
 no registration and keep their own material, particle and mesh objects. The observer requires
 the local RTX guard's session proof; server and RTX-off starts install nothing.
+
+Named util.Decal calls are recognized by their drawn material metadata. Observation must not call
+[util.DecalMaterial](https://wiki.facepunch.com/gmod/util.DecalMaterial), which randomly selects a
+variant and would advance the engine's random state merely to guess what was drawn.
 
 Publish three NoSave runtime options under `rtx.gmod`: `particleTexturesForSession`,
 `decalTexturesForSession` and `legacyEffectTexturesForSession`. Particle and decal tags join

@@ -57,13 +57,8 @@ if util.DecalEx then
         return original(material, ...)
     end
 end
-if util.Decal and util.DecalMaterial then
-    local original, resolve = util.Decal, util.DecalMaterial
-    util.Decal = function(decal, ...)
-        if type(decal) == "string" then observe(resolve(decal), "decal") end
-        return original(decal, ...)
-    end
-end
+-- Named util.Decal variants are discovered through their drawn material metadata. Calling
+-- DecalMaterial just to observe them would choose another random variant and advance native RNG.
 if render.SetMaterial then
     local original = render.SetMaterial
     render.SetMaterial = function(material, ...)

@@ -4,7 +4,7 @@ R20-D's automatic Source particle/decal observer ([ADR 0121](../../../../docs/de
 Runs at client autorun only when NativeLoaderRenderGuard proves the local RTX session. It is
 idempotent in that Lua realm. Server and RTX-off starts return without changing APIs.
 
-Inputs: CLuaEmitter:Add, CLuaParticle:SetMaterial, util.Decal/DecalEx, render.SetMaterial and
+Inputs: CLuaEmitter:Add, CLuaParticle:SetMaterial, util.DecalEx, render.SetMaterial and
 sprite/beam calls; the native RemixMaterial draw cache; material shader/flags and base texture.
 The Think hook processes at most twelve discoveries and twelve hash lookups per frame. Material
 lookups require a previously drawn hash, so undrawn character libraries are never loaded.
@@ -17,6 +17,8 @@ Lookup retries, two-second refresh, 4,096-entry cap, 120-second expiry and write
 bound the work. Shared white/error/framebuffer textures are excluded.
 
 The observer keeps native arguments, objects, errors and return values and changes no material.
+Named util.Decal variants are discovered through their drawn metadata: it never calls the random
+util.DecalMaterial resolver to guess which variant the engine selected.
 It reads no VMT files and writes no files, user.conf, rtx.conf, persistent options, network or
 Steam settings. NativeLoaderEffectCategories.Status() prints diagnostics; there is no process
 exit code or new player setting. The guard's existing shader/resource limits apply unchanged.

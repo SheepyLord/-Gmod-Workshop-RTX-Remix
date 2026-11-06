@@ -10,7 +10,8 @@ local originalAdd=function(self,name,...)self.args={name,...}return self.result 
 metas.CLuaEmitter.Add=originalAdd
 metas.CLuaParticle.SetMaterial=function(self,name)self.material=name return 'set' end
 render={SetMaterial=function(mat,...)return mat,... end,DrawSprite=function(...)return 'draw',... end}
-util={DecalEx=function(...)return 'decal',... end,Decal=function(...)return 'named',... end,DecalMaterial=function()return 'decal' end}
+util={DecalEx=function(...)return 'decal',... end,Decal=function(...)return 'named',... end,
+ DecalMaterial=function()error('observation must not choose another random decal variant')end}
 local data={
  decal={shader='LightmappedGeneric',['$decal']=1,hashes={'0xA'}},
  particle={shader='UnlitGeneric',hashes={'0xB'}},
