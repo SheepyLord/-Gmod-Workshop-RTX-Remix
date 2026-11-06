@@ -1,5 +1,8 @@
 # Roadmap
 
+R20-D (items 44 and 51) is **in progress** on `r20-render`: camera alias bookkeeping,
+then automatic particle/decal compatibility and locked PoC comparisons ([brief](handover/R20-D-render-compat.md)).
+
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader
 0.14.0 ([plan](handover/R19-plan.md), [review](handover/R19-review.md), [report](handover/R19-report.md)):

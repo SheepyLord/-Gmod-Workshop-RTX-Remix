@@ -180,3 +180,7 @@ These checks prove CPU policy/contract behavior,
 not a GPU/native-fault fix. Foreign remote initializers, earlier native aliases, later API overrides,
 direct registry mutations, unknown shaders, native modules, infinite loops and driver failures
 remain explicit limits. See Claude's QA procedure in the R8-C report after integration.
+
+R20-D: ordinary camera closers End/End2D/End3D share tracked scopes; Start3D2D requires
+End3D2D. Regression scenario `camera_aliases` checks 257 icon-style pairs, every ordinary
+start/closer combination, nested calls, cross-family refusal, virtual pushes and error cleanup.

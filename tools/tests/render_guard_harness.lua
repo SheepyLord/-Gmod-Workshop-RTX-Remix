@@ -192,6 +192,7 @@ function render.RenderView(...) viewCalls=viewCalls+1 if viewCallback then retur
 cam={}
 function cam.Start() cameraDepth=cameraDepth+1 return "camera" end
 function cam.End3D() assert(cameraDepth>0,"native camera underflow") cameraDepth=cameraDepth-1 end
+cam.End=cam.End3D
 function cam.Start2D() return cam.Start({type="2D"}) end
 function cam.End2D() return cam.End3D() end
 function cam.Start3D() return cam.Start({type="3D"}) end
@@ -463,6 +464,39 @@ elseif scenario=="shaders" then
     denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,1,"depth getter is legal; rebuild is inert")
     render.SetMaterial(Material("normal")) render.MaterialOverride(nil) render.DrawScreenQuad()
     eq(quadCalls,1)
+elseif scenario=="camera_aliases" then
+    hook.Add("PostRender","dupe-icon",function()
+        -- Stock icon.lua does 32 cameras per prop per outline pass, plus the final pass.
+        for _=1,257 do cam.Start({type="3D",w=512,h=512}) cam.End() end
+        for _,start in ipairs({cam.Start,cam.Start2D,cam.Start3D}) do
+            for _,finish in ipairs({cam.End,cam.End2D,cam.End3D}) do
+                start() cam.Start3D() cam.End() finish()
+            end
+        end
+    end)
+    hook.Call("PostRender")
+    eq(#guard.blocked,0) eq(#guard.errors,0) eq(cameraDepth,0) eq(modelDepth,0)
+    -- Cross-family closers must leave both native stacks intact for the proper closer.
+    hook.Add("HUDPaint","mismatch",function()
+        cam.Start3D2D() cam.End() cam.End2D() cam.End3D()
+        eq(cameraDepth,1) eq(modelDepth,1)
+        cam.End3D2D()
+        cam.Start2D() cam.End3D2D() eq(cameraDepth,1) eq(modelDepth,0) cam.End()
+    end)
+    hook.Call("HUDPaint")
+    eq(#guard.blocked,4) eq(#guard.errors,0) eq(cameraDepth,0) eq(modelDepth,0)
+    -- Rejected pushes must also be balanced through any ordinary-camera alias.
+    hook.Add("PreRender","virtual",function()
+        for _=1,40 do cam.Start3D() end
+        for _=1,40 do cam.End() end
+        cam.Start({w=math.huge}) cam.End2D()
+        eq(cameraDepth,0)
+    end)
+    hook.Call("PreRender") eq(#guard.errors,0) eq(cameraDepth,0)
+    hook.Add("PostDrawOpaqueRenderables","failure",function()
+        cam.Start3D() cam.Start2D() cam.End() cam.Start3D2D() error("camera cleanup")
+    end)
+    hook.Call("PostDrawOpaqueRenderables") eq(cameraDepth,0) eq(modelDepth,0) eq(#guard.cleanup_errors,0)
 elseif scenario=="views" then
     render.RenderView(nil) render.RenderView({w=512,h=512}) eq(viewCalls,2,"sequential stock views")
     viewCallback=function()return render.RenderView({})end

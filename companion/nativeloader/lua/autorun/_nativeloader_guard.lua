@@ -1179,9 +1179,15 @@ function policy.suppressed()
     end
     return false
 end
-local function pair(tbl, push, pop, kind, validate)
-    local first, last = tbl and tbl[push], tbl and tbl[pop]
+-- Install each closer once. Several pushes share a native closer, and cam.End/End2D/End3D
+-- all close an ordinary camera. Capturing an already wrapped pop as an undo hid aliases.
+local closers = {}
+local function pair(tbl, push, pop, kind, validate, family)
+    local registered = tbl and closers[tbl]
+    if not registered and tbl then registered = {} closers[tbl] = registered end
+    local first, last = tbl and tbl[push], registered and registered[pop] or (tbl and tbl[pop])
     if not first or not last then return end
+    family = family or kind
     tbl[push] = function(...)
         if busy > 0 then return first(...) end
         sync()
@@ -1191,11 +1197,11 @@ local function pair(tbl, push, pop, kind, validate)
             if chainDepth(stacks[kind]) >= 32 then reject(push, "tracked stack limit") skip = true end
             if validate and validate(nil, ...) == false then skip = true end
             if skip then
-                if top and top.skipped and top.owner == frame then top.count = top.count + 1
+                if top and top.skipped and top.owner == frame and top.family == family then top.count = top.count + 1
                 else
                     pushed(kind, function() end, function() end)
                     top = stacks[kind][#stacks[kind]]
-                    top.skipped, top.count = true, 1
+                    top.skipped, top.count, top.family = true, 1, family
                 end
                 return
             end
@@ -1211,14 +1217,18 @@ local function pair(tbl, push, pop, kind, validate)
         end
         local result = pack(invokeBusy(first, ...))
         pushed(kind, last, replay)
+        stacks[kind][#stacks[kind]].family = family
         return unpack(result, 1, result.n)
     end
+    if registered[pop] then return end
+    registered[pop] = last
     tbl[pop] = function(...)
         if busy > 0 then return last(...) end
         sync()
         local top = stacks[kind][#stacks[kind]]
         if active() then
             if not top then reject(pop, "no tracked Lua push to pop") return end
+            if top.family ~= family then reject(pop, "closer does not match tracked Lua push") return end
             if frame and top.owner ~= frame and (not top.owner or not top.owner.completed) then
                 reject(pop, "protected callback cannot consume caller-owned state") return
             end
@@ -1281,12 +1291,14 @@ end
 pair(render, "PushRenderTarget", "PopRenderTarget", "rt", targetValues)
 pair(render, "PushCustomClipPlane", "PopCustomClipPlane", "clip")
 pair(cam, "PushModelMatrix", "PopModelMatrix", "model")
-pair(cam, "Start", "End3D", "camera", function(s, view) return viewValues("cam.Start", s, view) end)
+pair(cam, "Start", "End", "camera", function(s, view) return viewValues("cam.Start", s, view) end)
 pair(cam, "Start2D", "End2D", "camera")
 pair(cam, "Start3D", "End3D", "camera", function(s, pos, angle, fov, x, y, w, h, near, far)
     return viewValues("cam.Start3D", s, {origin = pos, angles = angle, fov = fov, x = x, y = y, w = w, h = h, znear = near, zfar = far})
 end)
-pair(cam, "Start3D2D", "End3D2D", "camera")
+-- Start3D2D also pushes a model matrix. An ordinary camera closer cannot unwind that scope,
+-- nor may End3D2D consume an ordinary camera and an unrelated caller-owned matrix.
+pair(cam, "Start3D2D", "End3D2D", "camera", nil, "camera3d2d")
 if nativeRender.SetRenderTarget then
     render.SetRenderTarget = function(texture, ...)
         if active() and (policy.suppressed() or not targetValues(nil, texture)) then return end

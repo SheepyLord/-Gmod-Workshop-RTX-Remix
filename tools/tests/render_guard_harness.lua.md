@@ -71,3 +71,7 @@ argument models minimum milliseconds per failed VMT lookup across 761 mounts. Th
 r8_material_bench scenario permits comparison with an older guard; it emits BENCH JSON rows and
 uses QueryPerformanceCounter through LuaJIT FFI on Windows (os.clock elsewhere). See
 [bench_render_guard.py](bench_render_guard.py.md) for measurement scope and output.
+
+R20-D: ordinary camera closers End/End2D/End3D share tracked scopes; Start3D2D requires
+End3D2D. Regression scenario `camera_aliases` checks 257 icon-style pairs, every ordinary
+start/closer combination, nested calls, cross-family refusal, virtual pushes and error cleanup.

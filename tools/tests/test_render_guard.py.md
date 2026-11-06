@@ -39,3 +39,7 @@ queried at binding and then cached. Existing refusal assertions now require
 no escaped error and verify native-call counters; deliberate add-on errors still test containment,
 reporting and quarantine. The leaked-scope limit test balances ignored pushes/pops instead of
 relying on a guard-created exception to unwind a successful callback.
+
+R20-D: ordinary camera closers End/End2D/End3D share tracked scopes; Start3D2D requires
+End3D2D. Regression scenario `camera_aliases` checks 257 icon-style pairs, every ordinary
+start/closer combination, nested calls, cross-family refusal, virtual pushes and error cleanup.

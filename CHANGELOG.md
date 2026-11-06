@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Dupe camera tracking:** the RTX guard observes `cam.End` as well as `End2D` and `End3D`,
+  so the stock dupe icon's repeated cameras no longer exhaust its tracked stack. Composite 3D2D
+  cameras reject incomplete closers ([ADR 0120](docs/decisions/0120-camera-closers-share-the-guards-stack.md)).
+
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main
   menu's project link, the Workshop page and the package indexes' origins points at the new name
