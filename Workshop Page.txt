@@ -1,6 +1,9 @@
-[h3]NVIDIA RTX Remix is an open-sourced platform built on NVIDIA Omniverse that allows modders to create stunning RTX remasters of classic games.[/h3]
+// English
+NVIDIA RTX Remix Runtime for Garry's Mod [Win64] (Effects)
 
-This add-on installs and manages the RTX Remix and ReShade runtimes, along with the enhancement add-ons they depend on. 
+[h3]NVIDIA RTX Remix is an open-sourced platform built on NVIDIA Omniverse that allows modders to create stunning RTX remasters of classic games.[/h3] 
+
+[u]This workshop release aims to ensure its compatibility to all workshop addons and will not override your settings in game. [/u]
 
 [h1]Installation[/h1]
 [olist]
@@ -17,17 +20,17 @@ The zip adds two files: bin\win64\winmm.dll (the loader) and native-loader\confi
 
 [b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
 
+[h1]Uninstallation[/h1]
+Disable this add-on in the addon menu, or unsubscribe from it in the workshop page, then restart the game. All settings are kept.
+To remove the Install Manager too (full uninstallation), delete bin\win64\winmm.dll.
+To play without RTX but keep everything installed, set "remix": { "enabled": false } in native-loader\config.json.
+
 [h1]In the game[/h1]
 [list]
 [*]Every RTX setting is in the spawn menu's [b]RTX Remix[/b] tab.
 [*]The console command [b]nativeloader_guide[/b] opens the guide. It also opens automatically when you launch it the first time.
 [*]Compatible with ReShade. ReShade is only turned on if your game already had ReShade set up, so a game without ReShade stays without it.
 [/list]
-
-[h1]Uninstallation[/h1]
-Disable this add-on in the addon menu, or unsubscribe from it, then restart the game. All settings are kept.
-To remove the Install Manager too (full uninstallation), delete bin\win64\winmm.dll.
-To play without RTX but keep everything installed, set "remix": { "enabled": false } in native-loader\config.json.
 
 [h1]Hardware Requirements[/h1]
 A modern, mid-tier computer is needed. Please update your graphics driver. This currently only works on Windows, while we are working on a Linux compatibility update.
@@ -67,3 +70,441 @@ This project is open-sourced and bulit by GitHub Actions: winmm.dll in [url=http
 [/list]
 
 License: GPL-2.0
+
+// Simplified Chinese
+适用于 Garry's Mod 的 NVIDIA RTX Remix 运行时 [Win64]（特效）
+
+[h3]NVIDIA RTX Remix 是一个基于 NVIDIA Omniverse 构建的开源平台，可让 Mod 制作者为经典游戏打造令人惊叹的 RTX 重制版。[/h3]
+
+[u]本创意工坊版本力求与所有创意工坊插件兼容，并且不会覆盖你的游戏内设置。[/u]
+
+[h1]安装[/h1]
+[olist]
+[*]从 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub 上的最新版本[/url]下载安装管理器：即 gmod-native-loader 压缩包，不到 1 MB。
+[*]将其解压到你的 Garry's Mod 文件夹，也就是存放 gmod.exe 的那个文件夹。如果 Windows 询问是否合并文件夹，请选择“是”。要找到该文件夹，请在 Steam 库中右键点击 Garry's Mod，然后选择“管理 > 浏览本地文件”。
+[b]正确：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]错误：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]订阅本插件。
+[*]在 Steam 中以 x86-64 版本启动游戏。
+[/olist]
+压缩包会添加两个文件：bin\win64\winmm.dll（加载器）和 native-loader\config.json（加载器的设置）。
+
+[b]更新：[/b]本插件会通过创意工坊自动更新，但安装管理器不会。新版本发布后，请用新下载的文件替换 bin\win64\winmm.dll。
+
+[b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
+
+[h1]卸载[/h1]
+在插件菜单中禁用本插件，或在创意工坊页面取消订阅，然后重启游戏。所有设置都会保留。
+如需同时移除安装管理器（完全卸载），请删除 bin\win64\winmm.dll。
+如想保留所有已安装的内容但不使用 RTX 游玩，请在 native-loader\config.json 中设置 "remix": { "enabled": false }。
+
+[h1]游戏内[/h1]
+[list]
+[*]所有 RTX 设置都位于生成菜单（Q 菜单）的 [b]RTX Remix[/b] 选项卡中。
+[*]控制台命令 [b]nativeloader_guide[/b] 可打开使用指南。首次启动时，指南也会自动打开。
+[*]兼容 ReShade。只有当你的游戏原本已安装 ReShade 时才会启用它，未安装 ReShade 的游戏依然不会有 ReShade。
+[/list]
+
+[h1]硬件要求[/h1]
+需要一台较新的中端电脑。请更新你的显卡驱动程序。目前仅支持 Windows，我们正在开发 Linux 兼容更新。
+[b]最低配置：[/b]
+[list]
+[*][b]操作系统：[/b] Windows 11 64 位
+[*][b]处理器：[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]内存：[/b] 16 GB RAM
+[*][b]显卡：[/b] 8 GB 或以上显存：NVIDIA GeForce RTX 4060 8 GB 笔记本电脑 GPU / AMD Radeon RX 6700 XT 12 GB
+[*][b]驱动程序：[/b] NVIDIA GeForce Game Ready 或 Studio 驱动程序 616.92 或更高版本（2026 年 9 月 9 日）；AMD：最新驱动程序
+[*][b]分辨率：[/b] 1920 x 1080 或更高
+[*][b]存储空间：[/b] 固态硬盘（SSD）
+[/list]
+[b]附注事项：[/b]请开启帧生成以保证帧率。
+
+[h1]功能[/h1]
+[list]
+[*]无需禁用任何插件，应可与所有现有插件兼容。
+[*]逼真的天空、水体与玻璃模拟
+[*]自动识别从以下游戏导入的 PBR 资源：明日方舟：终末地、鸣潮、Silver Palace 和异环
+[*]原生支持多人游戏，开启 RTX Remix 时也能加入任何服务器
+[/list]
+
+[h1]杀毒软件警告[/h1]
+部分杀毒软件（尤其是使用 AI 扫描的）可能会将以下文件标记为可疑。请将它们加入白名单；如果你介意杀毒软件的警告，请不要使用本插件：
+[list]
+[*]GarrysMod\bin\win64\winmm.dll：加载并管理 Remix 的安装
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe：导入模型、纹理和 PBR
+[/list]
+本项目开源，并由 GitHub Actions 构建：winmm.dll 由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] 构建，本插件的包（包括 worker）由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] 构建。每次打包运行的摘要都会列出 .gma 及其中每个文件的 SHA-256。本页面上正式版本更新的更新说明（Change Notes）会写明“built on GitHub”，并注明对应的运行和 .gma 的 SHA-256，你可以据此核对从 Steam 获得的文件是否正是 GitHub 构建的文件。
+
+[h1]致谢[/h1]
+[list]
+[*][b]Gmod 创意工坊版 NVIDIA RTX Remix 作者：[/b] SheepyLord
+[*][b]开发者（贡献了代码）：[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]测试者（未贡献代码）：[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+许可证：GPL-2.0
+
+// Traditional Chinese
+適用於 Garry's Mod 的 NVIDIA RTX Remix 執行階段 [Win64]（特效）
+
+[h3]NVIDIA RTX Remix 是一個以 NVIDIA Omniverse 打造的開源平台，讓 Mod 製作者能為經典遊戲製作令人驚豔的 RTX 重製版。[/h3]
+
+[u]此工作坊版本力求與所有工作坊插件相容，且不會覆寫你的遊戲內設定。[/u]
+
+[h1]安裝[/h1]
+[olist]
+[*]從 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub 上的最新版本[/url]下載安裝管理器：即 gmod-native-loader 壓縮檔，不到 1 MB。
+[*]將其解壓縮到你的 Garry's Mod 資料夾，也就是存放 gmod.exe 的資料夾。若 Windows 詢問是否合併資料夾，請選擇「是」。要找到這個資料夾，請在 Steam 收藏庫中對 Garry's Mod 按右鍵，然後選擇「管理 > 瀏覽本機檔案」。
+[b]正確：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]錯誤：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]訂閱此插件。
+[*]在 Steam 中以 x86-64 版本啟動遊戲。
+[/olist]
+壓縮檔會新增兩個檔案：bin\win64\winmm.dll（載入器）與 native-loader\config.json（載入器的設定）。
+
+[b]更新：[/b]此插件會透過工作坊自動更新，但安裝管理器不會。新版本推出後，請以新下載的檔案取代 bin\win64\winmm.dll。
+
+[b]中國大陸的測試者[/b]：請透過百度網盤下載（請自行補全連結）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取碼：mdvw
+
+[h1]解除安裝[/h1]
+在插件選單中停用此插件，或在工作坊頁面取消訂閱，然後重新啟動遊戲。所有設定都會保留。
+若要一併移除安裝管理器（完全解除安裝），請刪除 bin\win64\winmm.dll。
+若想保留所有已安裝的內容但不使用 RTX 遊玩，請在 native-loader\config.json 中設定 "remix": { "enabled": false }。
+
+[h1]遊戲內[/h1]
+[list]
+[*]所有 RTX 設定都位於生成選單（Q 選單）的 [b]RTX Remix[/b] 分頁中。
+[*]主控台指令 [b]nativeloader_guide[/b] 可開啟使用指南。首次啟動時，指南也會自動開啟。
+[*]相容於 ReShade。只有在你的遊戲原本就已安裝 ReShade 時才會啟用，未安裝 ReShade 的遊戲依然不會有 ReShade。
+[/list]
+
+[h1]硬體需求[/h1]
+需要一台較新的中階電腦。請更新你的顯示卡驅動程式。目前僅支援 Windows，我們正在開發 Linux 相容性更新。
+[b]最低需求：[/b]
+[list]
+[*][b]作業系統：[/b] Windows 11 64 位元
+[*][b]處理器：[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]記憶體：[/b] 16 GB RAM
+[*][b]顯示卡：[/b] 8 GB 以上顯示記憶體：NVIDIA GeForce RTX 4060 8 GB 筆記型電腦 GPU / AMD Radeon RX 6700 XT 12 GB
+[*][b]驅動程式：[/b] NVIDIA GeForce Game Ready 或 Studio 驅動程式 616.92 或更新版本（2026 年 9 月 9 日）；AMD：最新驅動程式
+[*][b]解析度：[/b] 1920 x 1080 或更高
+[*][b]儲存空間：[/b] 固態硬碟（SSD）
+[/list]
+[b]備註：[/b]請開啟畫格生成以確保幀率。
+
+[h1]功能[/h1]
+[list]
+[*]無需停用任何插件，應可與所有現有插件相容。
+[*]逼真的天空、水體與玻璃模擬
+[*]自動偵測從以下遊戲匯入的 PBR 資源：明日方舟：終末地、鳴潮、Silver Palace 與異環
+[*]原生支援多人遊戲，啟用 RTX Remix 時也能加入任何伺服器
+[/list]
+
+[h1]防毒軟體警告[/h1]
+部分防毒軟體（尤其是使用 AI 掃描的）可能會將以下檔案標記為可疑。請將它們加入白名單；若你在意防毒軟體的警告，請勿使用此插件：
+[list]
+[*]GarrysMod\bin\win64\winmm.dll：載入並管理 Remix 的安裝
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe：匯入模型、材質與 PBR
+[/list]
+本專案為開源專案，並由 GitHub Actions 建置：winmm.dll 由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] 建置，此插件的套件（包含 worker）由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] 建置。每次套件建置的摘要都會列出 .gma 及其中每個檔案的 SHA-256。本頁面上正式版本更新的變更說明（Change Notes）會註明「built on GitHub」，並列出對應的執行與 .gma 的 SHA-256，讓你可以核對從 Steam 取得的檔案是否正是 GitHub 建置的檔案。
+
+[h1]致謝[/h1]
+[list]
+[*][b]Gmod 工作坊版 NVIDIA RTX Remix 作者：[/b] SheepyLord
+[*][b]開發者（有貢獻程式碼）：[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]測試者（未貢獻程式碼）：[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+授權條款：GPL-2.0
+
+// Japanese
+Garry's Mod 用 NVIDIA RTX Remix ランタイム [Win64]（エフェクト）
+
+[h3]NVIDIA RTX Remix は、NVIDIA Omniverse 上に構築されたオープンソースのプラットフォームです。MOD 制作者はこれを使って、クラシックゲームの見事な RTX リマスターを制作できます。[/h3]
+
+[u]このワークショップ版は、すべてのワークショップアドオンとの互換性を目指しており、ゲーム内の設定を上書きしません。[/u]
+
+[h1]インストール[/h1]
+[olist]
+[*][url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub の最新リリース[/url]からインストールマネージャーをダウンロードします。gmod-native-loader の zip ファイルで、1 MB 未満です。
+[*]Garry's Mod のフォルダ（gmod.exe があるフォルダ）に展開します。Windows からフォルダの統合を確認されたら「はい」を選んでください。フォルダは、Steam ライブラリで Garry's Mod を右クリックし、「管理 > ローカルファイルを閲覧」を選ぶと開けます。
+[b]正しい例：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]間違った例：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]このアドオンをサブスクライブします。
+[*]Steam でゲームを x86-64 版で起動します。
+[/olist]
+zip によって 2 つのファイルが追加されます：bin\win64\winmm.dll（ローダー）と native-loader\config.json（ローダーの設定）。
+
+[b]アップデート：[/b]このアドオンはワークショップを通じて自動的に更新されますが、インストールマネージャーは更新されません。新しいリリースが公開されたら、bin\win64\winmm.dll を新しくダウンロードしたものに置き換えてください。
+
+[b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
+
+[h1]アンインストール[/h1]
+アドオンメニューでこのアドオンを無効にするか、ワークショップのページでサブスクライブを解除してから、ゲームを再起動してください。設定はすべて保持されます。
+インストールマネージャーも削除する場合（完全なアンインストール）は、bin\win64\winmm.dll を削除してください。
+すべてをインストールしたまま RTX なしでプレイするには、native-loader\config.json で "remix": { "enabled": false } と設定してください。
+
+[h1]ゲーム内[/h1]
+[list]
+[*]RTX の設定はすべて、スポーンメニュー（Q メニュー）の [b]RTX Remix[/b] タブにあります。
+[*]コンソールコマンド [b]nativeloader_guide[/b] でガイドを開けます。初回起動時にも自動で開きます。
+[*]ReShade に対応しています。ReShade が有効になるのは、ゲームにすでに ReShade が導入されている場合だけなので、ReShade のないゲームはそのままです。
+[/list]
+
+[h1]必要なハードウェア[/h1]
+最近のミドルレンジのパソコンが必要です。グラフィックドライバーを最新にしてください。現在は Windows でのみ動作します。Linux 対応のアップデートを開発中です。
+[b]最低動作環境：[/b]
+[list]
+[*][b]OS：[/b] Windows 11（64 ビット）
+[*][b]プロセッサー：[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]メモリー：[/b] 16 GB RAM
+[*][b]グラフィック：[/b] ビデオメモリー 8 GB 以上：NVIDIA GeForce RTX 4060 8 GB Laptop GPU / AMD Radeon RX 6700 XT 12 GB
+[*][b]ドライバー：[/b] NVIDIA GeForce Game Ready ドライバーまたは Studio ドライバー 616.92 以降（2026 年 9 月 9 日）、AMD：最新のドライバー
+[*][b]解像度：[/b] 1920 x 1080 以上
+[*][b]ストレージ：[/b] SSD
+[/list]
+[b]備考：[/b]フレームレートを確保するため、フレーム生成を有効にしてください。
+
+[h1]特徴[/h1]
+[list]
+[*]アドオンを無効にする必要はありません。既存のすべてのアドオンと一緒に動作するはずです。
+[*]リアルな空、水、ガラスのシミュレーション
+[*]次のゲームからインポートした PBR リソースを自動検出：Arknights Endfield、Wuthering Waves、Silver Palace、Neverness to Everness
+[*]マルチプレイヤーにネイティブ対応：RTX Remix を有効にしたまま、どのサーバーにも参加できます
+[/list]
+
+[h1]ウイルス対策ソフトの警告[/h1]
+一部のウイルス対策ソフト、特に AI でスキャンするものは、以下のファイルを検出することがあります。ホワイトリストに登録するか、ウイルス対策ソフトの警告が気になる場合はこのアドオンを使わないでください：
+[list]
+[*]GarrysMod\bin\win64\winmm.dll：Remix のインストールを読み込み、管理します
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe：モデル、テクスチャ、PBR をインポートします
+[/list]
+このプロジェクトはオープンソースで、GitHub Actions でビルドされています。winmm.dll は [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] で、ワーカーを含むこのアドオンのパッケージは [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] でビルドされます。パッケージの各実行のサマリーには、.gma とその中のすべてのファイルの SHA-256 が記載されます。このページにあるリリース更新の変更履歴（Change Notes）には「built on GitHub」と書かれ、その実行と .gma の SHA-256 が記されているので、Steam から受け取ったファイルが GitHub でビルドされたものと同じかどうかを確認できます。
+
+[h1]クレジット[/h1]
+[list]
+[*][b]Gmod ワークショップ版 NVIDIA RTX Remix 制作：[/b] SheepyLord
+[*][b]開発者（コードで貢献）：[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]テスター（コードの貢献なし）：[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+ライセンス：GPL-2.0
+
+// Korean
+Garry's Mod용 NVIDIA RTX Remix 런타임 [Win64] (이펙트)
+
+[h3]NVIDIA RTX Remix는 NVIDIA Omniverse 기반의 오픈 소스 플랫폼으로, 모더가 고전 게임을 멋진 RTX 리마스터로 만들 수 있게 해 줍니다.[/h3]
+
+[u]이 창작마당 릴리스는 모든 창작마당 애드온과의 호환을 목표로 하며, 게임 내 설정을 덮어쓰지 않습니다.[/u]
+
+[h1]설치[/h1]
+[olist]
+[*][url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub의 최신 릴리스[/url]에서 설치 관리자를 다운로드하세요. 1MB 미만의 gmod-native-loader zip 파일입니다.
+[*]Garry's Mod 폴더, 즉 gmod.exe가 있는 폴더에 압축을 푸세요. Windows에서 폴더를 병합할지 물으면 "예"를 선택하세요. 폴더를 찾으려면 Steam 라이브러리에서 Garry's Mod를 마우스 오른쪽 버튼으로 클릭한 다음 "관리 > 로컬 파일 보기"를 선택하세요.
+[b]올바른 예:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]잘못된 예:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]이 애드온을 구독하세요.
+[*]Steam에서 게임을 x86-64 버전으로 실행하세요.
+[/olist]
+zip 파일은 두 파일을 추가합니다: bin\win64\winmm.dll(로더), native-loader\config.json(로더 설정).
+
+[b]업데이트:[/b] 이 애드온은 창작마당을 통해 자동으로 업데이트되지만, 설치 관리자는 그렇지 않습니다. 새 릴리스가 나오면 bin\win64\winmm.dll을 새로 다운로드한 파일로 교체하세요.
+
+[b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
+
+[h1]제거[/h1]
+애드온 메뉴에서 이 애드온을 비활성화하거나 창작마당 페이지에서 구독을 취소한 다음, 게임을 다시 시작하세요. 모든 설정은 유지됩니다.
+설치 관리자까지 제거하려면(완전 제거) bin\win64\winmm.dll을 삭제하세요.
+모든 것을 설치된 상태로 두고 RTX 없이 플레이하려면 native-loader\config.json에서 "remix": { "enabled": false }로 설정하세요.
+
+[h1]게임 내[/h1]
+[list]
+[*]모든 RTX 설정은 스폰 메뉴(Q 메뉴)의 [b]RTX Remix[/b] 탭에 있습니다.
+[*]콘솔 명령어 [b]nativeloader_guide[/b]로 가이드를 열 수 있습니다. 처음 실행할 때도 자동으로 열립니다.
+[*]ReShade와 호환됩니다. ReShade는 게임에 이미 ReShade가 설치되어 있는 경우에만 켜지므로, ReShade가 없는 게임은 그대로 유지됩니다.
+[/list]
+
+[h1]하드웨어 요구 사항[/h1]
+최신 중급 사양의 컴퓨터가 필요합니다. 그래픽 드라이버를 업데이트해 주세요. 현재는 Windows에서만 작동하며, Linux 호환 업데이트를 개발 중입니다.
+[b]최소 사양:[/b]
+[list]
+[*][b]운영체제:[/b] Windows 11 64비트
+[*][b]프로세서:[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]메모리:[/b] 16GB RAM
+[*][b]그래픽:[/b] 비디오 메모리 8GB 이상: NVIDIA GeForce RTX 4060 8GB 노트북 GPU / AMD Radeon RX 6700 XT 12GB
+[*][b]드라이버:[/b] NVIDIA GeForce Game Ready 또는 Studio 드라이버 616.92 이상(2026년 9월 9일), AMD: 최신 드라이버
+[*][b]해상도:[/b] 1920 x 1080 이상
+[*][b]저장 공간:[/b] SSD
+[/list]
+[b]추가 사항:[/b] 프레임 레이트를 확보하려면 프레임 생성을 켜 주세요.
+
+[h1]기능[/h1]
+[list]
+[*]애드온을 비활성화할 필요가 없습니다. 기존의 모든 애드온과 함께 작동할 것입니다.
+[*]사실적인 하늘, 물, 유리 시뮬레이션
+[*]다음 게임에서 가져온 PBR 리소스 자동 감지: Arknights Endfield, Wuthering Waves, Silver Palace, Neverness to Everness
+[*]멀티플레이 기본 지원: RTX Remix를 켠 상태로 어떤 서버에든 접속할 수 있습니다
+[/list]
+
+[h1]백신 경고[/h1]
+일부 백신 프로그램, 특히 AI로 검사하는 프로그램은 다음 파일을 위험한 파일로 표시할 수 있습니다. 예외 목록에 추가하거나, 백신 경고가 걱정된다면 이 애드온을 사용하지 마세요:
+[list]
+[*]GarrysMod\bin\win64\winmm.dll: Remix 설치를 불러오고 관리합니다
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe: 모델, 텍스처, PBR을 가져옵니다
+[/list]
+이 프로젝트는 오픈 소스이며 GitHub Actions로 빌드됩니다. winmm.dll은 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url]에서, 워커를 포함한 이 애드온의 패키지는 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]에서 빌드됩니다. 각 패키지 빌드 실행의 요약에는 .gma와 그 안에 있는 모든 파일의 SHA-256이 나열됩니다. 이 페이지에 있는 릴리스 업데이트의 변경 사항(Change Notes)에는 "built on GitHub"라는 문구와 함께 해당 실행과 .gma의 SHA-256이 적혀 있으므로, Steam에서 받은 파일이 GitHub에서 빌드한 파일과 같은지 확인할 수 있습니다.
+
+[h1]크레딧[/h1]
+[list]
+[*][b]Gmod 창작마당용 NVIDIA RTX Remix 제작:[/b] SheepyLord
+[*][b]개발자(코드 기여):[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]테스터(코드 기여 없음):[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+라이선스: GPL-2.0
+
+// French
+Runtime NVIDIA RTX Remix pour Garry's Mod [Win64] (Effets)
+
+[h3]NVIDIA RTX Remix est une plateforme open source basée sur NVIDIA Omniverse qui permet aux moddeurs de créer d'époustouflants remasters RTX de jeux classiques.[/h3]
+
+[u]Cette version du Workshop vise à être compatible avec tous les addons du Workshop et ne remplace pas vos paramètres en jeu.[/u]
+
+[h1]Installation[/h1]
+[olist]
+[*]Téléchargez le gestionnaire d'installation depuis la [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]dernière version sur GitHub[/url] : le fichier zip gmod-native-loader, moins de 1 Mo.
+[*]Décompressez-le dans votre dossier Garry's Mod, celui qui contient gmod.exe. Si Windows demande s'il faut fusionner les dossiers, répondez Oui. Pour trouver ce dossier, faites un clic droit sur Garry's Mod dans votre bibliothèque Steam, puis choisissez Gérer > Parcourir les fichiers locaux.
+[b]Correct :[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]Incorrect :[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]Abonnez-vous à cet addon.
+[*]Dans Steam, lancez le jeu en version x86-64.
+[/olist]
+Le zip ajoute deux fichiers : bin\win64\winmm.dll (le chargeur) et native-loader\config.json (ses paramètres).
+
+[b]Mises à jour :[/b] cet addon se met à jour tout seul via le Workshop, mais pas le gestionnaire d'installation. À chaque nouvelle version, remplacez bin\win64\winmm.dll par celui que vous venez de télécharger.
+
+[b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
+
+[h1]Désinstallation[/h1]
+Désactivez cet addon dans le menu des addons, ou désabonnez-vous depuis sa page du Workshop, puis redémarrez le jeu. Tous les paramètres sont conservés.
+Pour supprimer aussi le gestionnaire d'installation (désinstallation complète), supprimez bin\win64\winmm.dll.
+Pour jouer sans RTX tout en gardant tout installé, définissez "remix": { "enabled": false } dans native-loader\config.json.
+
+[h1]En jeu[/h1]
+[list]
+[*]Tous les paramètres RTX se trouvent dans l'onglet [b]RTX Remix[/b] du menu de spawn (touche Q).
+[*]La commande console [b]nativeloader_guide[/b] ouvre le guide. Il s'ouvre aussi automatiquement au premier lancement.
+[*]Compatible avec ReShade. ReShade n'est activé que s'il était déjà installé dans votre jeu : un jeu sans ReShade reste sans ReShade.
+[/list]
+
+[h1]Configuration requise[/h1]
+Un ordinateur récent de milieu de gamme est nécessaire. Veuillez mettre à jour votre pilote graphique. Pour le moment, cela ne fonctionne que sous Windows ; une mise à jour pour la compatibilité Linux est en préparation.
+[b]Minimale :[/b]
+[list]
+[*][b]Système d'exploitation :[/b] Windows 11, 64 bits
+[*][b]Processeur :[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]Mémoire vive :[/b] 16 Go de RAM
+[*][b]Graphiques :[/b] 8 Go de mémoire vidéo ou plus : NVIDIA GeForce RTX 4060 8 Go pour ordinateur portable / AMD Radeon RX 6700 XT 12 Go
+[*][b]Pilote :[/b] NVIDIA GeForce Game Ready ou Studio 616.92 ou plus récent (9 septembre 2026) ; AMD : le dernier pilote
+[*][b]Résolution :[/b] 1920 x 1080 ou plus
+[*][b]Stockage :[/b] un SSD
+[/list]
+[b]Notes supplémentaires :[/b] activez la génération d'images pour garantir une bonne fréquence d'images.
+
+[h1]Fonctionnalités[/h1]
+[list]
+[*]Inutile de désactiver vos addons : il devrait fonctionner avec tous les addons existants.
+[*]Simulation réaliste du ciel, de l'eau et du verre
+[*]Détection automatique des ressources PBR importées depuis Arknights Endfield, Wuthering Waves, Silver Palace et Neverness to Everness
+[*]Prise en charge native du multijoueur : vous pouvez rejoindre n'importe quel serveur avec RTX Remix activé
+[/list]
+
+[h1]Alertes antivirus[/h1]
+Certains antivirus, en particulier ceux qui analysent par IA, peuvent signaler ces fichiers. Ajoutez-les à la liste blanche, ou n'utilisez pas cet addon si les alertes antivirus vous posent problème :
+[list]
+[*]GarrysMod\bin\win64\winmm.dll : charge et gère l'installation de Remix
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe : importe les modèles, les textures et le PBR
+[/list]
+Ce projet est open source et compilé par GitHub Actions : winmm.dll dans [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], et le paquet de cet addon, worker compris, dans [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. Le résumé de chaque exécution du paquet indique le SHA-256 du .gma et de chacun des fichiers qu'il contient. Sur cette page, la note de mise à jour (Change Notes) d'une nouvelle version indique « built on GitHub », ainsi que l'exécution et le SHA-256 du .gma : vous pouvez donc vérifier que les fichiers reçus de Steam sont bien ceux que GitHub a compilés.
+
+[h1]Crédits[/h1]
+[list]
+[*][b]NVIDIA RTX Remix pour le Workshop de Gmod, par :[/b] SheepyLord
+[*][b]Développeurs, avec contributions au code :[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]Testeurs, sans contribution au code :[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+Licence : GPL-2.0
+
+// Russian
+Среда выполнения NVIDIA RTX Remix для Garry's Mod [Win64] (Эффекты)
+
+[h3]NVIDIA RTX Remix — это платформа с открытым исходным кодом на основе NVIDIA Omniverse, которая позволяет моддерам создавать впечатляющие RTX-ремастеры классических игр.[/h3]
+
+[u]Эта версия из Мастерской рассчитана на совместимость со всеми аддонами Мастерской и не перезаписывает ваши настройки в игре.[/u]
+
+[h1]Установка[/h1]
+[olist]
+[*]Скачайте менеджер установки из [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]последнего релиза на GitHub[/url]: это zip-архив gmod-native-loader размером меньше 1 МБ.
+[*]Распакуйте его в папку Garry's Mod — ту, в которой лежит gmod.exe. Если Windows спросит, объединить ли папки, ответьте «Да». Чтобы найти эту папку, щёлкните правой кнопкой мыши по Garry's Mod в библиотеке Steam и выберите «Управление > Просмотреть локальные файлы».
+[b]Правильно:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]Неправильно:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]Подпишитесь на этот аддон.
+[*]В Steam запустите игру в версии x86-64.
+[/olist]
+Архив добавляет два файла: bin\win64\winmm.dll (загрузчик) и native-loader\config.json (его настройки).
+
+[b]Обновление:[/b] аддон обновляется сам через Мастерскую, а менеджер установки — нет. Когда выйдет новый релиз, замените bin\win64\winmm.dll на только что скачанный файл.
+
+[b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
+
+[h1]Удаление[/h1]
+Отключите этот аддон в меню аддонов или отпишитесь от него на странице Мастерской, затем перезапустите игру. Все настройки сохранятся.
+Чтобы удалить и менеджер установки (полное удаление), удалите bin\win64\winmm.dll.
+Чтобы играть без RTX, ничего не удаляя, укажите "remix": { "enabled": false } в native-loader\config.json.
+
+[h1]В игре[/h1]
+[list]
+[*]Все настройки RTX находятся на вкладке [b]RTX Remix[/b] в меню спавна (клавиша Q).
+[*]Консольная команда [b]nativeloader_guide[/b] открывает руководство. При первом запуске оно также открывается автоматически.
+[*]Поддерживается ReShade. ReShade включается, только если он уже был установлен в вашей игре, так что в игре без ReShade он не появится.
+[/list]
+
+[h1]Системные требования[/h1]
+Нужен современный компьютер среднего уровня. Обновите драйвер видеокарты. Сейчас всё работает только в Windows; мы готовим обновление для совместимости с Linux.
+[b]Минимальные:[/b]
+[list]
+[*][b]ОС:[/b] Windows 11, 64-разрядная
+[*][b]Процессор:[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]Оперативная память:[/b] 16 ГБ ОЗУ
+[*][b]Видеокарта:[/b] 8 ГБ видеопамяти или больше: NVIDIA GeForce RTX 4060 8 ГБ для ноутбуков / AMD Radeon RX 6700 XT 12 ГБ
+[*][b]Драйвер:[/b] NVIDIA GeForce Game Ready или Studio 616.92 или новее (от 9 сентября 2026 г.); AMD: последний драйвер
+[*][b]Разрешение:[/b] 1920 x 1080 или выше
+[*][b]Накопитель:[/b] SSD
+[/list]
+[b]Дополнительно:[/b] включите генерацию кадров, чтобы обеспечить нужную частоту кадров.
+
+[h1]Возможности[/h1]
+[list]
+[*]Не нужно отключать никакие аддоны: всё должно работать со всеми существующими аддонами.
+[*]Реалистичная симуляция неба, воды и стекла
+[*]Автоматическое распознавание импортированных PBR-ресурсов из Arknights Endfield, Wuthering Waves, Silver Palace и Neverness to Everness
+[*]Встроенная поддержка мультиплеера: с включённым RTX Remix можно заходить на любые серверы
+[/list]
+
+[h1]Предупреждения антивирусов[/h1]
+Некоторые антивирусы, особенно те, что проверяют файлы с помощью ИИ, могут помечать эти файлы. Добавьте их в исключения или не используйте этот аддон, если предупреждения антивируса для вас неприемлемы:
+[list]
+[*]GarrysMod\bin\win64\winmm.dll: загружает установку Remix и управляет ею
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe: импортирует модели, текстуры и PBR
+[/list]
+Это проект с открытым исходным кодом, и он собирается в GitHub Actions: winmm.dll — в [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], а пакет этого аддона вместе с worker — в [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. В сводке каждого запуска сборки пакета перечислены SHA-256 файла .gma и каждого файла в нём. В списке изменений (Change Notes) релизного обновления на этой странице написано «built on GitHub» и указаны запуск и SHA-256 файла .gma, так что вы можете убедиться, что файлы, полученные из Steam, — именно те, что собрал GitHub.
+
+[h1]Авторы[/h1]
+[list]
+[*][b]NVIDIA RTX Remix для Мастерской Gmod — автор:[/b] SheepyLord
+[*][b]Разработчики (вклад в код):[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]Тестировщики (без вклада в код):[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+Лицензия: GPL-2.0
