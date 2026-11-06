@@ -142,7 +142,26 @@ def check_runtime_record(root):
            'files': files}
     built = {'commit': record.get('commit'), 'submodules': settings(record.get('submodules')),
              'clones': settings(record.get('clones')), 'files': record.get('files')}
-    problems = [f'runtime/: the {key} differ from what the stored d3d9.dll was built from (runtime/base.json "packaged"); '
+    # Parallel runtime tasks build locally; integration imports their combined DLL once (R20-E).
+    # Only explicitly hashed, newly appended patches may wait. Existing inputs remain immutable.
+    pending = base.get('pending_patches')
+    pending_problems = []
+    if pending is not None:
+        if (not isinstance(pending, dict) or set(pending) != {'why', 'files'}
+                or not isinstance(pending.get('why'), str) or not pending['why'].strip()
+                or not isinstance(pending.get('files'), dict) or not pending['files']):
+            pending_problems.append('runtime/base.json: pending_patches needs a reason and nonempty files map')
+        else:
+            last_built = max((name for name in (built['files'] or {}) if name.startswith('patches/')), default='')
+            for name, digest in pending['files'].items():
+                if (not re.fullmatch(r'patches/[0-9]{4}-[^/]+\.patch', name)
+                        or name <= last_built or name in (built['files'] or {})
+                        or not isinstance(digest, str) or not re.fullmatch(r'[0-9a-f]{64}', digest)
+                        or files.get(name) != digest):
+                    pending_problems.append(f'runtime/base.json: invalid or changed pending patch {name}')
+                else:
+                    del now['files'][name]
+    problems = pending_problems + [f'runtime/: the {key} differ from what the stored d3d9.dll was built from (runtime/base.json "packaged"); '
                 'run runtime/build_runtime.ps1 to build and store it again' for key in now if now[key] != built[key]]
     index = root / 'packages' / 'runtime' / 'files.json'
     if index.is_file():

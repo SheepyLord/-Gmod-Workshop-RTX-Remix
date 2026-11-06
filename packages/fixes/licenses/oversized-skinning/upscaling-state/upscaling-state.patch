@@ -1,0 +1,96 @@
+diff --git a/source/remixapi/config_lua_bindings.cpp b/source/remixapi/config_lua_bindings.cpp
+index e39a985d904097e000584be6ec0f7a3c5faaa0be..105dedab707cf5552cab3ce77f4641339746cdbd 100644
+--- a/source/remixapi/config_lua_bindings.cpp
++++ b/source/remixapi/config_lua_bindings.cpp
+@@ -1,5 +1,6 @@
+ #ifdef _WIN64
+ #include "remixapi.h"
++#include "upscaling_state.h"
+ #include "../lua_path_policy.h"
+ #include <tier0/dbg.h>
+ 
+@@ -64,6 +65,28 @@ LUA_FUNCTION(RemixConfig_GetConfigVariable) {
+     return 1;
+ }
+ 
++// The export lookup also supports older SDK headers; no optional interface tail is dereferenced.
++LUA_FUNCTION(RemixConfig_GetUpscalingState) {
++    using Read = remixapi_ErrorCode(REMIXAPI_CALL*)(const char*, char*, uint32_t, uint32_t*);
++    HMODULE runtime = GetModuleHandleW(L"d3d9.dll");
++    auto read = runtime ? reinterpret_cast<Read>(GetProcAddress(runtime, "remixapi_GetGameValue")) : nullptr;
++    UpscalingReadback::State state;
++    if (!read || !UpscalingReadback::ReadState([read](const char* key, char* value, uint32_t size, uint32_t* actual) {
++            return read(key, value, size, actual) == REMIXAPI_ERROR_CODE_SUCCESS;
++        }, state)) {
++        LUA->PushNil();
++        return 1;
++    }
++    LUA->CreateTable();
++    LUA->PushBool(state.ready); LUA->SetField(-2, "ready");
++    LUA->PushNumber(state.upscaler); LUA->SetField(-2, "upscaler");
++    LUA->PushNumber(state.frameGeneration); LUA->SetField(-2, "frame_generation");
++    LUA->PushBool(state.dlss); LUA->SetField(-2, "dlss_supported");
++    LUA->PushBool(state.dlfg); LUA->SetField(-2, "dlss_frame_generation_supported");
++    LUA->PushBool(state.fsrfg); LUA->SetField(-2, "fsr_frame_generation_supported");
++    return 1;
++}
++
+ // Lua function: RemixConfig.GetUIState()
+ LUA_FUNCTION(RemixConfig_GetUIState) {
+     auto& configManager = RemixAPI::Instance().GetConfigManager();
+@@ -264,6 +287,9 @@ void ConfigManager::InitializeLuaBindings() {
+     m_lua->PushCFunction(RemixConfig_SetConfigVariable);
+     m_lua->SetField(-2, "SetConfigVariable");
+     
++    m_lua->PushCFunction(RemixConfig_GetUpscalingState);
++    m_lua->SetField(-2, "GetUpscalingState");
++
+     m_lua->PushCFunction(RemixConfig_GetConfigVariable);
+     m_lua->SetField(-2, "GetConfigVariable");
+     
+diff --git a/source/remixapi/upscaling_state.h b/source/remixapi/upscaling_state.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..569a44d56ec8515054db5644c6b00d8aed7d627c
+--- /dev/null
++++ b/source/remixapi/upscaling_state.h
+@@ -0,0 +1,40 @@
++// GPL-2.0, as part of RTXFixesBinary. See ../../../../COPYING.
++#pragma once
++#include <cstdint>
++#include <string_view>
++
++namespace RemixAPI::UpscalingReadback {
++inline constexpr const char* Key = "rtx.runtime.upscalingState";
++struct State {
++    bool ready = false;
++    unsigned upscaler = 0;
++    unsigned frameGeneration = 0;
++    bool dlss = false;
++    bool dlfg = false;
++    bool fsrfg = false;
++};
++
++// Version 1: seven single-digit fields, exactly one space between them.
++inline bool Parse(std::string_view value, State& out) {
++    if (value.size() != 13 || value[0] != '1') return false;
++    for (unsigned i = 1; i < 13; i += 2) {
++        if (value[i] != ' ') return false;
++    }
++    for (unsigned i : {2u, 8u, 10u, 12u}) {
++        if (value[i] != '0' && value[i] != '1') return false;
++    }
++    if (value[4] < '0' || value[4] > '5' || value[6] < '0' || value[6] > '2') return false;
++    out = {value[2] == '1', unsigned(value[4] - '0'), unsigned(value[6] - '0'),
++           value[8] == '1', value[10] == '1', value[12] == '1'};
++    return true;
++}
++
++template<class Read>
++bool ReadState(Read read, State& out) {
++    char value[64] = {};
++    uint32_t actual = 0;
++    if (!read(Key, value, uint32_t(sizeof(value)), &actual)
++        || actual != 14 || value[13] != '\0') return false;
++    return Parse(std::string_view(value, 13), out);
++}
++} // namespace RemixAPI::UpscalingReadback

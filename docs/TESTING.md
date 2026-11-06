@@ -1,5 +1,14 @@
 # Testing
 
+R20-E: `tools/tests/test_upscaling_readback.py` compiles the production runtime game-value store
+and its unit test from patch 0040, and the GPL bounded reader test, with optimized MSVC x64 and
+warnings as errors. It covers startup/pending readiness, failed callback convergence, read-only
+namespace, all enum/capability combinations, device lifetime, 100,000 concurrent publications and
+malformed, missing, oversized, failed and unterminated reads. `test_pending_runtime_patches.py`
+proves only declared hash-pinned new suffix patches may await import; shipped input checks remain.
+Both run in `tools/test.ps1 -Config Release`. Build/PoC receipts live in this worktree's `out/r20e`
+(ADR 0123); the runtime DLL is tested locally without a package import.
+
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.

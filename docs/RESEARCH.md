@@ -1,5 +1,24 @@
 # Research notes
 
+## R20-E: effective upscaling state, 2026-11-06
+
+- The fixes' original disk getter is `remixapi.cpp:1111` in the bundled memory-limits source. Runtime
+  `src/dxvk/rtx_render/rtx_initializer.cpp:127` applies DLSS/graphics presets later, and `:151`
+  resolves their callbacks. The disk getter cannot serve R20-B's startup hint.
+- In runtime patch 0040 (`codex/r20-native`), `rtx_fork_game_state.h:26` names the atomic wire value;
+  `:46` rejects plugin writes to the runtime namespace; `:54` starts an unready device; `:81` records
+  callback convergence. `rtx_option.cpp:356` invalidates readiness on every dirty option, and
+  `rtx_option_manager.cpp:244` records convergence before its existing dirty-map clear.
+  `rtx_initializer.cpp:184` reads actual DLSS/DLFG/FSR capabilities and both effective enums under
+  the option update mutex. Publication runs after initialization and at every present.
+- The GPL binding is `upscaling-state/source/remixapi/config_lua_bindings.cpp:69`, registered at
+  `:290`. It uses an export lookup and bounded thirteen-byte schema-1 value, with no optional
+  interface offset, config read or save. Publisher/reader checks pass with MSVC `/O2 /W4 /WX`.
+- Pinned premake drops `!` in generated intermediate paths in this nested worktree. The direct
+  module build failed with C1083/D8040; a temporary `subst W:` pointing into this worktree's `out`
+  gives correct paths. The unchanged build script then built the 5,515,264-byte module, SHA-256
+  `53da14f9269f042869510fe8be56b8b055263acd7c80a54d3e6178dbbfa94e73`.
+
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 
 Runtime source at `403b2336` (patch 0028); the patch, the A/B and its evidence are in the

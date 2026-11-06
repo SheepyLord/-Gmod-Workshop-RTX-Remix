@@ -1,0 +1,434 @@
+From 9e7a4d2d41b3ad145e565d55e8bfd4c27dc4d760 Mon Sep 17 00:00:00 2001
+From: Codex <noreply@openai.com>
+Date: Fri, 6 Nov 2026 03:34:44 -0700
+Subject: [PATCH] Publish live upscaling state for startup advice
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ public/include/remix/remix_c.h             |  4 +-
+ src/dxvk/rtx_render/rtx_context.cpp        |  1 +
+ src/dxvk/rtx_render/rtx_fork_game_state.h  | 78 ++++++++++++++++++++-
+ src/dxvk/rtx_render/rtx_initializer.cpp    | 29 ++++++++
+ src/dxvk/rtx_render/rtx_initializer.h      |  3 +
+ src/dxvk/rtx_render/rtx_option.cpp         |  2 +
+ src/dxvk/rtx_render/rtx_option_manager.cpp |  3 +
+ src/dxvk/rtx_render/rtx_remix_api.cpp      |  6 +-
+ tests/rtx/unit/meson.build                 |  5 ++
+ tests/rtx/unit/test_upscaling_state.cpp    | 81 ++++++++++++++++++++++
+ 10 files changed, 206 insertions(+), 6 deletions(-)
+ create mode 100644 tests/rtx/unit/test_upscaling_state.cpp
+
+diff --git a/public/include/remix/remix_c.h b/public/include/remix/remix_c.h
+index c2c9c3ad53fb6dbf836c4e0fbb72c3fa10571836..a8fefd87ca8ab115659971eb42d81855848f19b1 100644
+--- a/public/include/remix/remix_c.h
++++ b/public/include/remix/remix_c.h
+@@ -757,11 +757,11 @@ extern "C" {
+   // fork-owned, thread-safe string/string map that graph components
+   // (GameValueReadBool / GameValueReadNumber) read by name.
+   //
+-  // Keys are chosen by the plugin; Remix does not validate or namespace them.
++  // Keys beginning with "rtx.runtime." are read-only runtime snapshots; writes are rejected.
+   // The store survives Shutdown / re-init, so callers do not have to
+   // re-populate their state across device resets.
+   //
+-  // Returns REMIXAPI_ERROR_CODE_INVALID_ARGUMENTS on a null or empty key,
++  // Returns REMIXAPI_ERROR_CODE_INVALID_ARGUMENTS on a null, empty or reserved key,
+   // REMIXAPI_ERROR_CODE_SUCCESS otherwise.
+   typedef remixapi_ErrorCode(REMIXAPI_PTR* PFN_remixapi_SetGameValue)(
+     const char*               key,
+diff --git a/src/dxvk/rtx_render/rtx_context.cpp b/src/dxvk/rtx_render/rtx_context.cpp
+index bff7c5590d06b9329053bcac59bc9d8ff1b6ba77..7ec2bac60ea7088c1b5976accf6c2a1d6cef9579 100644
+--- a/src/dxvk/rtx_render/rtx_context.cpp
++++ b/src/dxvk/rtx_render/rtx_context.cpp
+@@ -916,6 +916,7 @@ namespace dxvk {
+ 
+   // Called right before D3D9 present
+   void RtxContext::onPresent(Rc<DxvkImage> targetImage) {
++    m_common->getRtxInitializer().publishUpscalingState();
+     m_common->metaMemoryDiagnostics().onFrame(getSceneManager().getCameraManager().isCameraCutThisFrame());
+     {
+       static bool s_firstFrameDone = false;
+diff --git a/src/dxvk/rtx_render/rtx_fork_game_state.h b/src/dxvk/rtx_render/rtx_fork_game_state.h
+index e2a6240b35981e60eef19ca0ff6c2c7c3e29b5ad..c367a0aa1e31e3028854ad27018d923d5ac59921 100644
+--- a/src/dxvk/rtx_render/rtx_fork_game_state.h
++++ b/src/dxvk/rtx_render/rtx_fork_game_state.h
+@@ -1,59 +1,133 @@
+ #pragma once
+ 
+ // rtx_fork_game_state.h — fork-owned generic key/value store for plugin-
+ // injected runtime state that graph components read by name. The store is a
+ // header-only singleton guarded by an internal mutex. Writes happen on the
+ // plugin thread via remixapi_SetGameValue; reads happen on the render thread
+ // from GameValueRead* graph components.
+ //
+ // Lifetime is deliberately API-lifetime (function-local static): the store
+ // survives Remix Shutdown / re-init so plugins do not have to re-populate
+ // their state across device resets.
+ //
+ // See docs/fork-touchpoints.md for the upstream file touches
+ // associated with the remixapi_SetGameValue entrypoint.
+ 
++#include <cstdint>
+ #include <mutex>
+ #include <string>
+ #include <unordered_map>
+ #include <utility>
+ 
+ namespace dxvk {
+   namespace fork_game_state {
+ 
++    // A single versioned value keeps the plugin read atomic across all six fields.
++    inline constexpr const char* kUpscalingStateKey = "rtx.runtime.upscalingState";
++
++    struct UpscalingState {
++      bool ready = false;
++      uint32_t upscaler = 0;
++      uint32_t frameGeneration = 0;
++      bool dlssSupported = false;
++      bool dlssFrameGenerationSupported = false;
++      bool fsrFrameGenerationSupported = false;
++    };
++
+     class GameStateStore {
+     public:
+       static GameStateStore& get() {
+         static GameStateStore s_instance;
+         return s_instance;
+       }
+ 
+-      // Overwrites the value under key. Thread-safe.
+-      void set(const std::string& key, std::string value) {
++      // Plugins cannot impersonate the runtime, including future keys in this namespace.
++      bool set(const std::string& key, std::string value) {
++        if (key.compare(0, 12, "rtx.runtime.") == 0) {
++          return false;
++        }
+         std::lock_guard<std::mutex> lock{ m_lock };
+         m_values[key] = std::move(value);
++        return true;
++      }
++
++      void beginUpscalingState(const void* owner) {
++        std::lock_guard<std::mutex> lock{ m_lock };
++        m_upscalingOwner = owner;
++        m_upscalingOptionsResolved = false;
++        m_upscalingResolutionFailed = false;
++        m_upscalingState = {};
++        writeUpscalingState();
++      }
++
++      void endUpscalingState(const void* owner) {
++        std::lock_guard<std::mutex> lock{ m_lock };
++        if (owner == m_upscalingOwner) {
++          m_values.erase(kUpscalingStateKey);
++          m_upscalingOwner = nullptr;
++        }
++      }
++
++      // Called while holding the option update mutex; readers take only m_lock.
++      void invalidateUpscalingState() {
++        std::lock_guard<std::mutex> lock{ m_lock };
++        m_upscalingOptionsResolved = false;
++        if (m_upscalingOwner && m_upscalingState.ready) {
++          m_upscalingState.ready = false;
++          writeUpscalingState();
++        }
++      }
++
++      void finishUpscalingOptions(bool converged) {
++        std::lock_guard<std::mutex> lock{ m_lock };
++        m_upscalingOptionsResolved = converged;
++        // A resolver that abandons cyclic callbacks cannot certify this device's state.
++        m_upscalingResolutionFailed |= !converged;
++      }
++
++      void publishUpscalingState(const void* owner, UpscalingState state) {
++        std::lock_guard<std::mutex> lock{ m_lock };
++        if (owner != m_upscalingOwner || !owner) {
++          return;
++        }
++        state.ready &= m_upscalingOptionsResolved && !m_upscalingResolutionFailed;
++        state.ready &= state.upscaler <= 5 && state.frameGeneration <= 2;
++        m_upscalingState = state;
++        writeUpscalingState();
+       }
+ 
+       // Copies the current value under key into out. Returns false if the
+       // key is not present. Thread-safe.
+       bool tryGet(const std::string& key, std::string& out) const {
+         std::lock_guard<std::mutex> lock{ m_lock };
+         auto it = m_values.find(key);
+         if (it == m_values.end()) {
+           return false;
+         }
+         out = it->second;
+         return true;
+       }
+ 
+     private:
+       GameStateStore() = default;
+       GameStateStore(const GameStateStore&) = delete;
+       GameStateStore& operator=(const GameStateStore&) = delete;
+ 
++      void writeUpscalingState() {
++        const auto& s = m_upscalingState;
++        m_values[kUpscalingStateKey] = "1 " + std::to_string(s.ready) + " "
++          + std::to_string(s.upscaler) + " " + std::to_string(s.frameGeneration) + " "
++          + std::to_string(s.dlssSupported) + " " + std::to_string(s.dlssFrameGenerationSupported) + " "
++          + std::to_string(s.fsrFrameGenerationSupported);
++      }
++
++      const void* m_upscalingOwner = nullptr;
++      bool m_upscalingOptionsResolved = false;
++      bool m_upscalingResolutionFailed = false;
++      UpscalingState m_upscalingState;
+       mutable std::mutex m_lock;
+       std::unordered_map<std::string, std::string> m_values;
+     };
+ 
+   }  // namespace fork_game_state
+ }  // namespace dxvk
+diff --git a/src/dxvk/rtx_render/rtx_initializer.cpp b/src/dxvk/rtx_render/rtx_initializer.cpp
+index ca62d52bf601eb195ebec03dcadb9398d84adb51..a4e4dd4ace3894063202fc444a8e41d5b55eab2a 100644
+--- a/src/dxvk/rtx_render/rtx_initializer.cpp
++++ b/src/dxvk/rtx_render/rtx_initializer.cpp
+@@ -22,6 +22,8 @@
+ #pragma once
+ 
+ #include "rtx_initializer.h"
++#include "rtx_fork_game_state.h"
++#include "rtx_fork_fsr_framegen.h"
+ #include "rtx_scene_manager.h"
+ #include "rtx_asset_replacer.h"
+ #include "rtx_options.h"
+@@ -69,9 +71,13 @@ namespace dxvk {
+ 
+   RtxInitializer::RtxInitializer(DxvkDevice* device)
+   : CommonDeviceObject(device) {
++    fork_game_state::GameStateStore::get().beginUpscalingState(this);
++    Logger::info("[RTX Upscaling State] startup pending: 1 0 0 0 0 0 0");
+   }
+ 
+   void RtxInitializer::onDestroy() {
++    m_upscalingPresetsInitialized = false;
++    fork_game_state::GameStateStore::get().endUpscalingState(this);
+     // Raised before the joins below so the asset loaders abandon their prim walks rather
+     // than running the stage to completion - otherwise quitting while enhancements load
+     // blocks for the whole remaining load and looks like a hang.
+@@ -168,6 +174,29 @@ namespace dxvk {
+       // Wait for all prewarming to complete before calling "RTX initialized"
+       waitForShaderPrewarm();
+     }
++    m_upscalingPresetsInitialized = true;
++    publishUpscalingState();
++    std::string upscalingState;
++    fork_game_state::GameStateStore::get().tryGet(fork_game_state::kUpscalingStateKey, upscalingState);
++    Logger::info(str::format("[RTX Upscaling State] startup resolved: ", upscalingState));
++  }
++
++  void RtxInitializer::publishUpscalingState() {
++    if (!m_upscalingPresetsInitialized) {
++      return;
++    }
++    auto* common = m_device->getCommon();
++    const bool dlss = m_device->extensions().nvxBinaryImport
++      && m_device->extensions().nvxImageViewHandle && m_device->extensions().khrPushDescriptor
++      && common->metaDLSS().supportsDLSS();
++    const bool dlfg = common->metaDLFG().supportsDLFG() && !common->metaDLFG().hasDLFGFailed();
++    const bool fsrfg = common->metaFSRFrameGen().supportsFSRFrameGen();
++
++    // Match markDirty's lock order and copy both effective enums from the same resolution.
++    std::lock_guard<std::mutex> lock(RtxOptionImpl::getUpdateMutex());
++    fork_game_state::GameStateStore::get().publishUpscalingState(this, {
++      true, static_cast<uint32_t>(RtxOptions::upscalerType.getValueNoLock()),
++      static_cast<uint32_t>(RtxOptions::frameGenerationType.getValueNoLock()), dlss, dlfg, fsrfg });
+   }
+ 
+   void RtxInitializer::release() {
+diff --git a/src/dxvk/rtx_render/rtx_initializer.h b/src/dxvk/rtx_render/rtx_initializer.h
+index ce7d3e8d7aeec59b7da67181178014192129a48c..978db1d29652b56b817f1b04137a62f8f834ef2b 100644
+--- a/src/dxvk/rtx_render/rtx_initializer.h
++++ b/src/dxvk/rtx_render/rtx_initializer.h
+@@ -23,6 +23,7 @@
+ #include "../../util/rc/util_rc_ptr.h"
+ #include "rtx_option.h"
+ #include "rtx_common_object.h"
++#include <atomic>
+ 
+ namespace dxvk {
+   class DxvkDevice;
+@@ -35,6 +36,7 @@ namespace dxvk {
+ 
+     void initialize();
+     void release();
++    void publishUpscalingState();
+ 
+     void waitForShaderPrewarm();
+ 
+@@ -43,6 +45,7 @@ namespace dxvk {
+     }
+ 
+   private:
++    std::atomic<bool> m_upscalingPresetsInitialized = false;
+     bool m_warmupComplete = false;
+     bool m_assetsLoaded = false;
+ 
+diff --git a/src/dxvk/rtx_render/rtx_option.cpp b/src/dxvk/rtx_render/rtx_option.cpp
+index 847f457ee5c5164bb87c6ee692bb481330eea38a..1f99e031a9887058329bad62a93b13678f69d4a3 100644
+--- a/src/dxvk/rtx_render/rtx_option.cpp
++++ b/src/dxvk/rtx_render/rtx_option.cpp
+@@ -21,6 +21,7 @@
+ */
+ #include "rtx_options.h"
+ #include "rtx_option_dynamic.h"
++#include "rtx_fork_game_state.h"
+ 
+ namespace dxvk {
+   void fillHashVector(const std::vector<std::string>& rawInput, std::vector<XXH64_hash_t>& hashVectorOutput) {
+@@ -353,6 +354,7 @@ namespace dxvk {
+   }
+ 
+   void RtxOptionImpl::markDirty() {
++    fork_game_state::GameStateStore::get().invalidateUpscalingState();
+     RtxOptionManager::getDirtyOptionMap()[m_hash] = this;
+   }
+ 
+diff --git a/src/dxvk/rtx_render/rtx_option_manager.cpp b/src/dxvk/rtx_render/rtx_option_manager.cpp
+index 13472ca1324a3c45e21cef39cf1f485ca3414886..47c872fc387bcf3baf9b64c1ed3da0cff659c852 100644
+--- a/src/dxvk/rtx_render/rtx_option_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_option_manager.cpp
+@@ -21,6 +21,7 @@
+ */
+ 
+ #include "rtx_option_manager.h"
++#include "rtx_fork_game_state.h"
+ #include "../util/log/log.h"
+ 
+ #include <fstream>
+@@ -240,6 +241,8 @@ namespace dxvk {
+     }
+ #endif
+ 
++    fork_game_state::GameStateStore::get().finishUpscalingOptions(getDirtyOptionMap().empty());
++
+     // Don't let dirty options persist across frames
+     getDirtyOptionMap().clear();
+   }
+diff --git a/src/dxvk/rtx_render/rtx_remix_api.cpp b/src/dxvk/rtx_render/rtx_remix_api.cpp
+index f82a37cf44d2802c5e776df64c58a444c7cb11c1..cebdaced0f86a0d3fdbd307843c2955eac057c0c 100644
+--- a/src/dxvk/rtx_render/rtx_remix_api.cpp
++++ b/src/dxvk/rtx_render/rtx_remix_api.cpp
+@@ -2844,8 +2844,10 @@ extern "C"
+     // Keep the generic Plus key/value contract intact, then adapt weather keys
+     // into the native typed subsystem when a device is available. The native
+     // WeatherBlender never depends on this untyped transport.
+-    dxvk::fork_game_state::GameStateStore::get().set(
+-      std::string{ key }, std::string{ value });
++    if (!dxvk::fork_game_state::GameStateStore::get().set(
++      std::string{ key }, std::string{ value })) {
++      return REMIXAPI_ERROR_CODE_INVALID_ARGUMENTS;
++    }
+     applyWeatherGameValue(getWeatherBlender(tryAsDxvk()), key, value);
+     return REMIXAPI_ERROR_CODE_SUCCESS;
+   }
+diff --git a/tests/rtx/unit/meson.build b/tests/rtx/unit/meson.build
+index 92441f629958b2636322510c6f9d2b0fac8c4565..3616f968e73487963f54f375086fa81f3b5db7ac 100644
+--- a/tests/rtx/unit/meson.build
++++ b/tests/rtx/unit/meson.build
+@@ -206,4 +206,9 @@ exe = executable('test_rtx_option_threads', files('test_rtx_option_threads.cpp')
+ test('test_rtx_option_threads', exe, env: test_env, timeout: 120)
+ tests += exe
+ 
++exe = executable('test_upscaling_state', files('test_upscaling_state.cpp'),
++  win_subsystem: 'console', override_options: ['cpp_std='+dxvk_cpp_std])
++test('test_upscaling_state', exe)
++tests += exe
++
+ alias_target('unit_tests', tests)
+diff --git a/tests/rtx/unit/test_upscaling_state.cpp b/tests/rtx/unit/test_upscaling_state.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f8c0255bbeaa6093f320b16c8516c7633326c22
+--- /dev/null
++++ b/tests/rtx/unit/test_upscaling_state.cpp
+@@ -0,0 +1,81 @@
++// Runtime-owned upscaling snapshots: no GPU, SDK or config files required.
++#include "../../../src/dxvk/rtx_render/rtx_fork_game_state.h"
++
++#include <atomic>
++#include <cstdlib>
++#include <iostream>
++#include <thread>
++
++using namespace dxvk::fork_game_state;
++
++static void check(bool value) {
++  if (!value) {
++    std::cerr << "FAIL upscaling state publisher\n";
++    std::abort();
++  }
++}
++
++int main() {
++  auto& store = GameStateStore::get();
++  std::string value;
++  int deviceA = 0;
++  int deviceB = 0;
++  check(!store.tryGet(kUpscalingStateKey, value));
++  check(!store.set(kUpscalingStateKey, "forged"));
++  check(!store.set("rtx.runtime.future", "forged"));
++  check(store.set("isRaining", "true"));
++  check(store.tryGet("isRaining", value) && value == "true");
++
++  store.beginUpscalingState(&deviceA);
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 0 0 0 0 0");
++  store.publishUpscalingState(&deviceA, {true, 1, 1, true, true, false});
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 1 1 1 1 0");
++  store.finishUpscalingOptions(true);
++  store.publishUpscalingState(&deviceA, {true, 1, 1, true, true, false});
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 1 1 1 1 1 0");
++  check(!store.set(kUpscalingStateKey, "1 1 0 0 1 1 1"));
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 1 1 1 1 1 0");
++
++  store.invalidateUpscalingState();
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 1 1 1 1 0");
++  store.publishUpscalingState(&deviceA, {true, 0, 0, true, true, true});
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 0 0 1 1 1");
++  store.finishUpscalingOptions(false);
++  store.finishUpscalingOptions(true);
++  store.publishUpscalingState(&deviceA, {true, 0, 0, true, true, true});
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 0 0 1 1 1");
++
++  store.beginUpscalingState(&deviceB);
++  store.endUpscalingState(&deviceA);
++  store.publishUpscalingState(&deviceA, {true, 5, 2, false, false, false});
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 0 0 0 0 0");
++  store.finishUpscalingOptions(true);
++  for (uint32_t up = 0; up <= 5; up++) {
++    for (uint32_t fg = 0; fg <= 2; fg++) {
++      store.publishUpscalingState(&deviceB, {true, up, fg, true, true, true});
++      check(store.tryGet(kUpscalingStateKey, value)
++        && value == "1 1 " + std::to_string(up) + " " + std::to_string(fg) + " 1 1 1");
++    }
++  }
++  store.publishUpscalingState(&deviceB, {true, 6, 3, true, true, true});
++  check(store.tryGet(kUpscalingStateKey, value) && value == "1 0 6 3 1 1 1");
++
++  std::atomic<bool> done = false;
++  store.publishUpscalingState(&deviceB, {true, 1, 1, true, false, true});
++  std::thread writer([&] {
++    for (int i = 0; i < 50000; i++) {
++      store.publishUpscalingState(&deviceB, {true, 1, 1, true, false, true});
++      store.publishUpscalingState(&deviceB, {true, 5, 2, false, true, false});
++    }
++    done = true;
++  });
++  do {
++    check(store.tryGet(kUpscalingStateKey, value));
++    check(value == "1 1 1 1 1 0 1" || value == "1 1 5 2 0 1 0");
++  } while (!done);
++  writer.join();
++  store.endUpscalingState(&deviceB);
++  check(!store.tryGet(kUpscalingStateKey, value));
++  check(store.tryGet("isRaining", value) && value == "true");
++  std::cout << "PASS upscaling state publisher: lifecycle, readiness, namespace, enums, atomic readers\n";
++}

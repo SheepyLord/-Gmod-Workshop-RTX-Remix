@@ -8,6 +8,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Live upscaling readback for the startup hint (R20-E).** The fixes' native module adds
+  `RemixConfig.GetUpscalingState()`, with atomic effective settings and selected-device capability
+  flags from runtime patch 0040 after presets/callbacks resolve. Old runtimes return `nil` safely.
+  The runtime patch awaits the combined integration import; a hash-pinned pending-patch record keeps
+  source changes separate from unchanged shipped DLL provenance ([ADR 0123](docs/decisions/0123-live-upscaling-readback.md)).
+
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main
   menu's project link, the Workshop page and the package indexes' origins points at the new name

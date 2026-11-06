@@ -228,6 +228,6 @@ if (-not $NoImport) {
     $recordPath = Join-Path $repo 'out\tmp\runtime-packaged.json'
     New-Item -ItemType Directory -Force (Split-Path $recordPath) | Out-Null
     [IO.File]::WriteAllText($recordPath, ($record | ConvertTo-Json -Depth 8 -Compress), [Text.UTF8Encoding]::new($false))
-    python -I -c "import json, sys; path, new = sys.argv[1], sys.argv[2]; data = json.load(open(path, encoding='utf-8')); data['packaged'] = json.load(open(new, encoding='utf-8')); open(path, 'w', encoding='utf-8', newline='\n').write(json.dumps(data, indent=1, ensure_ascii=False) + '\n')" $basePath $recordPath
+    python -I -c "import json, sys; path, new = sys.argv[1], sys.argv[2]; data = json.load(open(path, encoding='utf-8')); data['packaged'] = json.load(open(new, encoding='utf-8')); data.pop('pending_patches', None); open(path, 'w', encoding='utf-8', newline='\n').write(json.dumps(data, indent=1, ensure_ascii=False) + '\n')" $basePath $recordPath
     if ($LASTEXITCODE) { throw "runtime\base.json could not be updated: $LASTEXITCODE" }
 }

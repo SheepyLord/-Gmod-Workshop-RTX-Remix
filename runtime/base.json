@@ -89,5 +89,11 @@
    "patches/0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch": "30ba4b5cf07de1a73f2a60954f864bd3b509607c908f8f127794ba2496bc8524",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
+ },
+ "pending_patches": {
+  "why": "R20-E builds and tests 0040 locally; Claude imports one runtime DLL after merging every R20 runtime patch. The packaged DLL and its provenance remain unchanged.",
+  "files": {
+   "patches/0040-Publish-live-upscaling-state-for-startup-advice.patch": "7714032b739317315b244026b4e8e4ade75878262045decf1f6489a8472bf203"
+  }
  }
 }

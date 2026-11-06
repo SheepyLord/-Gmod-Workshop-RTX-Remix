@@ -1,5 +1,10 @@
 # Oversized mesh hardware-skinning source
 
+R20-E adds the sixth native patch, [live upscaling readback](upscaling-state/README.md), after the
+R19 inputs below. Its complete changed files, bounded wire reader and SDK-free test are in that
+folder; `tools/ci/pins.json` records the patched native tree. It reads runtime patch 0040 and returns
+`nil` with the packaged older runtime until the combined R20 runtime import.
+
 The [R8-B Backrooms native candidate](backrooms/Source.md) layers its reviewed model-loading,
 lazy-transform and optional PAS changes on the R6 build below. That local DLL awaits Claude's
 import; its full source, patch, tests and hashes are included under this existing bundled tree.

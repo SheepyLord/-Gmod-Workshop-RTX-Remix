@@ -27,7 +27,7 @@ tools\ci\build_modules.ps1 -Only advmat -Out out\ci\built-advmat
 
 1. Checks premake's version and that garrysmod_common and each of its submodules is at its pin.
 2. **The fixes:** a sparse checkout (`/.gitattributes`, `/premake5.lua`, `/public/`, `/source/`) of the
-   public base commit; the patches (`fixes.patches`, five since R19) are applied to the index
+   public base commit; the patches (`fixes.patches`, six since R20-E) are applied to the index
    (`git apply --cached`, limited to `source/*`, `premake5.lua` and `public/*`), and the files are written
    from it. The patched native tree must be the recorded one, everywhere: `git write-tree` stores the
    index as a tree (in that checkout only) and the object id of each path in `fixes.patched_tree`
