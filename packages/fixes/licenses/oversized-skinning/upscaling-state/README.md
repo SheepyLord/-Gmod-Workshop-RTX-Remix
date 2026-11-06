@@ -1,5 +1,12 @@
 # Live upscaling readback (R20-E)
 
+Validated build: **5,515,264 bytes**, SHA-256
+`53da14f9269f042869510fe8be56b8b055263acd7c80a54d3e6178dbbfa94e73`, source tree
+`68b5778182983e59c2d5491699cd7f0996bcd0d1`. Built with the unchanged pinned module script using
+a temporary drive alias into this worktree's `out` to avoid premake's `!` path bug. Live RTX 5090
+edits and older-runtime nil fallback passed, then the module was imported once with `tools/inputs.py`.
+The [R20-E report](../../../../../docs/handover/R20-E-report.md) records exact PoC restoration.
+
 GPL-2.0 changes to `gmcl_RTXFixesBinary_win64.dll`; the parent [COPYING](../COPYING) applies.
 [upscaling-state.patch](upscaling-state.patch) is the sixth native patch after the public base and
 the five patches recorded in [pins.json](../../../../../tools/ci/pins.json). It adds

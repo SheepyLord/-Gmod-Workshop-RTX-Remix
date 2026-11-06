@@ -2,8 +2,17 @@
 
 ## R20-E: effective upscaling state, 2026-11-06
 
+- PoC: RTX 5090 reports DLSS/DLSS-G/FSR 3 FG support all true. Startup is unready at 04:01:49.660
+  and ready after presets at 04:01:52.054. Six in-memory edits read unready first, then effective
+  **0/0, 3/0, 1/0, 1/1, 3/2, 1/0** (upscaler/FG). The new module with the old runtime returns nil.
+  Both games exit 0 with no Lua/device errors. Evidence: `out/r20e/poc/validation.json`.
+- PoC stock still matches ENVIRONMENT.md's original manifests, while the field names newer ones:
+  4001/7488132547021413298 and 4002/7341198560151933050 verify 2,877 files / 7,279,873,012 bytes
+  before and after. Rollback uses those verified real manifests; all 4,022 copied tree files'
+  hashes/timestamps match afterward, with a clean rollback and lock release.
+
 - The fixes' original disk getter is `remixapi.cpp:1111` in the bundled memory-limits source. Runtime
-  `src/dxvk/rtx_render/rtx_initializer.cpp:127` applies DLSS/graphics presets later, and `:151`
+  `src/dxvk/rtx_render/rtx_initializer.cpp:129` applies DLSS/graphics presets later, and `:151`
   resolves their callbacks. The disk getter cannot serve R20-B's startup hint.
 - In runtime patch 0040 (`codex/r20-native`), `rtx_fork_game_state.h:26` names the atomic wire value;
   `:46` rejects plugin writes to the runtime namespace; `:54` starts an unready device; `:81` records

@@ -1,5 +1,12 @@
 # Testing
 
+R20-E PoC acceptance passes on RTX 5090, all three capability flags true. The actual getter returns
+unready then effective state across off, TAAU, DLSS, DLSS-G, FSR 3 FG and restoration; a second run
+with the old runtime returns nil. Both normal exits are 0 with no Lua/device errors; `user.conf`
+stays absent. Exact restoration checks 4,022 files and timestamps, plus 2,877 stock files against the
+PoC's original depot manifests (the field has newer revisions). Evidence and limits:
+[R20-E report](handover/R20-E-report.md), worktree `out/r20e/poc`.
+
 R20-E: `tools/tests/test_upscaling_readback.py` compiles the production runtime game-value store
 and its unit test from patch 0040, and the GPL bounded reader test, with optimized MSVC x64 and
 warnings as errors. It covers startup/pending readiness, failed callback convergence, read-only
