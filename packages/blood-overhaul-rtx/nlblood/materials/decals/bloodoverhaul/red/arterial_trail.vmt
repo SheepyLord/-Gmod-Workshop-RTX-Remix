@@ -1,9 +1,10 @@
 "LightmappedGeneric"
 {
-    "$basetexture" "decals/bloodoverhaul/tex/arterial_trail"
-    "$decal" "1"
-    "$translucent" "1"
-    "$decalscale" "0.052734"
-    "$color" "[1.000 1.000 1.000]"
-    "$modelmaterial" "decals/bloodoverhaul/red/arterial_trail_model"
+	// Blood Overhaul RTX: red blood splat, tinted at runtime
+	"$basetexture" "decals/bloodoverhaul/tex/arterial_trail"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0527"
+	"$color" "[1.000 1.000 1.000]"
+	"$modelmaterial" "decals/bloodoverhaul/red/arterial_trail_model"
 }

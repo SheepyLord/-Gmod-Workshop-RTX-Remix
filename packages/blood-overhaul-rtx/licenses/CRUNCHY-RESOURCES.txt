@@ -1,0 +1,15 @@
+Blood Overhaul resources by Crunchy
+Source: '2022' Blood Overhaul, Steam Workshop 2683396098
+https://steamcommunity.com/sharedfiles/filedetails/?id=2683396098
+
+Included with the resource author's permission, obtained by SheepyLord on 2026-11-06 and reported
+in the project's R21 instruction that day. The permission covers inclusion of these resources and
+their derived PBR in this project's RTX package and its public repository of package inputs.
+
+Crunchy's resources and derivatives remain the author's. They are not licensed under this
+repository's MIT licence. This notice records the permission to include them in this distribution;
+it does not grant an independent general licence to redistribute or relicense the resources.
+The author retains all rights not granted by that permission. No private correspondence is bundled.
+
+provenance.json identifies unchanged Crunchy files using the original add-on's MD5 inventory,
+files modified by SheepyLord, derived conversions/PBR maps and the generated patterns separately.

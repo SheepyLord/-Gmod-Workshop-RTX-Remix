@@ -1,4 +1,4 @@
-"""Owned-asset selection and execution regressions for R20-C blood and the toolgun settings move."""
+"""R20-C/R21-A resource selection, permission audit, Lua controllers and toolgun settings."""
 import json
 import os
 from pathlib import Path
@@ -14,18 +14,23 @@ LUA = shutil.which('luajit') or str(Path(os.environ.get('LOCALAPPDATA', '')) / '
 
 class BloodInputsTests(unittest.TestCase):
     def manifest(self):
-        return {'shapes': [{'key': key, 'kind': 'pool', 'units': 50, 'textures': [
+        shapes = [{'key': key, 'kind': 'pool', 'units': prep.ORIGINALS.get(key, 50), 'size': [1024, 1024], 'textures': [
             {'tex': 'decals/bloodoverhaul/tex/' + key + suffix,
              'hash': {'xxh64': '0x0123456789ABCDEF', 'xxh3': '0xFEDCBA9876543210'}}
-            for suffix in ('', '_n')]} for key in sorted(prep.PATTERNS)]}
+            for suffix in ('', '_n')]} for key in sorted(prep.PATTERNS | prep.ORIGINALS.keys())]
+        for shape in shapes:
+            if shape['key'] in prep.ORIGINALS:
+                shape['textures'].append({'tex': 'decals/blood' + shape['key'][-1], 'original': True,
+                    'hash': {'xxh64': '0x1123456789ABCDEF', 'xxh3': '0xEEDCBA9876543210'}})
+        return {'shapes': shapes}
 
-    def test_only_complete_owned_shapes_and_expected_textures(self):
+    def test_complete_permitted_shapes_world_sizes_and_expected_textures(self):
         manifest = self.manifest()
-        manifest['shapes'].append({'key': 'bo_blood1', 'kind': 'pool'})
-        self.assertEqual({s['key'] for s in prep.select_shapes(manifest)}, prep.PATTERNS)
-        manifest['shapes'][0]['textures'][0]['original'] = True
-        with self.assertRaises(ValueError):
-            prep.select_shapes(manifest)
+        shapes = prep.select_shapes(manifest)
+        self.assertEqual({s['key'] for s in shapes}, prep.PATTERNS | prep.ORIGINALS.keys())
+        self.assertEqual([s['key'] for s in shapes[:8]], list(prep.ORIGINALS))
+        manifest['shapes'].append(manifest['shapes'][0])
+        with self.assertRaises(ValueError): prep.select_shapes(manifest)
         manifest = self.manifest()
         manifest['shapes'][0]['textures'][0]['tex'] = 'decals/blood1'
         with self.assertRaises(ValueError):
@@ -35,14 +40,14 @@ class BloodInputsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prep.select_shapes(manifest)
 
-    def test_layer_cannot_pull_in_original_derived_maps(self):
+    def test_layer_cannot_pull_in_unlisted_maps(self):
         shape = self.manifest()['shapes'][:1]
         layer = '''        over "mat_0123456789ABCDEF" {
             asset inputs:diffuse_texture = @./textures/bo_blood1.a.rtex.dds@
             asset inputs:normalmap_texture = @./textures/bo_blood1.n.rtex.dds@
             asset inputs:reflectionroughness_texture = @./textures/bo_blood1.r.rtex.dds@
         }'''
-        with self.assertRaisesRegex(ValueError, 'excluded/unknown'):
+        with self.assertRaisesRegex(ValueError, 'unknown'):
             prep.selected_layer(layer, shape)
 
     def test_small_original_particle_textures_have_coverage_and_transparent_edges(self):
@@ -57,28 +62,40 @@ class BloodInputsTests(unittest.TestCase):
             self.assertGreater(max(alpha), 180)
             self.assertEqual(raw, prep.procedural_vtf(size, mist))
 
-    def test_imported_part_has_only_owned_texture_names_and_filtered_hashes(self):
+    def test_imported_part_covers_source_pbr_stock_materials_and_analytic_sprites(self):
         import re
         part = REPO / 'packages/blood-overhaul-rtx'
         index = json.loads((part / 'files.json').read_text())['files']
         vtfs = {p for p in index if p.endswith('.vtf')}
-        expected_vtfs = {f'nlblood/materials/decals/bloodoverhaul/tex/{key}{suffix}.vtf'
-                         for key in prep.PATTERNS for suffix in ('', '_n')}
-        expected_vtfs |= {f'nlblood/materials/particle/nlfluid/{name}.vtf' for name in ('drop', 'mist')}
-        self.assertEqual(vtfs, expected_vtfs)
+        self.assertEqual(len(vtfs), 93)
+        for key in prep.PATTERNS | prep.ORIGINALS.keys():
+            for suffix in ('', '_n'):
+                self.assertIn(f'nlblood/materials/decals/bloodoverhaul/tex/{key}{suffix}.vtf', vtfs)
+        for prefix,count in [('blood',8),('yblood',6)]:
+            for i in range(1,count+1):
+                self.assertIn(f'nlblood/materials/decals/{prefix}{i}.vtf', vtfs)
+                self.assertIn(f'nlblood/materials/decals/{prefix}{i}_subrect.vmt', index)
         dds = {Path(p).name for p in index if p.endswith('.dds')}
-        self.assertEqual(dds, {f'{key}{suffix}.rtex.dds' for key in prep.PATTERNS
-                              for suffix in ('.a', '_n.a', '.n', '.r')} |
-                         {f'nlfluid_{name}.a.rtex.dds' for name in ('drop', 'mist')})
+        self.assertEqual(len(dds), 179)
         layer = (part / 'nl_blood_overhaul_rtx/replacements.usda').read_text()
-        self.assertEqual(len(re.findall(r'over "mat_[0-9A-F]{16}"', layer)), 76)
+        self.assertEqual(len(re.findall(r'over "mat_[0-9A-F]{16}"', layer)), 186)
         self.assertEqual(set(re.findall(r'@\./textures/([^@]+)@', layer)), dds)
         self.assertNotIn('preload_textures = 1', layer)
         audit = json.loads((part / 'licenses/provenance.json').read_text())
-        self.assertEqual(len(audit['selected']), 109)
-        self.assertIn('dist/addon_companion/materials/particle/bo_droplets/drop.vtf', audit['excluded'])
+        self.assertEqual(audit['permission']['date'], '2026-11-06')
+        self.assertIn('dist/addon/materials/particle/bo_droplets/drop.vtf', audit['excluded'])
+        self.assertEqual(len(audit['selected']), 437)
+        self.assertTrue(audit['selected']['dist/addon/materials/decals/blood1.vtf']['matches_original_md5'])
+        self.assertFalse(audit['selected']['dist/addon/materials/decals/blood1_subrect.vmt']['matches_original_md5'])
+        for source,entry in audit['selected'].items():
+            if entry['to'].startswith(('nlblood/', 'nl_blood_overhaul_rtx/')):
+                self.assertEqual(index[entry['to']]['sha256'],entry['sha256'],source)
+        for target,entry in audit['generated'].items():
+            self.assertEqual(index[target]['sha256'], entry['sha256'], target)
+        self.assertTrue(all(len(entry['sha256']) == 64 and entry['reason'] for entry in audit['excluded'].values()))
+        self.assertNotIn('nlblood/materials/particle/bo_droplets/drop.vtf', index)
         patterns, sprites = layer.split('        # BEGIN R20-C PARTICLE MATERIALS', 1)
-        self.assertEqual(patterns.count('bool inputs:enable_emission = 0'), 72)
+        self.assertEqual(patterns.count('bool inputs:enable_emission = 0'), 182)
         self.assertEqual(sprites.count('inputs:emissive_adaptive_intensity = 0.05'), 4)
 
     def test_procedural_sprite_png_is_lossless_rgba(self):
@@ -124,7 +141,7 @@ class BloodInputsTests(unittest.TestCase):
 class BloodLuaTests(unittest.TestCase):
     def test_controllers(self):
         for scenario in ('budget', 'server_delivery', 'dts_bootstrap', 'coexist', 'preloaded', 'absent', 'menu', 'menu_fallback', 'impacts', 'saturation',
-                         'blood_menu', 'ragdolls', 'previous_impact', 'world_landing'):
+                         'blood_menu', 'ragdolls', 'previous_impact', 'world_landing', 'stock_materials'):
             with self.subTest(scenario=scenario):
                 run = subprocess.run([LUA, str(REPO / 'tools/tests/r20_blood_harness.lua'), str(REPO), scenario],
                                      cwd=REPO, capture_output=True, text=True, encoding='utf-8', timeout=20)

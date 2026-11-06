@@ -1,0 +1,9 @@
+"VertexLitGeneric"
+{
+	// Blood Overhaul RTX: alien blood splat, tinted at runtime (on models)
+	"$basetexture" "decals/bloodoverhaul/tex/bo_blood1_n"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0400"
+	"$color2" "[0.780 0.700 0.240]"
+}

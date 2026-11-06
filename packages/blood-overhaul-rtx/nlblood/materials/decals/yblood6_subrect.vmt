@@ -1,0 +1,10 @@
+"LightmappedGeneric"
+{
+	// Blood Overhaul RTX: world alien blood decal, tinted at runtime
+	"$basetexture" "decals/bloodoverhaul/tex/bo_blood6_n"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0400"
+	"$color" "[0.780 0.700 0.240]"
+	"$modelmaterial" "decals/bloodoverhaul/alien/bo_blood6_model"
+}

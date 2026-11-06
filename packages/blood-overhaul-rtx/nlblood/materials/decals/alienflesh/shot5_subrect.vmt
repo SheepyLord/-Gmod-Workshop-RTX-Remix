@@ -1,0 +1,7 @@
+"LightMappedGeneric"
+{
+"$basetexture"	"decals/alienflesh/shot5"
+"$translucent" 1
+"$decalscale" 	0.05
+"$modelmaterial" "decals/alienflesh/shot5"
+}

@@ -1,0 +1,7 @@
+"VertexLitGeneric"
+{
+"$basetexture" "decals/alienflesh/shot1"
+"$translucent" 1
+"$decal" 1
+"$decalscale" 0.25
+}

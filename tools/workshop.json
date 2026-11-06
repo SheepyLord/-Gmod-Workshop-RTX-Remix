@@ -252,7 +252,10 @@
         "packages/blood-overhaul-rtx/LICENSE",
         "--add-to-addon",
         "nlblood/CREDITS.txt",
-        "packages/blood-overhaul-rtx/licenses/CREDITS.txt"
+        "packages/blood-overhaul-rtx/licenses/CREDITS.txt",
+        "--add-to-addon",
+        "nlblood/CRUNCHY-RESOURCES.txt",
+        "packages/blood-overhaul-rtx/licenses/CRUNCHY-RESOURCES.txt"
       ]
     }
   ],

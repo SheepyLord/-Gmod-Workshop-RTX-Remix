@@ -1,4 +1,12 @@
 return {
+    { key = "bo_blood1", units = 41 },
+    { key = "bo_blood2", units = 51.2 },
+    { key = "bo_blood3", units = 61.4 },
+    { key = "bo_blood4", units = 41 },
+    { key = "bo_blood5", units = 51.2 },
+    { key = "bo_blood6", units = 41 },
+    { key = "bo_blood7", units = 45.1 },
+    { key = "bo_blood8", units = 24.6 },
     { key = "arterial_trail", units = 54 },
     { key = "castoff_sweep", units = 54 },
     { key = "dark_core_halo", units = 56 },

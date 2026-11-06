@@ -16,4 +16,5 @@ If a remote server sent the old standalone before verified local loading, retire
 source is the old `bloodoverhaul/cl_core.lua`; preserve other add-ons' intervening wrappers.
 
 No files, network messages or server gameplay changes. Missing parts are a no-op. No exit code.
-See ADR 0118 and the R20-C Lua harness for both precedence orders and repeated initialization.
+See ADRs 0118/0124 and the R20-C/R21-A Lua harness for both precedence orders and repeated initialization.
+The blood core now retints selected in-memory stock materials; this bootstrap never edits the legacy files.

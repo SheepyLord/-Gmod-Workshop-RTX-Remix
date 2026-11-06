@@ -1,9 +1,10 @@
 "LightmappedGeneric"
 {
-    "$basetexture" "decals/bloodoverhaul/tex/mist_cloud"
-    "$decal" "1"
-    "$translucent" "1"
-    "$decalscale" "0.054688"
-    "$color" "[1.000 1.000 1.000]"
-    "$modelmaterial" "decals/bloodoverhaul/red/mist_cloud_model"
+	// Blood Overhaul RTX: red blood splat, tinted at runtime
+	"$basetexture" "decals/bloodoverhaul/tex/mist_cloud"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0547"
+	"$color" "[1.000 1.000 1.000]"
+	"$modelmaterial" "decals/bloodoverhaul/red/mist_cloud_model"
 }

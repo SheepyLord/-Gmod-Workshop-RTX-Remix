@@ -1,9 +1,10 @@
 "LightmappedGeneric"
 {
-    "$basetexture" "decals/bloodoverhaul/tex/castoff_sweep_n"
-    "$decal" "1"
-    "$translucent" "1"
-    "$decalscale" "0.052734"
-    "$color" "[0.780 0.700 0.240]"
-    "$modelmaterial" "decals/bloodoverhaul/alien/castoff_sweep_model"
+	// Blood Overhaul RTX: alien blood splat, tinted at runtime
+	"$basetexture" "decals/bloodoverhaul/tex/castoff_sweep_n"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0527"
+	"$color" "[0.780 0.700 0.240]"
+	"$modelmaterial" "decals/bloodoverhaul/alien/castoff_sweep_model"
 }

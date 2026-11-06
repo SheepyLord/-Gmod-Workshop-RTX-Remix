@@ -1,0 +1,10 @@
+"LightmappedGeneric"
+{
+	// Blood Overhaul RTX: red blood splat, tinted at runtime
+	"$basetexture" "decals/bloodoverhaul/tex/bo_blood6"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0400"
+	"$color" "[1.000 1.000 1.000]"
+	"$modelmaterial" "decals/bloodoverhaul/red/bo_blood6_model"
+}

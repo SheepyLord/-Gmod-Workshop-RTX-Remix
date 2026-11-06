@@ -163,3 +163,4 @@ Each with the reason it lost.
 - [0122: Offscreen raster canvases keep their native draws](0122-raster-canvases-keep-their-native-draws.md) (R20-D, alpha masks and post-injection canvas updates).
 - [0118: Bundle the user's screen and owned blood patterns](0118-bundled-toolgun-screen-and-owned-blood-patterns.md) (R20-C, item 48; provenance boundaries and coexistence).
 - [0119: Client blood impacts with bounded spatter](0119-client-blood-impacts-with-bounded-spatter.md) (R20-C; stock fallback, normal particle/decal paths and budgets).
+- [0124: Blood Overhaul resources and their PBR ship by permission](0124-blood-overhaul-resources-by-permission.md) (R21-A; supersedes 0118's resource exclusions and stock-material policy).

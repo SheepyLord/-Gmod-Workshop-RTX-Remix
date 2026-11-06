@@ -1,4 +1,4 @@
--- Settings shared by the RTX package and the standalone owned-pattern part.
+-- Settings shared by the RTX package and the standalone Blood Overhaul RTX part.
 local BO = BloodOverhaul
 if not BO or not BO.Packaged or BO.MenuRegistered then return end
 BO.MenuRegistered = true
@@ -21,7 +21,8 @@ end
 local function build(panel)
     if i18n then i18n.PreparePanel(panel) end
     panel:CheckBox(L("Enable Blood Overhaul RTX"), "bloodoverhaul_enable")
-    panel:ControlHelp(L("Eighteen new patterns and twelve colour schemes, with wet PBR surfaces under RTX. Crunchy's Blood Overhaul is optional."))
+    panel:ControlHelp(L("Twenty-six patterns and twelve colour schemes, with wet PBR surfaces under RTX. No separate Blood Overhaul subscription is needed."))
+    panel:Help(L("Off restores material colours, the mixer and engine impacts. Packaged Blood Overhaul textures and PBR remain until the package is removed."))
     panel:CheckBox(L("Realistic bullet impacts"), "nativeloader_blood_impacts")
     panel:ControlHelp(L("Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."))
     panel:NumSlider(L("Impact amount"), "nativeloader_blood_amount", 0, 2, 2)
@@ -38,7 +39,7 @@ local function build(panel)
     panel:Button(L("Test splats where you look"), "bloodoverhaul_test")
     panel:Button(L("Clear all decals"), "bloodoverhaul_clear")
     panel:Button(L("Reset blood settings"), "bloodoverhaul_reset")
-    panel:Help(L("New patterns made with an AI image model. Base and style credit: Crunchy's 2022 Blood Overhaul (2683396098); its original textures and derived maps are not bundled."))
+    panel:Help(L("Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are included with his permission."))
 end
 BO.BuildMenu = build
 -- The complete companion owns the tab/categories. A part tested alone has the same usable panel.

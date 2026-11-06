@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/bo_blood1_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.040039"
+    "$color" "[0.670 0.820 0.140]"
+    "$modelmaterial" "decals/bloodoverhaul/worker/bo_blood1_model"
+}
