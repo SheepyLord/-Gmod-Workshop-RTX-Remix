@@ -1,10 +1,11 @@
 # R20-F: published-package field QA
 
+**Current result: the follow-up field checks pass; loader 0.15.0 remains installed.**
 The initial stop below is historical. The authorized follow-up is recorded in
 [After the toolgun fix and the 0.15.0 loader](#after-the-toolgun-fix-and-the-0150-loader).
 
 Branch `r20-field`, from `8332e03`; [brief](R20-F-field-qa.md), [shared plan](R20-plan.md).
-**Field sign-off withheld: the live toolgun display is nearly black in the actual field profile.**
+**Initial field sign-off was withheld: the live toolgun display was nearly black in the actual field profile.**
 Live QA stopped at the brief's failure boundary. Only this report is committed; scratch drivers
 and evidence stay under this worktree's `out/r20f/`. No product code or package input changed.
 
@@ -116,7 +117,7 @@ assets, already present in the first, older-package session. They are retained a
 log. The guard reports early installation, zero errors/cleanup errors and one blocked entry;
 that entry's identity was not collected, so a fully empty guard-block list is not claimed.
 
-## Open
+## Open at the initial stop
 
 The owning screen/rendering task should diagnose the unreadable night display with the retained
 field profile and replacements. After review/fix, repeat that view and complete the unrun field
@@ -126,6 +127,9 @@ ragdoll cloud and unisolated historical 4K cause also remain its documented revi
 was retested or resolved here.
 
 ## After the toolgun fix and the 0.15.0 loader
+
+**The requested follow-up field checks pass. Loader 0.15.0 is left installed.**
+The original night-screen rejection above is resolved in the real field view.
 
 Resumed on `r20-field` at **`e94aba0`**, after the manager published [R20-T](R20-T-report.md) and
 the real 0.15.0 release record. The follow-up authorizes replacing **only** the field DLL after
@@ -147,10 +151,15 @@ these checks.
 | Published package / actual runtime / release record | **Pass.** Exact downloaded archive hash, new deployed version and unchanged final runtime; real 0.15.0 record. | `published.json`, `downloaded-package.json`, `deployment-verified.json`, `04-reminder-night/status.json` |
 | 0.14.0 companion reminder | **Pass in the accepted map session.** One actual reminder, current/latest 0.14.0/0.15.0, one observed **Later** click; no ignore preference written. | `04-reminder-night/shot-01-update_reminder_014.png`, `console.log`: `R20F2_REMINDER_*`, `R20F2_LATER_CLICK` |
 | Toolgun at the retained field night | **Pass.** Bright, readable, live 512x512 display in the same inspect view, real ready DLSS/DLSS-G 1/1; frames **2,293 to 2,593**, backlight 1 / dim 0, clock approximately **20.54-20.66**. No corner-preview draw, brightness gain or graphics/sky change. | `04-reminder-night/shot-02-fixed_night_toolgun_first.png`, `shot-03-fixed_night_toolgun_second.png`, `console.log`; `04-reminder-night-receipt.json` |
-| Citizen/ragdoll pistol and shotgun; stains; Physics Blood; stock dupe; combined frame time | Running; no acceptance claimed yet. | `05-effects-dupe/`, task-local probes |
-| Verified release ZIP and candidate | **Pass, staged only.** ZIP SHA-256 matches GitHub's release-asset digest. Candidate DLL is 1,662,464 bytes, SHA-256 `0999cd017515a37de8ec86112f104f54ad8761baf766a13a4b13fc9f6c2d8418`. | `release-metadata.json`, `release-verification.json`; ZIP in `../release/` |
-| Manual loader update, 0.15.0 menu/pause warnings, no reminder | Pending old-loader acceptance. | Receipts to follow |
-| Final preservation/depot audit and Release gate | Pending. Initial Release gate passes all 27 CTests and 710 Python tests. | `release-initial.log`; final receipts to follow |
+| Citizen/ragdoll pistol and shotgun | **Pass for actual weapon/effect dispatch.** Clean pistol/shotgun citizen hits and ragdoll pistol hit; the first ragdoll shotgun spread missed and is excluded. A closer stock-shotgun repeat records actual ragdoll pellet hits and **seven** ragdoll impact events / **140** particle admissions. No getter/effect stub or simulated status. | `05b-effects-clean/shot-04-citizen_pistol.png` through `shot-06-ragdoll_pistol.png`, `console.log`: `R20F_BULLET`, `R20F2_HIT_*`; `05c-ragdoll-shotgun/shot-02-ragdoll_shotgun_close.png`, `R20F2_SG_AIM`, `R20F2_SG_PELLET`, `R20F2_SG_FINAL` |
+| Floor/wall stains and Physics Blood coexistence | **Pass for the exercised scene.** Visible world stains and pools/body flow together with packaged impacts. **55 wall / 329 floor** decal calls, zero landing trace misses; up to **420 droplets / 28 pools**, active body flow. Clean guard and zero Lua errors. No D3D9 colour/intensity parity claimed. | `05b-effects-clean/shot-02-physics_pools_droplets.png`, `shot-03-physics_bodyflow.png`, `shot-08-wall_stains.png`, `shot-09-floor_stains.png`; `R20F2_COMBAT_FINAL`, `controlled_flow.lua` |
+| Stock two-prop dupe / icon and cleanup | **Pass.** Actual stock copy/save of a drum and crate joined by one weld, readable coloured **512x512** JPEG, no `cam.End underflow`. Accepted clean run plus the earlier probe-correction run each generated one pair; both pairs were hash-checked into evidence and removed from the field. | `05b-effects-clean/dupes/`, `shot-10-stock_dupe_saved.png`, `console.log`: `R20F_DUPE_COPY`, `R20F2_DUPE_BYTES`, `R20F2_DUPE_SAVED`; both `*-dupe-cleanup.json` receipts |
+| Heaviest combined scene at 3840x2160 | **Pass for this bounded stress.** **493 frames / 10.011967 s**, median **19.8082 ms**, p99 **38.2395 ms**, maximum **47.2586 ms**, mean **49.2411 rendered FPS**; real ready DLSS/DLSS-G 1/1, normal timescale 1.0. No device loss/allocation-failure marker, Lua error or guard/cleanup error in the accepted run. | `05b-effects-clean/shot-11-heavy_combined_scene.png`, `console.log`: `R20F2_HEAVY`; `remix-dxvk.log`, `old-loader-acceptance.json` |
+| Verified release ZIP and installed DLL | **Pass.** ZIP SHA-256 matches GitHub's release-asset digest. Installed DLL is **1,662,464 bytes**, SHA-256 `0999cd017515a37de8ec86112f104f54ad8761baf766a13a4b13fc9f6c2d8418`. Old DLL/PDB are backed up; only the DLL was copied. | `release-metadata.json`, `release-verification.json`, `loader-installed.json`; ZIP in `../release/`, backups in `../before-loader/bin/win64/` |
+| 0.15.0 main menu / warning | **Pass.** No update window; Find Multiplayer Game opens the actual warning; **Back** returns home. No checkbox or Continue action. | `06-loader015-ui/main_menu_clear_no_update.png`, `main_multiplayer_warning.png`, `main_back_home.png`, inbox receipts |
+| 0.15.0 pause warning / no in-game reminder / status | **Pass.** Pause-menu Find Multiplayer Game opens the warning; **Back** returns to the pause home page. No dismissal/Continue action. Zero update frames during the 30-second in-game observation and at the final check; old-loader seen marker stays on the prior process's token. Status says **0.15.0 / active / no errors**. RTX tab still has one Blood panel and one Dynamic Toolgun Screen panel, zero old shortcuts. | `06-loader015-ui/pause_home.png`, `pause_multiplayer_warning.png`, `pause_back_home.png`, `shot-01-loader015_no_ingame_reminder.png`, `console.log`: `R20F2_LOADER015_*`; `ui-observations.json`, `preferences-after.json` |
+| Final preservation/depot audit | **Pass.** Before/after **2,877 files / 7,282,813,551 bytes**, only the permitted unchanged `autoexec.cfg` difference. Settings and registry preserved, all 301 standalone file hashes unchanged, no generated dupe/screenshot file remains in the field. Only the authorized loader DLL changes among protected files. | `verify-{before,after}.json`, `audit.json`, `acceptance.json`, `preferences-after.json`, `before/`, both `*-dupe-cleanup.json` |
+| Release gate | **Both initial and final `tools/test.ps1 -Config Release` pass, exit 0**, ending `All checks passed.` Each runs **27 CTests / 710 Python tests** (655 tools, 29 gmapack, 26 Steam; two existing optional-environment skips). Final documentation and whitespace checks also pass. | `release-initial.log`, `release-final.log`, `release-final-summary.json` |
 
 The ZIP digest supplied by GitHub is
 **`7f0258207d82aa754a941614b592eeaff1d3a815dd8b58c760ef01fa41f391e7`** for
@@ -169,4 +178,64 @@ config backup as their settings-back source. The accepted **04** session quit no
 Its client.vdf was restored byte for byte and its lock released. No product failure is attributed
 to the mistyped QA path. The launcher now checks fixture existence before acquiring the lock.
 
-Follow-up completion remains in progress; no product code or package input is edited here.
+The first combat probe (**05**) passed the boolean returned by `ABL.FlowCore.Active` to
+`math.max`; the guard contained and then quarantined that test timer. Its Lua/guard-clean claims
+are excluded. `05-combat-executed.lua` preserves it; `combat_clean.lua` corrects only that probe's
+active-flow indicator. The accepted **05b** run has zero Lua and guard errors. The field visually
+replaces the first disposable `male_07` flow model with a character, so `controlled_flow.lua`
+uses a distinct stock **`models/monk.mdl`** fixture to inspect flow placement. Only that disposable
+client fixture changes; the real citizen/ragdoll weapon targets retain the field's replacements.
+Their appearance and body-overlay alignment are not a new imported-character parity claim.
+The closer **05c** shotgun case replaces an observed miss, not a product failure.
+
+The heavy scene continuously spawns Physics Blood droplets and flow alongside six packaged blood
+effect dispatches per rendered frame. Its particle admissions and stains reach the package's
+budgets; the reported **4,611** admissions are cumulative, not 4,611 simultaneous particles.
+Frame intervals come from `PostRender` / `SysTime`, excluding screenshot time, with
+`engine_no_focus_sleep 0`, `fps_max 0` and the original settings restored at normal quit. These are
+application-frame measurements on the field's RTX 5090 and full mounted add-on set, not generated
+display FPS or an isolated PoC benchmark.
+
+The dupe collector verifies the observed compressed-data SHA-256 after the native file's **DUP3**
+prefix, and the JPEG SHA-256 with the same native filename stem. It refused ambiguous identical
+icons before deletion; matching the compressed dupe first disambiguates the pairs. Copies are
+verified before the two exact source files are removed. No directory is recursively deleted and
+no pre-existing dupe is removed.
+
+The pause menu was opened with the normal `gameui_activate` console command after injected
+Escape produced no visible UI change. Both Find Multiplayer Game clicks and both Back clicks
+used the real observed UI; no menu route/state stub was supplied. Neither reminder ignore nor
+multiplayer dismissal preference existed before, and both remain absent afterwards. No server
+browser Continue action or server connection was made.
+
+The manual update deliberately leaves the old PDB and the already-stale 0.13.0 installation
+receipt unchanged: the user authorized copying **only** `bin/win64/winmm.dll`. The original
+allowlist/config and `user.conf` are hash-checked before and after that copy. Actual DLL identity
+and the running status, rather than that stale receipt, establish the installed 0.15.0 version.
+
+`acceptance.json` indexes **24 native-size 3840x2160 PNGs** across four accepted game processes:
+**04, 05b, 05c and 06**, all normal exit 0, `settings_back=restored`, zero Lua/status errors, no
+device loss and no new crash dump. Their locks were held **2.43, 8.29, 6.44 and 6.78 minutes**,
+then released; the PoC was never launched or modified. The earlier 03/05 fixture errors and the
+missed 05b shotgun volley remain explicitly excluded. No unrelated running game was ended.
+
+The final audit verifies hashes **and original modification times** for `user.conf`, `rtx.conf`,
+the PDB, loader config/receipt and restored client.vdf. Config.cfg, client.vdf and server.vdf have
+zero changed, added or removed setting values, the video-registry exports match, and both
+standalone add-ons retain all **34 + 267** hashes. The new native-loader/status/session files,
+per-process hint/reminder markers and ordinary caches/logs are game-created state. The only
+manual field changes were the authorized client.vdf restoration, removal of the exact test dupe
+pairs, and the verified DLL update; the standard driver's temporary settings-back cfg was removed.
+
+All **207** runtime payload files match the new archive. **1,159** root files match; the same
+**92 create-only** paths retain their field copies, verified against this publication's manifest
+in `deployment-differences.json`. No attempt was made to replace the user's retained ToPBR maps
+or startup-message files. The existing Poolday asset errors and occasional stock Workshop HTML
+messages are preserved in the session logs. No new product fault was established in the requested
+paths; colour/intensity equivalence, substituted-character body-overlay alignment, and the wider
+R2 field-parity/earlier Q review limits remain outside this bounded acceptance.
+
+No product source/package input changed, no native binary was imported into git, and no push,
+merge, tag, Workshop operation or GitHub workflow was performed by this task. Only this report is
+committed. The release DLL remains in the user's game; its old DLL/PDB backups stay in
+`out/r20f/before-loader/`.
