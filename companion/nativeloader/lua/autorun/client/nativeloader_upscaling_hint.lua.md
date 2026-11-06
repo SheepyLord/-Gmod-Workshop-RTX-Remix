@@ -59,6 +59,8 @@ Tests: [QoL harness](../../../../../tools/tests/companion_qol_harness.lua.md) an
 [runner](../../../../../tools/tests/test_companion_qol.py.md).
 
 Integration QA must retain an obstructing frame while live edits/presets converge, then allow
-the full delay/poll interval after closing it. Keep ordinary sky/effect writers active: R20-Q
-found that runtime patch 0040 invalidates readiness for unrelated option writes, racing normal
-Lua timer reads. The native provider needs that integration fix; never trust an unready snapshot.
+the full delay/poll interval after closing it. Keep ordinary sky/effect writers active: R20-E's
+corrected patch 0040 invalidates only the 19 relevant option dependencies. R20-Q's combined-runtime
+follow-up reads ready 3,140 times with no pending/wrong steady samples while the sky keeps writing.
+The original unrelated-write defect and its corrected acceptance are in the integration report;
+never trust an unready snapshot.

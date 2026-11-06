@@ -3,7 +3,7 @@
 ## R20-Q follow-up: packaged client bootstrap (2026-11-06)
 
 The live menu rejected `remix.performance_tier` in `nl::config::load` from
-`loader/client/module.cpp:188`. The packaged bootstrap was the R4 input: 456,192 bytes, SHA-256
+`loader/client/module.cpp:190`. The packaged bootstrap was the R4 input: 456,192 bytes, SHA-256
 `de92d0261084c5d7dd7bdaca279a19012bf412fc00a1cbd31bfc385cff2104b4`.
 The current-source Release module is 460,800 bytes,
 `f23c711c4e6b3678661cbed45cf34d034d064b0444cd45c77a3e8b66851c508b`; its real menu reports
@@ -13,6 +13,17 @@ the simulated older-loader companion reminder, and menu-cookie restart checks pa
 imported once through `inputs.py`; `out/r20q/afterfix/bridge-overlay.json`, `bridge-import.log`
 and `bridge-import-receipt.json` retain the comparison and import. Native trust/catalog policy
 and the corrected Remix runtime are unchanged by this artifact refresh.
+
+The combined corrected runtime `00124bf6` passes Q's six live hint cases: 3,140 ready / 0 pending /
+0 wrong steady timer reads, 7,913 observed sun-elevation writes, sky running with a 20-minute day.
+Real effect landing gives 50 wall and 101 floor decals, 229 landings and no trace misses. The
+512x512 live toolgun screen records ready DLSS/DLSS-G 1/1 and 902 captures / 451 HUD redraws.
+Evidence: `out/r20q/afterfix/acceptance.json`, `hints/`, `views/` and the daylight menu-session
+inspection. Both old `b311f0d9` and new `00124bf6` runtimes load gm_construct at actual 3840x2160
+in direct borderless and bordered menu-to-map runs, all exit 0 with no device loss. The earlier
+failure's exact cause remains unisolated after the game/fixture changes. Controlled FX captures
+retain darker stock ragdoll blood under RTX and differing CPU light probes; see the follow-up
+report for visual/field limits rather than treating these runs as full photometric parity.
 
 ## R20-Q: merged runtime readback versus the running sky (2026-11-06)
 

@@ -1,7 +1,8 @@
-# R20-Q: merged-package QA, stopped at the runtime boundary
+# R20-Q: merged-package integration QA
 
 Branch `r20-qa`, from `708051b`; [brief](R20-Q-integration-qa.md), [shared plan](R20-plan.md).
-**The merged round is not signed off.** Integration exposed a native readback defect in runtime
+**Follow-up checks are complete; see [After the readiness fix](#after-the-readiness-fix).**
+The initial run below stopped without sign-off: integration exposed a native readback defect in runtime
 patch 0040. The brief says: "A runtime change is not expected; if one is needed, stop and report
 instead." Further live QA stopped after isolating that defect. No runtime change, binary import,
 merge, push, tag, publication, Workshop operation or GitHub workflow was performed.
@@ -162,18 +163,98 @@ Resumed from `f7bfe41` after R20-E's dependency-scoped invalidation fix and the 
 single rebuild/import. The earlier stop above is historical; this section records the follow-up.
 The refreshed PoC remains on GMod build 26439081. Evidence is under **`out/r20q/afterfix/`**.
 
-The loader Release build passes all 27 CTests. A fresh thirteen-part merged package was built
-and validated with this branch's `nlctl`; the synthetic menu package changes only its test version
-and the hash-indexed release record. The repository record stays 0.14.0.
+The loader Release build passes all 27 CTests. The final thirteen-part package, validated by this
+branch's `nlctl`, is `final-dist/gmod-rtx-remix-0.0.0-dev.20261106154248_01052ec2.gma`:
+**1,458 files**, **1,955,100,507 archive bytes**, SHA-256
+`cb38e5073aea358b6c9e0a0f59d6a640b2bf504c8379042d8beda620a6f05382`.
+`final-package.json` / `final-package-build.log` retain its receipt. The supplied combined runtime
+is **417,509,888 bytes**, SHA-256
+`00124bf6009ee6acb2b2ffbc64d8a724aeb0ed700fa88b0dc4dbb7a8720b05a1`; Q did not change/import it.
+The repository's release record stays **0.14.0**. The validated local menu fixture records 0.16.0.
 
 | Open check | Follow-up result | Evidence under out/r20q/afterfix |
 |---|---|---|
 | 45, full matrix with running sky | **Pass.** Real 0/0, 0/2 (upscaling off with FSR 3 FG), 1/0 and 1/1 states; correct single hint for the three off cases, none with both on, `cl_showhints 0` or the actual RTX checkbox clicked off. No hint while obstructed. Across steady samples: 3,140 ready / 0 pending / 0 wrong, with continuing sky writes and a running 20-minute day. | `hints/*/game/console.log`, two native-size captures per case, `hints/*/session.json`; `hints/optout/game/shot-01-checkbox_off.png` |
-| 48, wall stains and sharp live screen | In progress. | `views-driver.log` |
-| 44, controlled other-add-on comparison | Prepared; not yet run. | `compare-cases.json` |
-| 46/50, English and CJK live menus | Prepared; not yet run. | `synthetic-validation.json`, `menus-en-cases.json`, `menus-zh-cases.json` |
-| 4K current/old runtime | Pending. | Follow-up evidence will be recorded here. |
+| 48, wall/floor stains | **Pass.** Ten effect dispatches produced 50 observed wall decals and 101 floor decals, 229 landing callbacks and zero trace misses. The camera/trace normals and pictures show real world surfaces, not direct test stamps. | `views/wall-floor/game/console.log`, `shot-01-wall_stains.png`, `shot-02-floor_stains.png` |
+| 48, sharp live screen | **Pass for live updating and sharpness.** Ready DLSS/DLSS-G 1/1; actual 512x512 `dtscreen_screen512`, two live layouts, 902 capture / 451 HUD redraw callbacks in the short standalone run. The fixed-daylight inspection with the refreshed bootstrap also shows readable live text, backlight 1, dim 0 and ready 1/1 state. | `views/toolgun/game/` (two captures, log); `menus-en-fixed/later/toolgun-daylight*.png`, `toolgun-scene.json` |
+| 44, controlled comparison | **Comparison complete; colour/intensity parity is not claimed.** Same fixed map sun, camera, FOV, seed, effect inputs and 0.05 timescale; samples near 0.05/0.15/0.30 simulation seconds. Draconic dust is faint in both; the stock `blood_impact_red_01` ragdoll cloud is darker under RTX. Shapes/fades render without opaque filter rectangles, and the RTX guard is clean. This remains a visual difference for renderer review, not a demonstrated Q-owned Lua failure. | `compare/off/game/` and `compare/on/game/`: three dust and three ragdoll captures each, `R20Q_COMPARE_VIEW`, `R20Q_COMPARE_SAMPLE`, `R20Q_COMPARE_FINAL` |
+| 46, main-menu reminder | **Pass in English and zh-CN.** Synthetic 0.16.0 shows versions/instructions; Later permits a reminder after restart; per-version ignore survives a restart. Open download page opens only the recorded project `/releases/tag/v0.16.0` URL in Steam's browser (expected 404 for this synthetic version). With both preferences cleared, the real 0.14.0 record shows no update window. | `menus-en/open/` (URL prefix/suffix and opened-page captures), `menus-en-fixed/{later,ignore,remembered}/`, `menus-zh/{real-record,later,ignore,remembered}/`, targeted `*choices.json` receipts |
+| 46, in-game fallback | **Pass in English and zh-CN.** DATA status alone is simulated to 0.14.0; the actual DLL remains 0.15.0. The shipped companion displays its verified-record reminder with complete text/buttons; Later closes it. | `menus-en-fixed/later/companion-update.png`, `menus-zh/later/companion-update-zh.png`, `companion-scene.json`, `old-status` command receipts |
+| 50, main/pause warnings | **Pass in English and zh-CN.** Find Multiplayer opens the warning in both contexts. Back returns home; Continue reaches the real server browser. Checking the box then Back does not save dismissal; checking it then Continue does. Cookie `1` and direct browser entry survive new processes in both languages. No server was joined. | `menus-en-fixed/later/{multiplayer-warning,pause-warning,back-did-not-dismiss,pause-continue-browser}.png`, `menus-zh/later/{warning-zh,pause-warning-zh,pause-continue-zh}.png`, restart captures/`*choices.json` in both groups |
+| 4K current/old runtime | **Pass for these bounded loads; historical loss not reproduced.** Both packages load gm_construct at actual 3840x2160 with borderless direct-map startup, and with bordered main-menu-to-map startup. Four normal quits, no device-loss/allocation-failure markers. Current native readback is ready 1/0. Old package is the untouched distributed v0.14-era archive, internal version `0.0.0-dev.20261106004558+ad5cf8e8`, runtime `b311f0d9` (full hash in the original `baseline-package.json`). | `fourk/{v014-4k,merged-4k}/game/`, their `session.json`; `fourk-menu/{v014,merged}/`: `map-4k*.png`, `record.json`, `modules.json`, `loader.log`, `status.json`, `remix-dxvk.log` |
 
 The hint batch's `restoration.json` verifies 4,200 original files/timestamps and the video registry,
 with zero differences; lock hold 6.89 minutes. Its own verified binary copies were removed after
 restoration, retaining screenshots, logs, text and JSON receipts (`hints/binary-cleanup.json`).
+
+### Fix found during live menus
+
+The stored `gmsv_nlrtxclient_win64.dll` was the R4 artifact (456,192 bytes, `de92d026...`), linked
+to an old config parser. It printed `unknown key "performance_tier" in remix` from
+`loader/client/module.cpp:190`, so it never prepared the verified client catalog. This is distinct
+from the loader's menu notices, which could still work.
+
+The current-source Release build accepts that exact config and reports `verified; waiting for
+the client realm`. It passed the real menu, map/fallback and restart checks before its **one final
+import** through `inputs.py`: **460,800 bytes**, SHA-256
+`f23c711c4e6b3678661cbed45cf34d034d064b0444cd45c77a3e8b66851c508b`.
+The owning input/index and part README are updated. No C++ policy change or new native source
+permission was introduced; normal SP loading remains the explicit early return in
+`loader/client/bootstrap.lua:8`. Evidence: `bridge-overlay.json`, `bridge-validation.json`,
+`bridge-import.log`, `bridge-import-receipt.json`, `bridge-inputs-verify.log`. This is Q's only
+binary import; the final package was rebuilt after it.
+
+### Diagnosis and limits
+
+R20-A's old-package 4K records contain `VK_ERROR_DEVICE_LOST` and exit 1 on the older PoC. The
+follow-up's four runs retain active loader/runtime reports and the expected native runtime module
+paths, complete 3840x2160 captures and exit 0. Their Remix logs contain no device-loss or allocation
+failure marker. This does not isolate the old failure: the game build and isolated content/cache
+setup differ from A's run. No R20-specific cause was reproduced, no speculative rendering fix was
+made, and stability with every field subscription is not established by these smoke tests.
+
+The effect comparison's CPU lighting probes differ: vanilla `[0.5622,0.5959,0.5713]`, RTX
+`[0.4202,0.3902,0.3339]`. Colour/intensity equality therefore cannot be inferred from identical
+effect timing or geometry. The darker ragdoll cloud remains documented; the bounded observer did
+not block it and no new native renderer fault was established. The auxiliary old-4K stock-PCF
+photo was taken after that effect expired and is not used as colour-parity evidence.
+
+The RTX comparison also displays the shipped Model Hotloader's compatibility notice: its native
+release's tested engine hashes predate build 26439081. It runs anyway. Q has not claimed a new
+imported-character/physics acceptance or changed that metadata to hide the notice; that broader
+field/model validation remains outside these effect/menu checks.
+
+### Restoration, cleanup and final gate
+
+Every follow-up batch verifies **4,200** retained file hashes/timestamps and the original video
+registry. The longest completed hold is the English menu group at **15.08 minutes**; all are below
+20 minutes. The real field game was never launched or ended. No Steam setting or `user.conf` was
+changed. The English menu runner initially kept its own SQLite connection open (a Python sqlite
+context commits but does not close); explicit close fixed the runner. The game had quit normally;
+recovery completed under its retained lock and verified all 4,200 files before the next run
+(`menu-recovery.log`, `menus-en/restoration.json`).
+
+Large binary snapshot/generated copies are deleted only after the corresponding successful
+restoration receipt; `*/binary-cleanup.json` records paths and bytes. Screenshots, logs, JSON and
+Lua/text are kept. `acceptance.json` and `acceptance-summary.json` index the follow-up's records
+and native-size image hashes; `assertions.json` checks the functional results and restart cookies
+while explicitly excluding colour/intensity equivalence. `package-binary-cleanup.json` records
+removal of the superseded initial package and extracted fixture binaries. Re-extract the retained
+final GMA before rerunning a cleaned synthetic fixture.
+
+Final results under `afterfix/`:
+
+- **`tools/test.ps1 -Config Release` passes, exit 0**, with the normal dispatch: **27 CTests and
+  710 Python tests** (655 tools, 29 gmapack, 26 Steam; two existing optional-environment skips),
+  ending `All checks passed.` Receipt: `release-final.log`.
+- `final-restoration.json` / `final-audit.log`: **4,200** original file hashes/timestamps match;
+  **zero added, missing or changed files**, identical video registry and original 3840x2160
+  settings, no `user.conf`, no PoC process. The task lock is released.
+- `poc-after.json` / `poc-after.log`: **2,877** stock files / **7,282,813,551 bytes** match current
+  manifests, zero missing/size/hash/reparse/unverified failures. Only the same permitted
+  `autoexec.cfg` user-config difference remains. GMod build **26439081** is kept.
+
+**Open for review:** the darker stock ragdoll-cloud appearance, the unisolated historical 4K cause,
+and the Hotloader/current-build notice and full field/model parity. No additional Q-owned defect
+was confirmed in the exercised paths. Review/release/publication remain with the manager; Q has
+not pushed, merged, tagged, published or started a workflow.

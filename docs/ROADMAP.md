@@ -1,5 +1,12 @@
 # Roadmap
 
+R20-Q's **requested follow-up checks are complete locally**: full live hint matrix, wall stains and
+upscaled live screen, controlled effect comparison, English/zh-CN main/pause reminders and saved
+choices, and four 3840x2160 old/current-package loads without reproduced device loss. The stale
+packaged client bootstrap is refreshed once. Colour/intensity parity of the stock ragdoll cloud,
+the historical 4K cause, Hotloader build notice and broader field parity remain review notes
+([follow-up report](handover/R20-Q-report.md#after-the-readiness-fix)).
+
 R20-Q **resumed after the readiness fix**, on combined runtime `00124bf6`. The complete live hint
 matrix passes with the sky running (3,140 steady ready samples, zero pending/wrong); the restored
 PoC stays on build 26439081. The follow-up screen, effects, menu and 4K checks are in progress

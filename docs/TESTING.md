@@ -1,5 +1,24 @@
 # Testing
 
+## R20-Q after the corrected readback
+
+The full matrix and real English/zh-CN menu, restart, wall/screen and 4K checks are recorded in
+[the follow-up report](handover/R20-Q-report.md#after-the-readiness-fix), with receipts under
+`out/r20q/afterfix/`. Q found/refreshed a stale packaged client-bootstrap DLL: source tests alone
+had not proved that the stored binary accepted the current config. Check its actual menu message
+and lifecycle before importing the final build once. No native trust rule or runtime changed in Q.
+
+Four old/current-runtime 3840x2160 loads pass, including a bordered menu-to-map repeat. The colour
+comparison still has a darker ragdoll cloud and differing lighting; no pixel/intensity equivalence
+or full field/model parity is claimed. The report distinguishes those limits from execution,
+guard, readback, shutdown and restoration results. Large binary copies may be removed only after
+the retained restoration receipt passes; keep the text, logs, JSON and native-size captures.
+
+The final corrected-package gate passes **27 CTests and 710 Python tests** (two existing skips),
+`out/r20q/afterfix/release-final.log`, exit 0. The independent audit checks 4,200 original files
+and registry values with no differences/additions/missing files; current-build depot verification
+passes 2,877 files. These are separate from the explicitly retained visual/field limits.
+
 ## R20-Q: merged round and the native stop boundary
 
 The idle mandatory Release gate passes **27 CTests and 710 Python tests** (655 tools, 29 gmapack,
