@@ -15,6 +15,8 @@ Versions follow the loader's CMake project version once it ships; until then eve
   generation, separate capability-aware sandbox hints, and a once-per-game marker across maps.
   The packaged native API has no live option getter, so the consumer safely remains silent until
   the documented live snapshot is supplied ([ADR 0117](docs/decisions/0117-startup-upscaling-hint-and-sky-defaults.md)).
+  The first-run guide and other menus defer its decision until the map is visible; closing a menu
+  reads the current settings, so advice cannot be left behind that window or queued before an edit.
 
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main

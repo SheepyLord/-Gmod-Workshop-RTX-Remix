@@ -2,6 +2,14 @@
 
 ## R20-B: startup readback and sky defaults (2026-11-06)
 
+- Live QA exposed the first-run guide covering the stock hint notification. The guide opens at
+  eight seconds (`nativeloader_guide.lua:452-456`); the original hint attempted at twelve. The hint
+  now defers the whole decision while [vgui.CursorVisible](https://wiki.facepunch.com/gmod/vgui.CursorVisible),
+  [gui.IsGameUIVisible](https://wiki.facepunch.com/gmod/gui.IsGameUIVisible) or Remix's existing live
+  `RemixConfig.GetUIState` says a menu is open. It does not spend native-readiness attempts or read
+  DATA/snapshots while obscured. Closing the window reads current settings, avoiding stale advice
+  if the player enabled both features in that menu. Four LuaJIT scenarios cover the wait and edit.
+
 - The packaged fixes' `packages/fixes/licenses/oversized-skinning/memory-limits/source/remixapi/remixapi.cpp:1111`
   reads `rtx.conf` directly and returns empty when a key is absent. The binding exposes it as
   `RemixConfig.GetConfigVariable`; no live option readback is exposed. The tab itself warns that its

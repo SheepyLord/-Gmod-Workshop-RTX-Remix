@@ -7,6 +7,9 @@ local archive, callbacks, hooks, jobs, data = {}, {}, {}, {}, {}
 local now, serial, reads, hints, sounds = 0, 0, 0, {}, {}
 local fileReads, settingsWrites = 0, 0
 local fault, writeFailed
+local cursorBusy, gameMenuBusy, remixMenuBusy = false, false, false
+gui = { IsGameUIVisible = function() return gameMenuBusy end }
+vgui = { CursorVisible = function() return cursorBusy end }
 local marker = "nativeloader_companion/upscaling_hint_start.txt"
 local skyMarker = "nativeloader_companion/sky_defaults_client_v1.txt"
 local status = { schema = 1, process_id = 1234, utc = "2026-11-06T12:00:00Z", activation = {
@@ -58,8 +61,8 @@ local function advance(seconds)
         if not due then break end
         now = due.at
         jobs[id] = nil
-        if due.reps and due.reps > 1 then jobs[id] = {
-            at = now + due.delay, fn = due.fn, delay = due.delay, reps = due.reps - 1 } end
+        if due.reps and (due.reps == 0 or due.reps > 1) then jobs[id] = {
+            at = now + due.delay, fn = due.fn, delay = due.delay, reps = due.reps == 0 and 0 or due.reps - 1 } end
         due.fn()
     end
     now = target
@@ -157,6 +160,20 @@ elseif scenario == "unreadable" then
 elseif scenario == "ready-later" then
     state.ready = false boot() advance(18) checkHint(0)
     state.ready = true advance(2) checkHint(1)
+elseif scenario == "ui" then
+    if arg1 == "cursor" or arg1 == "changed" then cursorBusy = true end
+    if arg1 == "game-menu" then gameMenuBusy = true end
+    if arg1 == "remix-menu" then
+        remixMenuBusy = true
+        RemixConfig.GetUIState = function() return remixMenuBusy and 1 or 0 end
+    end
+    boot() advance(80) checkHint(0)
+    assert(reads == 0 and data[marker] == nil, "an obscured map must not consume the decision")
+    if arg1 == "changed" then state.upscaler, state.frame_generation = 1, 1 end
+    cursorBusy, gameMenuBusy, remixMenuBusy = false, false, false
+    advance(2)
+    checkHint(arg1 == "changed" and 0 or 1)
+    assert(reads == 1 and data[marker], "read current settings once after closing the menu")
 elseif scenario == "drawn" then
     boot(false) advance(60) checkHint(0) assert(reads == 0)
     hook.Run("PostRender") advance(11.99) checkHint(0) advance(0.02) checkHint(1)

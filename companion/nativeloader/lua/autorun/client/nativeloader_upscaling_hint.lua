@@ -77,8 +77,23 @@ local function finish(token)
     return file.Read(MARKER, "DATA") == token
 end
 
+local function uiBusy()
+    if type(gui) == "table" and type(gui.IsGameUIVisible) == "function" and gui.IsGameUIVisible() then return true end
+    if type(vgui) == "table" and type(vgui.CursorVisible) == "function" and vgui.CursorVisible() then return true end
+    if type(RemixConfig) == "table" and type(RemixConfig.GetUIState) == "function" then
+        local ok, state = pcall(RemixConfig.GetUIState)
+        local none = type(RemixConfig.UIState) == "table" and RemixConfig.UIState.None or 0
+        return not ok or type(state) ~= "number" or state ~= none
+    end
+    return false
+end
+
 local function check()
     if finished then return end
+    -- The first-run guide opens after eight seconds. Stock notifications sit behind it, so wait
+    -- for an unobstructed map before reading/consuming the decision. Read again after the UI closes,
+    -- rather than queuing stale "off" advice while the player changes settings in a menu.
+    if uiBusy() then return end
     attempts = attempts + 1
     local activation, token = status()
     if activation then
@@ -113,7 +128,9 @@ hook.Add("InitPostEntity", POLL, function()
         hook.Remove("PostRender", POLL)
         timer.Simple(DELAY, function()
             safeCheck()
-            if not finished then timer.Create(POLL, 2, ATTEMPTS - attempts, safeCheck) end
+            -- Menu waiting does not spend the 25 native-readiness attempts. The timer removes
+            -- itself on any final decision/error; an open menu performs no file/snapshot reads.
+            if not finished then timer.Create(POLL, 2, 0, safeCheck) end
         end)
     end)
 end)

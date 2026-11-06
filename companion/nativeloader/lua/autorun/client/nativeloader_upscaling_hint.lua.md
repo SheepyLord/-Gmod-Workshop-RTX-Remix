@@ -5,8 +5,11 @@ The companion loads this automatically in its RTX-only add-on. No command or man
 
 `nativeloader_upscaling_hint` is archived, default `1`; its translated checkbox follows Frame
 generation in RTX Remix > Remix settings. `cl_showhints 0` also suppresses the hint. The first map's
-first `PostRender` starts a 12-second delay. An unavailable live readout is retried every two seconds,
-at most 25 attempts (60 seconds after that first drawn frame). Nothing runs in a render callback
+first `PostRender` starts a 12-second minimum delay. The first-run guide, spawn/pause menus and
+Remix's own menu defer the decision until the map is unobstructed; the current snapshot is read
+after closing them, never queued from before an edit. An unavailable live readout is retried every
+two seconds, at most 25 attempts (60 seconds when unobstructed). UI waiting spends no readiness
+attempt and does no DATA/snapshot reads. Nothing runs in a render callback
 except scheduling the timer. No snapshot, invalid state or unsupported hardware means silence.
 
 The schema-1 loader status must report active RTX, a selected performance-tier adapter, NVIDIA's

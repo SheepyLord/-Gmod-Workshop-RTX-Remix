@@ -6,7 +6,8 @@
 defaults autoruns under LuaJIT: every upscaler/frame-generation combination, RTX 20/30/40/50 and
 unsupported/mixed/unknown adapters, per-backend capability flags, unreadable/malformed state,
 `cl_showhints 0`, the opt-out, bounded retries, delayed first drawing, two maps and another game
-start. It traps use of the file-only getter and settings writes. The migration checks old/fresh/
+start, and waiting for the first-run guide, pause/spawn menus or Alt+X to close before a fresh
+decision. It traps use of the file-only getter and settings writes. The migration checks old/fresh/
 changed pairs, missing ConVars and marker persistence after a skipped or successful migration.
 `test_companion_sky.py` exercises the actual defaults/sky startup together: 20 real minutes per
 day, migration before startup and Modern House ownership preserved. Existing fixed-sky tests

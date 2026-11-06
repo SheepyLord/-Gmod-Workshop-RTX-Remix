@@ -53,6 +53,11 @@ class CompanionQoLTests(unittest.TestCase):
             with self.subTest(scenario=scenario):
                 self.run_case(scenario)
 
+    def test_waits_for_menus_and_reads_current_settings_after_they_close(self):
+        for mode in ('cursor', 'game-menu', 'remix-menu', 'changed'):
+            with self.subTest(mode=mode):
+                self.run_case('ui', mode)
+
     def test_migration_preserves_changed_pairs_and_marks_even_when_skipped(self):
         for passes, minutes in [('0', '30'), ('0.000000', '30.000000'), ('1', '20'), ('1', '30'),
                                 ('0', '20'), ('0', '45'), ('0', '30.1')]:

@@ -12,6 +12,8 @@ Scenarios cover all 18 upscaler/frame-generation combinations; NVIDIA/non-NVIDIA
 adapters and explicit backend support; opt-outs and invalid status; unavailable/malformed/throwing
 readouts, failed marker persistence and bounded retries; delay after drawing, late readiness, two
 maps and a new process startup; old/fresh/changed sky pairs, missing ConVars and persistent markers.
+UI scenarios keep the guide/cursor, pause menu or Remix menu open beyond the readiness budget,
+then verify one fresh decision after closing; changing both features to on during the wait stays silent.
 The migration harness rejects queued console writes, ensuring values change synchronously before
 the sky starts. It never launches a game, writes a real file or needs a GPU. Output `PASS <scenario>`;
 exit 0 when assertions pass, otherwise LuaJIT's nonzero exit with the failed assertion.
