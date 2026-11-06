@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Automatic Source effect categories:** particles, decals and blended effect meshes receive
+  session-only Remix tags from their ordinary Lua APIs and already drawn material metadata,
+  preserving effect color/opacity without rewriting saved categories
+  ([ADR 0121](docs/decisions/0121-source-effect-categories-for-the-session.md)).
+
 - **Dupe camera tracking:** the RTX guard observes `cam.End` as well as `End2D` and `End3D`,
   so the stock dupe icon's repeated cameras no longer exhaust its tracked stack. Composite 3D2D
   cameras reject incomplete closers ([ADR 0120](docs/decisions/0120-camera-closers-share-the-guards-stack.md)).

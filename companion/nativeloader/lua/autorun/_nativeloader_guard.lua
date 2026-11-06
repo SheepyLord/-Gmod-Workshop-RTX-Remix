@@ -424,6 +424,7 @@ lua/advmat/sv_30_store.lua
 lua/advmat/sv_31_rtx_store.lua
 lua/advmat/sv_32_rtx_tool.lua
 lua/advmat/sv_40_apply.lua
+lua/autorun/_nativeloader_effect_categories.lua
 lua/autorun/_nativeloader_guard.lua
 lua/autorun/advanced_bodygroup_tool.lua
 lua/autorun/advmat_loader.lua

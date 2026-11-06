@@ -184,3 +184,8 @@ remain explicit limits. See Claude's QA procedure in the R8-C report after integ
 R20-D: ordinary camera closers End/End2D/End3D share tracked scopes; Start3D2D requires
 End3D2D. Regression scenario `camera_aliases` checks 257 icon-style pairs, every ordinary
 start/closer combination, nested calls, cross-family refusal, virtual pushes and error cleanup.
+
+R20-D adds the exact effect-observer autorun path to the bundled-source inventory. No new shader,
+format, MRT, depth or allocation exemption is added. Camera closers are installed once per API;
+all ordinary starts can be closed by End, End2D or End3D. Composite Start3D2D scopes keep their
+own family so a mismatched closer cannot consume a caller's matrix.

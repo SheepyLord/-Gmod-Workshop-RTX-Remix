@@ -413,3 +413,9 @@ R11-A adds the packaged ToPBR driver regression in
 [`topbr_harness.lua`](../tools/tests/topbr_harness.lua.md). Native ToPBR/game-map tests and their
 fixture generator are GPL corresponding source under
 [`packages/fixes/licenses/oversized-skinning/autopbr`](../packages/fixes/licenses/oversized-skinning/autopbr/Source.md).
+
+
+R20-D adds `companion/nativeloader/lua/autorun/_nativeloader_effect_categories.lua`: automatic
+Source particle/decal and blended-mesh categories for the session. Its LuaJIT contracts are
+`companion/tests/effect_categories_harness.lua` and `test_effect_categories.py`. The guard also
+tracks all ordinary camera closers ([ADR 0120](decisions/0120-camera-closers-share-the-guards-stack.md)).

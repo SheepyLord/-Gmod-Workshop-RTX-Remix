@@ -150,3 +150,6 @@ Each with the reason it lost.
 - [0114: The loader's workflow runs only for a release or when a person starts it](0114-the-loader-workflow-runs-only-for-a-release-or-by-hand.md) (after R19, the user; amends decision 1 of 0017: no push or pull request starts `build.yml`).
 
 - [0120: Every camera closer consumes the guard's matching scope](0120-camera-closers-share-the-guards-stack.md) (R20-D, dupe icons and camera aliases).
+
+- [0121: Source effect categories for this session](0121-source-effect-categories-for-the-session.md) (R20-D, automatic particle/decal and blended-mesh tags).
+- [0122: Offscreen raster canvases keep their native draws](0122-raster-canvases-keep-their-native-draws.md) (R20-D, alpha masks and post-injection canvas updates).
