@@ -50,3 +50,8 @@ alpha cutoff, lighting or reconstruction setting changes.
 Implementation bounds (R20-D): at most 64 hashes per observed material and 4,096 hashes per
 published category, including animated materials. Larger sets keep the bounded subset until a
 later observation. These caps bound allocation and native option parsing as well as name lookups.
+
+Live-engine clarification: DX7 reports fallback shader names such as UnlitGeneric_DX6 and stores
+VMT boolean flags in $flags; GetInt on individual flag names can return nil. Classification strips
+the numeric DX suffix and reads Source's packed flags. Color-material helpers clear the observer's
+previous binding and the guard's stale inert binding; shared white aliases remain excluded.

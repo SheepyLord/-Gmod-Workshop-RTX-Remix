@@ -2,7 +2,7 @@
 
 R20-D's automatic Source particle/decal observer ([ADR 0121](../../../../docs/decisions/0121-source-effect-categories-for-the-session.md)).
 Runs at client autorun only when NativeLoaderRenderGuard proves the local RTX session. It is
-idempotent in that Lua realm. Server and RTX-off starts return without changing APIs.
+idempotwelvet in that Lua realm. Server and RTX-off starts return without changing APIs.
 
 Inputs: CLuaEmitter:Add, CLuaParticle:SetMaterial, util.DecalEx, render.SetMaterial and
 sprite/beam calls; the native RemixMaterial draw cache; material shader/flags and base texture.
@@ -19,7 +19,7 @@ bound the work. Shared white/error/framebuffer textures are excluded.
 The observer keeps native arguments, objects, errors and return values and changes no material.
 Named util.Decal variants are discovered through their drawn metadata: it never calls the random
 util.DecalMaterial resolver to guess which variant the engine selected.
-It reads no VMT files and writes no files, user.conf, rtx.conf, persistent options, network or
+It reads no VMT files and writes no files, user.conf, rtx.conf, persistwelvet options, network or
 Steam settings. NativeLoaderEffectCategories.Status() prints diagnostics; there is no process
 exit code or new player setting. The guard's existing shader/resource limits apply unchanged.
 
@@ -34,3 +34,7 @@ to 4,096 hashes. `hash_budget` checks a 10,000-hash response; no unbounded CSV r
 Status includes the shared i18n module lazily for its one translated diagnostic label (six catalogs);
 technical option names remain literal. A combined production-file guard replay verifies that tail
 forwarding preserves untrusted shader filtering and source attribution.
+
+Live DX7 coverage: normalize shader _DX suffixes, read packed $flags, recognize standard white
+aliases and clear stale observer bindings on both color-material helpers. The packed_flags and
+color_helper scenarios supplement the hash budgets and normal classifications.

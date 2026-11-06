@@ -11,6 +11,8 @@ local originalAdd=function(self,name,...)self.args={name,...}return self.result 
 metas.CLuaEmitter.Add=originalAdd
 metas.CLuaParticle.SetMaterial=function(self,name)self.material=name return 'set' end
 render={SetMaterial=function(mat,...)return mat,... end,DrawSprite=function(...)return 'draw',... end}
+render.SetColorMaterial=function(...)return 'white',... end
+render.SetColorMaterialIgnoreZ=render.SetColorMaterial
 util={DecalEx=function(...)return 'decal',... end,Decal=function(...)return 'named',... end,
  DecalMaterial=function()error('observation must not choose another random decal variant')end}
 local data={
@@ -75,6 +77,22 @@ elseif scenario=='bounded' then
  end
  eq(NativeLoaderEffectCategories.Status(),4096)
  tick(1,10);eq(emitter.args[2],9000)
+elseif scenario=='packed_flags' then
+ data.packed={shader='UnlitGeneric_DX6',['$flags']=2097152+16+32,hashes={'0x10'}}
+ data.packeddecal={shader='VertexLitGeneric_DX6',['$flags']=65536,hashes={'0x11'}}
+ data.packedsprite={shader='SpriteCard_DX9',hashes={'0x12'}}
+ for _,name in ipairs({'packed','packeddecal','packedsprite'}) do cached[#cached+1]=name end
+ tick(3,30)
+ assert(opt('legacyEffect'):find('0000000000000010',1,true))
+ assert(opt('decal'):find('0000000000000011',1,true))
+ assert(opt('particle'):find('0000000000000012',1,true))
+elseif scenario=='color_helper' then
+ render.SetMaterial(Material('mesh'))
+ eq(render.SetColorMaterial(9),'white');render.DrawSprite()
+ render.SetMaterial(Material('mesh'))
+ eq(render.SetColorMaterialIgnoreZ(9),'white');render.DrawSprite()
+ tick(3,30)
+ assert(not opt('particle'):find('000000000000000d',1,true),'white helper tagged the previous mesh')
 elseif scenario=='hash_budget' then
  data.particle.hashes={}
  for i=1,10000 do data.particle.hashes[i]=string.format('0x%x',i) end

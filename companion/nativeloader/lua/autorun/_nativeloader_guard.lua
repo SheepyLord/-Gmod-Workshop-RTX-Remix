@@ -727,6 +727,8 @@ lua/weapons/weapon_mmdhl.lua
 end
 local nativeRender = {}
 for name, value in pairs(render or {}) do nativeRender[name] = value end
+local nativeCam = {}
+for name, value in pairs(cam or {}) do nativeCam[name] = value end
 local nativeRT, nativeRTEx, nativeMaterial, nativeCreate = GetRenderTarget, GetRenderTargetEx, Material, CreateMaterial
 local function canonical(name) return name:gsub("\\", "/"):lower():gsub("%.[^./]*$", "") end
 function policy.reserved(name)
@@ -1081,6 +1083,20 @@ if nativeRender.RedownloadAllLightmaps then
         return nativeRender.RedownloadAllLightmaps(...)
     end
 end
+-- Native color-material helpers also change the sprite/quad binding. A valid white binding must
+-- clear an earlier rejected shader, including engines whose helpers do not call Lua SetMaterial.
+for _, name in ipairs({"SetColorMaterial", "SetColorMaterialIgnoreZ"}) do
+    local original = nativeRender[name]
+    if original then
+        render[name] = function(...)
+            if active() and ((policy.suppressed and policy.suppressed()) or policy.effect(caller())) then
+                reject("render." .. name, "inert effect material binding ignored", caller()) return
+            end
+            policy.boundInert = false
+            return original(...)
+        end
+    end
+end
 
 -- Track only observed Lua pushes. Never guess native contexts or use mesh.End as an abort.
 local frame, busy = nil, 0
@@ -1180,10 +1196,10 @@ function policy.suppressed()
     end
     return false
 end
--- Install each closer once. Several pushes share a native closer, and cam.End/End2D/End3D
--- all close an ordinary camera. Capturing an already wrapped pop as an undo hid aliases.
+-- Install each closer once. End and End3D share the native 3D counter; End2D has its own
+-- painter counter. Capturing an already wrapped pop as an undo hid aliases (ADR 0122).
 local closers = {}
-local function pair(tbl, push, pop, kind, validate, family)
+local function pair(tbl, push, pop, kind, validate, family, describe)
     local registered = tbl and closers[tbl]
     if not registered and tbl then registered = {} closers[tbl] = registered end
     local first, last = tbl and tbl[push], registered and registered[pop] or (tbl and tbl[pop])
@@ -1192,17 +1208,19 @@ local function pair(tbl, push, pop, kind, validate, family)
     tbl[push] = function(...)
         if busy > 0 then return first(...) end
         sync()
+        local scopeFamily, undo = family, last
+        if describe then scopeFamily, undo = describe(...) end
         if active() then
             local top = stacks[kind][#stacks[kind]]
             local skip = top and top.skipped
             if chainDepth(stacks[kind]) >= 32 then reject(push, "tracked stack limit") skip = true end
             if validate and validate(nil, ...) == false then skip = true end
             if skip then
-                if top and top.skipped and top.owner == frame and top.family == family then top.count = top.count + 1
+                if top and top.skipped and top.owner == frame and top.family == scopeFamily then top.count = top.count + 1
                 else
                     pushed(kind, function() end, function() end)
                     top = stacks[kind][#stacks[kind]]
-                    top.skipped, top.count, top.family = true, 1, family
+                    top.skipped, top.count, top.family = true, 1, scopeFamily
                 end
                 return
             end
@@ -1217,8 +1235,8 @@ local function pair(tbl, push, pop, kind, validate, family)
             end
         end
         local result = pack(invokeBusy(first, ...))
-        pushed(kind, last, replay)
-        stacks[kind][#stacks[kind]].family = family
+        pushed(kind, undo, replay)
+        stacks[kind][#stacks[kind]].family = scopeFamily
         return unpack(result, 1, result.n)
     end
     if registered[pop] then return end
@@ -1292,14 +1310,21 @@ end
 pair(render, "PushRenderTarget", "PopRenderTarget", "rt", targetValues)
 pair(render, "PushCustomClipPlane", "PopCustomClipPlane", "clip")
 pair(cam, "PushModelMatrix", "PopModelMatrix", "model")
-pair(cam, "Start", "End", "camera", function(s, view) return viewValues("cam.Start", s, view) end)
-pair(cam, "Start2D", "End2D", "camera")
+pair(cam, "Start", "End", "camera", function(s, view) return viewValues("cam.Start", s, view) end,
+    "camera3d", function(view)
+        if type(view) == "table" and type(view.type) == "string" and view.type:sub(1, 1) == "2" then
+            return "camera2d", nativeCam.End2D
+        end
+        return "camera3d", nativeCam.End
+    end)
+pair(cam, "Start2D", "End2D", "camera", nil, "camera2d")
 pair(cam, "Start3D", "End3D", "camera", function(s, pos, angle, fov, x, y, w, h, near, far)
     return viewValues("cam.Start3D", s, {origin = pos, angles = angle, fov = fov, x = x, y = y, w = w, h = h, znear = near, zfar = far})
-end)
+end, "camera3d")
 -- Start3D2D also pushes a model matrix. An ordinary camera closer cannot unwind that scope,
 -- nor may End3D2D consume an ordinary camera and an unrelated caller-owned matrix.
 pair(cam, "Start3D2D", "End3D2D", "camera", nil, "camera3d2d")
+pair(cam, "StartOrthoView", "EndOrthoView", "camera", nil, "cameraortho")
 if nativeRender.SetRenderTarget then
     render.SetRenderTarget = function(texture, ...)
         if active() and (policy.suppressed() or not targetValues(nil, texture)) then return end

@@ -32,3 +32,7 @@ ordinary camera closer gets balanced tracking. Incorrect composite-camera closer
 before they consume an unrelated matrix. CPU regression coverage exercises 257 sequential pairs,
 every ordinary start/closer combination, nesting, virtual scopes and cleanup after a real error.
 Native alias identity and the actual dupe icon are also checked in the locked PoC acceptance run.
+
+Native follow-up: the ordinary-2D/3D equivalence assumed above is superseded by
+[0122](0122-raster-canvases-keep-their-native-draws.md). Native analysis and PoC execution found
+separate 2D, 3D2D and orthographic counters; only End and End3D share the 3D counter.

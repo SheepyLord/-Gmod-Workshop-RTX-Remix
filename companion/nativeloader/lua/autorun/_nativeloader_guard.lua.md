@@ -189,3 +189,9 @@ R20-D adds the exact effect-observer autorun path to the bundled-source inventor
 format, MRT, depth or allocation exemption is added. Camera closers are installed once per API;
 all ordinary starts can be closed by End, End2D or End3D. Composite Start3D2D scopes keep their
 own family so a mismatched closer cannot consume a caller's matrix.
+
+Native-mode correction (ADR 0122): End and End3D are equivalent 3D pops, while End2D, End3D2D and
+EndOrthoView have separate native counters. Generic Start's type selects its family and cleanup.
+The harness models independent modes, checks generic 2D cleanup and optional orthographic scopes,
+and refuses wrong-mode closers without a native call. Native color-material helpers also clear
+stale inert shader state; forwarding through the observer preserves caller policy.

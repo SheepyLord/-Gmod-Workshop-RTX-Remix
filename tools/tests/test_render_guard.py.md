@@ -47,3 +47,9 @@ start/closer combination, nested calls, cross-family refusal, virtual pushes and
 R20-D also loads the real effect observer on top of the real guard (`effect_observer`), rejects
 an untrusted screenspace binding and draw with the original virtual caller, then permits a normal
 UnlitGeneric sprite. The observer's renderer forwarding stays in tail position.
+
+Native-mode correction (ADR 0122): End and End3D are equivalent 3D pops, while End2D, End3D2D and
+EndOrthoView have separate native counters. Generic Start's type selects its family and cleanup.
+The harness models independent modes, checks generic 2D cleanup and optional orthographic scopes,
+and refuses wrong-mode closers without a native call. Native color-material helpers also clear
+stale inert shader state; forwarding through the observer preserves caller policy.

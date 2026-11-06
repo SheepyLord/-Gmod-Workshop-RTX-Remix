@@ -68,6 +68,15 @@ if render.SetMaterial then
         return original(material, ...)
     end
 end
+for _, api in ipairs({"SetColorMaterial", "SetColorMaterialIgnoreZ"}) do
+    local original = render[api]
+    if original then
+        render[api] = function(...)
+            bound = nil -- the engine's shared white texture must not inherit the previous material's tag
+            return original(...)
+        end
+    end
+end
 for _, api in ipairs({"DrawSprite", "DrawBeam", "StartBeam"}) do
     local original = render[api]
     if original then
@@ -78,7 +87,12 @@ for _, api in ipairs({"DrawSprite", "DrawBeam", "StartBeam"}) do
     end
 end
 
-local function flag(mat, key) return (mat:GetInt(key) or 0) ~= 0 end
+-- Source stores VMT boolean flags in $flags; GetInt("$translucent") etc. can return nil.
+local FLAGS = {["$vertexcolor"] = 16, ["$vertexalpha"] = 32, ["$additive"] = 128,
+    ["$decal"] = 65536, ["$translucent"] = 2097152}
+local function flag(mat, key, packed)
+    return bit.band(packed, FLAGS[key]) ~= 0 or (mat:GetInt(key) or 0) ~= 0
+end
 local function hashList(values)
     local hashes = {}
     values = values or {}
@@ -105,15 +119,17 @@ local function lookup(state, now)
     if not tex or tex:IsError() then state.due = now + 1 return end
     local texture = tex:GetName():lower():gsub("\\", "/")
     -- Texture categories affect every draw sharing a hash, including shared engine fallback colors.
-    if texture == "vgui/white" or texture == "color/white" or texture == "dev/white" or
+    if texture == "white" or texture == "vgui/white" or texture == "color/white" or texture == "dev/white" or
+        texture == "debug/debugwhite" or texture == "models/debug/debugwhite" or
         texture:find("error", 1, true) or texture == "_rt_fullframefb" then
         state.due = now + 8 return
     end
-    local shader = (mat:GetShader() or ""):lower()
-    local decal = state.decal or flag(mat, "$decal") or shader == "decalmodulate"
+    local shader = (mat:GetShader() or ""):lower():gsub("_dx%d+$", "")
+    local packed = mat:GetInt("$flags") or 0
+    local decal = state.decal or flag(mat, "$decal", packed) or shader == "decalmodulate"
     local sprite = shader == "sprite" or shader == "spritecard"
-    local color = shader == "unlitgeneric" and flag(mat, "$vertexcolor") and flag(mat, "$vertexalpha") and
-        (flag(mat, "$translucent") or flag(mat, "$additive"))
+    local color = shader == "unlitgeneric" and flag(mat, "$vertexcolor", packed) and flag(mat, "$vertexalpha", packed) and
+        (flag(mat, "$translucent", packed) or flag(mat, "$additive", packed))
     local kinds = {decal = decal, particle = not decal and (state.particle or sprite), color = color}
     if decal or kinds.particle or color then state.hashes, state.kinds = hashes, kinds end
     state.irrelevant = not (decal or kinds.particle or color)
