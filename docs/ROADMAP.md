@@ -1,5 +1,10 @@
 # Roadmap
 
+R20-Q is **stopped at its runtime boundary**, with the PoC restored: patch 0040 invalidates live
+upscaling readiness on unrelated sky-option writes. Dupes, Physics Blood, combat/sky and two live
+off-state hint cases pass; full effect/hint/screen/menu/4K acceptance awaits the runtime follow-up.
+See [R20-Q-report.md](handover/R20-Q-report.md). The earlier start note below is retained as history.
+
 R20-Q integration QA is **in progress** on `r20-qa`: the merged loader 0.15.0/package,
 live hint readback and the 4K RTX comparison ([brief](handover/R20-Q-integration-qa.md)).
 The requested PoC vanilla refresh replaced exactly 46 manifest-reported outdated depot files

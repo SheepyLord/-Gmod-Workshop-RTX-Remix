@@ -1,5 +1,28 @@
 # Research notes
 
+## R20-Q: merged runtime readback versus the running sky (2026-11-06)
+
+- Current Steam build 26439081 uses depot manifests 4001/8532700529041238050 and
+  4002/4618021864461761722. Refreshing the PoC's exact 21 size/25 hash mismatches from the
+  verified field gives 2,877 matching depot files, 7,282,813,551 bytes; only the user-config
+  autoexec differs. Full path/hash receipts: `out/r20q/depot-refresh.json`, `poc-refreshed.json`.
+- Runtime patch `0040-Publish-live-upscaling-state-for-startup-advice.patch:291` invalidates
+  upscaling state in every `RtxOptionImpl::markDirty`, not just its relevant options. Lines
+  129-135 clear readiness; lines 45-47 and 229-244 publish at present. With the merged running sky,
+  a 17-second native-getter diagnostic read ready 14/79 times normally, 140/140 while unrelated
+  writes were deferred for seven seconds, then 10/120 after replay/resumption. Sun-elevation
+  writes caused 536 ready-to-pending transitions while enums stayed 1/0. No getter stub was used.
+  The 1/1 toolgun probe separately failed a 45-second readiness wait. This needs a runtime fix;
+  [Q's report](handover/R20-Q-report.md) records the required stop and remaining live checks.
+- Fresh 1/20 sky clock: 14.6662585577 to 15.1114792189 hours in 22.2610330582 real seconds,
+  1.2 game hours/minute. Old 0/30 migrates to 1/20. Evidence: the two completed
+  `out/r20q/hints-acceptance/` sessions, plus the seven-method production-Lua QoL regression.
+- RTX 5090, 1600x900 merged package: Physics Blood's stress fixture peaks at 420 droplets and
+  16 pools (median 9.1459 ms, p99 16.4200 ms); bounded owned blood impacts peak at 512 live
+  particles (60 FPS cap, median 16.6474 ms, p99 23.2845 ms). The clean combat/stress session has 2,208 landing
+  callbacks and no trace misses. `out/r20q/effects-day/` retains the console, native logs and
+  32 native-size visual captures, including the real coloured stock dupe preview.
+
 ## R20-A: menu routes and physical release records (2026-11-06)
 
 - PoC field QA found two stock-menu limits. Awesomium ignores inset, clamp() and modern flex

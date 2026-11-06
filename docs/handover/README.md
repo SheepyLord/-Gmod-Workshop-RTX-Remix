@@ -1,5 +1,9 @@
 # Handovers
 
+R20-Q's [integration report](R20-Q-report.md) records the refreshed PoC, merged-build acceptance,
+and the required stop for patch 0040's readiness race with unrelated sky writes. Menu/4K/full
+hint and screen acceptance remain open; the PoC is restored and no runtime binary was changed.
+
 R20-A's local implementation and QA are recorded in [R20-A-report.md](R20-A-report.md), including
 the real menu engine fixes, release procedure and the 4K RTX map/depot-fixture acceptance limits.
 

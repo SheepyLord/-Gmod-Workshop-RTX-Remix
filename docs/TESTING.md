@@ -1,5 +1,28 @@
 # Testing
 
+## R20-Q: merged round and the native stop boundary
+
+The idle mandatory Release gate passes **27 CTests and 710 Python tests** (655 tools, 29 gmapack,
+26 Steam, two existing optional-environment skips), ending `All checks passed.`
+
+[R20-Q-report.md](handover/R20-Q-report.md) separates accepted 1600x900 PoC checks from open
+menu/4K/screen/suppression checks. `out/r20q/acceptance.json` indexes owned session records,
+measurements and screenshot hashes. The refreshed PoC must verify against the current field
+manifests; Q's old-byte depot archive precedes its QA snapshots, whose rollback keeps the refresh.
+
+Keep the sky/effect option writers active in live readback acceptance. Patch 0040's current
+global dirty-option invalidation races Lua timer reads; a clean startup snapshot or a passing
+publisher unit test does not cover it. Q's native getter was never stubbed: deferring unrelated
+writes changed ready reads from 14/79 to 140/140, then resumption returned them to 10/120.
+The brief requires stopping if a runtime change is needed; no runtime fix was attempted in Q.
+
+Use the installed Python 3.12/Pillow for live captures and preflight it before taking the lock.
+Do not accept `normal_quit` or `lua_shots_done` alone: the controlled toolgun probe quit cleanly
+after printing `R20Q_TOOLGUN_FAIL`, without completing any intended screen capture. Consume
+only the session owner's copied console logs, so a restoration cannot race a direct log poll.
+The mandatory idle Release gate receipt is `out/r20q/release-final.log`; live sign-off remains
+open regardless of its result until the runtime and remaining cases are verified.
+
 ## R20-A: loader release reminders and multiplayer entry
 
 Local completion: **27 Release CTests and 682 Python tests pass** (two existing skips). Real menu

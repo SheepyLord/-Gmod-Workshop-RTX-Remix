@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Merged QA stopped at a native readback defect (R20-Q).** Unrelated animated sky settings
+  repeatedly invalidate patch 0040's upscaling readiness. The refreshed stock PoC passes dupe,
+  Physics Blood/combat and sky checks; full effect/hint/menu/screen/4K sign-off awaits the runtime follow-up
+  ([report](docs/handover/R20-Q-report.md)). No runtime binary changed in Q.
+
 - **Loader 0.15.0: update reminders and a multiplayer entry warning** (R20-A, items 46 and 50).
   The RTX package records the newest published loader separately from development builds. The menu
   reminds once per start, with download instructions and a per-version ignore; older loaders get
