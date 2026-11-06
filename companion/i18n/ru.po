@@ -8,6 +8,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: nativeloader/lua/autorun/_nativeloader_effect_categories.lua:201
+#, c-format
+msgid "Effect categories: %d observed materials"
+msgstr "Категории эффектов: обнаружено материалов — %d"
+
 #: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Clear"
 msgstr "Ясно"

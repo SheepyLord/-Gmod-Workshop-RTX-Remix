@@ -29,6 +29,25 @@ Versions follow the loader's CMake project version once it ships; until then eve
   the documented live snapshot is supplied ([ADR 0117](docs/decisions/0117-startup-upscaling-hint-and-sky-defaults.md)).
   The first-run guide and other menus defer its decision until the map is visible; closing a menu
   reads the current settings, so advice cannot be left behind that window or queued before an edit.
+- **Readable dupe thumbnails:** suppressed-lighting raster previews use a bounded, restored unlit
+  base-map override, with stable cache identities and late-helper handling, so saved props show
+  their textures as well as saving without the camera underflow. Complex thumbnails remain a
+  flat approximation; world materials and dupe data are unchanged.
+
+- **Native effect rendering:** offscreen alpha canvases keep their native blend/write operations,
+  premultiplied transmission filters no longer draw opaque black backgrounds, and changing effect
+  alpha avoids static opacity micromaps. Camera tracking distinguishes native 2D, 3D, 3D2D and
+  orthographic scopes ([ADR 0122](docs/decisions/0122-raster-canvases-keep-their-native-draws.md));
+  the rebuilt runtime also corrects the compiled project fallback link.
+
+- **Automatic Source effect categories:** particles, decals and blended effect meshes receive
+  session-only Remix tags from their ordinary Lua APIs and already drawn material metadata,
+  preserving effect color/opacity without rewriting saved categories
+  ([ADR 0121](docs/decisions/0121-source-effect-categories-for-the-session.md)).
+
+- **Dupe camera tracking:** the RTX guard observes `cam.End` as well as `End2D` and `End3D`,
+  so the stock dupe icon's repeated cameras no longer exhaust its tracked stack. Composite 3D2D
+  cameras reject incomplete closers ([ADR 0120](docs/decisions/0120-camera-closers-share-the-guards-stack.md)).
 
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main

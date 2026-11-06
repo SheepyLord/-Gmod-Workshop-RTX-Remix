@@ -84,6 +84,45 @@
   before callbacks, avoiding a false player takeover on Modern House. LuaJIT's real sky startup
   harness measures a 1.2-hour advance per 60 seconds for fresh/migrated 20-minute days, and zero sky
   writes before/after 60 seconds when Modern House's add-on owns the sky.
+## R20-D: camera aliases, effect colors and offscreen alpha canvases (2026-11-06)
+
+- Stock dupe icons use 32 `cam.Start(view)`/`cam.End()` pairs per entity per outline pass,
+  then one final camera (`gamemodes/sandbox/entities/weapons/gmod_tool/stools/duplicator/icon.lua:104-213`).
+  In the locked PoC baseline, the two-prop request saved but printed 97 native camera underflows
+  and produced a black icon (`out/r20d/06-before-rtx/game/console.log`, archived dupe JPEG).
+  Ordinary camera closers were distinct Lua function objects in the RTX-off run. The guard now
+  tracks all three closer names once (`_nativeloader_guard.lua:1185`, `:1295-1302`); the LuaJIT
+  regression also covers 257 sequential pairs, virtual pushes and composite-camera mismatches.
+- Physics Blood (3818841829) ships 55 Lua files. `cl_materials.lua:34-82` builds translucent,
+  vertex-colored UnlitGeneric effects alongside native decals; `cl_flowdraw.lua:38-50` uses
+  triangle strips with filter/additive layers. These colors are effects, not map baked lighting.
+  The old runtime kept their vertex color and texture factor only when their hashes were already
+  saved as particle, decal or allowed-baked-lighting textures (`d3d9_rtx.cpp` at 51cf1b8b:295-309,
+  `:1153-1168`). Patch 0034 joins session categories at those boundaries (`:297`, `:1167`).
+- Physics Blood's pool canvas uses 512-square RGBA16F scratch textures and a 2048-square atlas.
+  Its `cl_poolcanvas.lua:1457-1476` tests float alpha as `(204/255 + 204/255) * 128/255`, then
+  reads alpha from the RGBA page. Native returned 205; the old RTX runtime returned 255 in our
+  sessions, with no guard rejection before the dupe (`05-off` and `06-before-rtx`). The runtime
+  rejected alpha-only write masks before deciding a non-primary target should be rasterized
+  (`d3d9_rtx.cpp` at 51cf1b8b:488-490, `:523-530`). Patch 0034 moves offscreen raster preservation
+  ahead of RTX-only filtering and the post-injection skip (`d3d9_rtx.cpp` at a5251896:590-615).
+- The automatic observer reads the native draw cache before resolving a material. The three
+  NoSave options join saved categories without writing them (`rtx_texture_category_sets.h:75-88`,
+  `rtx_types.cpp:416-422`, external submission in `rtx_fork_submit.cpp`). Blended effect meshes
+  get color preservation without billboard reorientation or decal offsets. Twelve discoveries
+  and twelve lookups per frame, 4,096 names, 64 hashes per material and 4,096 published hashes
+  per category bound the work. Existing material/hash APIs need no new native module.
+- [util.DecalMaterial](https://wiki.facepunch.com/gmod/util.DecalMaterial) randomly chooses among
+  variants. Observation therefore leaves named util.Decal untouched and discovers the material
+  that was drawn; calling the resolver merely to observe a decal would consume native RNG.
+- A production-observer/production-guard replay checks that renderer forwarders keep their original
+  untrusted caller attribution and do not inherit the observer's exact bundled-path exemption.
+  The forwarding calls must remain in tail position. This supplements separate observer tests.
+- The dedicated runtime unit build initially lacked `libxess.dll` for the category-plugin test.
+  Staging the unchanged indexed library under its D3D9 output directory resolved LoadLibrary error
+  126. Its RemixCategories plugin was built explicitly. After refreshing generated RtxOptions.md,
+  the complete dedicated suite passes 36/36 (`out/r20d/runtime-unit-pass.log`).
+
 
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 
@@ -5536,3 +5575,39 @@ The verified review is [R19-review.md](handover/R19-review.md); each part's repo
   The fork's `.gitignore` ignores `tests/rtx/unit/*` except a few names: new test sources need `git add -f`.
 - **GitHub Actions storage.** About 1.2 GB of the 2 GB was in use with one package artifact (about 0.84 GB),
   so the package workflow keeps deleting the older package before uploading its own (review F-07).
+
+## R20-D native follow-up and completed canvas/filter measurements (2026-11-06)
+
+The initial camera-family assumption is corrected by native evidence in
+[ADR 0122](decisions/0122-raster-canvases-keep-their-native-draws.md). End and End3D are separate
+C functions sharing the 3D counter; End2D, End3D2D and EndOrthoView have their own counters.
+Generic Start tests the type string's first byte. Native function dossiers, addresses, client.dll
+SHA-256 and limitations are retained in the [report](handover/R20-D-report.md) and its exported
+REA bundle under out/r20d. The guard now uses mode-specific cleanup, including generic 2D starts.
+
+Live DX7 materials report UnlitGeneric_DX6 and individual boolean GetInt queries return nil;
+packed $flags supplies vertex color 16, vertex alpha 32, additive 128, decal 65536 and translucent
+2097152. The observer normalizes the fallback suffix and reads those bits. In 10-comparison,
+legacyEffectTexturesForSession changed from empty to populated without material mutation.
+
+Physics Blood cl_render.lua:126-136 uses the premultiplied transmission pair DST_COLOR /
+ONE_MINUS_SRC_ALPHA. The old InstanceManager translation fell through to blendEnabled=false,
+explaining black rectangular backgrounds despite corrected colors. Patch 0035 selects a private
+legacy blend value 11 and evaluates clamp(alpha - luminance(color), 0, 1) in the shared evaluator.
+The 11-filter capture removes the rectangles. Its float-canvas alpha result is 205, equal to native;
+10-comparison/before returned 255. test_gmod_effects independently compares sixteen coverage /
+transmission combinations to the native destination factor; authored MDL blend values stay 0..10.
+
+The PoC matches its original cached depot manifests exactly: 7,279,873,012 verified bytes and zero
+missing/size/hash/reparse/unverified entries (10-comparison/stock-verification.json). It predates
+the field's current manifests, whose comparison yields 46 differences. No depot file was rewritten.
+
+R20-D preview follow-up: the camera fix removed native errors but left lit raster thumbnails black.
+Lighting-mode/depth experiments did not restore them; an UnlitGeneric base-map studio override
+was verified live. Stock helpers reset suppression between draws, so callback-local preview intent
+must survive that reset. Native Material lookups can produce transient Lua wrappers: weak-key cache
+misses consumed 256 material names during outline passes. Stable name/texture keys survived 129
+live draws with eight identities and 300 synthetic draws without budget exhaustion. The accepted
+colored JPEG is in out/r20d/21-preview; entity submaterials never change. Only the representative
+map is now looked up, avoiding unused skins. The remaining multi-material preview approximation
+is documented, rather than altering game shaders or persistent materials.

@@ -91,8 +91,10 @@
   }
  },
  "pending_patches": {
-  "why": "R20-E builds and tests 0040 locally; Claude imports one runtime DLL after merging every R20 runtime patch. The packaged DLL and its provenance remain unchanged.",
+  "why": "R20-D (0034, 0035) and R20-E (0040) built and tested these locally; Claude imports one runtime DLL with every R20 runtime patch after the merge. The packaged DLL and its provenance remain unchanged.",
   "files": {
+   "patches/0034-Keep-Source-effect-categories-transient-and-rasteriz.patch": "ea169565c7f83ae5d9ec8af0afd3732e794f37abc14d61031a244cf012fc21b5",
+   "patches/0035-Translate-premultiplied-transmission-filters-without.patch": "b0cabb9483c2c3919f9f40a6d281a86cd59700a85330d60d8d885d6da2c70c6a",
    "patches/0040-Publish-live-upscaling-state-for-startup-advice.patch": "7714032b739317315b244026b4e8e4ade75878262045decf1f6489a8472bf203"
   }
  }

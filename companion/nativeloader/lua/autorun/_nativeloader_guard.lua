@@ -424,6 +424,7 @@ lua/advmat/sv_30_store.lua
 lua/advmat/sv_31_rtx_store.lua
 lua/advmat/sv_32_rtx_tool.lua
 lua/advmat/sv_40_apply.lua
+lua/autorun/_nativeloader_effect_categories.lua
 lua/autorun/_nativeloader_guard.lua
 lua/autorun/advanced_bodygroup_tool.lua
 lua/autorun/advmat_loader.lua
@@ -727,6 +728,8 @@ lua/weapons/weapon_mmdhl.lua
 end
 local nativeRender = {}
 for name, value in pairs(render or {}) do nativeRender[name] = value end
+local nativeCam = {}
+for name, value in pairs(cam or {}) do nativeCam[name] = value end
 local nativeRT, nativeRTEx, nativeMaterial, nativeCreate = GetRenderTarget, GetRenderTargetEx, Material, CreateMaterial
 local function canonical(name) return name:gsub("\\", "/"):lower():gsub("%.[^./]*$", "") end
 function policy.reserved(name)
@@ -1055,6 +1058,7 @@ for _, name in ipairs({"SetMaterial", "MaterialOverride", "BrushMaterialOverride
             local denied = on and (policy.inertMaterials[mat] or
                 (not policy.bundled(source) and (policy.effect(source) or policy.incompatibleMaterial(mat))))
             if name == "SetMaterial" then policy.boundInert = denied end
+            if name == "MaterialOverride" and not denied then policy.modelOverride = mat end
             if denied then
                 reject("render." .. name, "unsupported RTX shader draw", source)
                 if name == "SetMaterial" then return original(policy.inertMaterial(), ...) end
@@ -1079,6 +1083,20 @@ if nativeRender.RedownloadAllLightmaps then
     render.RedownloadAllLightmaps = function(...)
         if active() then reject("render.RedownloadAllLightmaps", "RTX lightmap rebuild ignored", caller()) return end
         return nativeRender.RedownloadAllLightmaps(...)
+    end
+end
+-- Native color-material helpers also change the sprite/quad binding. A valid white binding must
+-- clear an earlier rejected shader, including engines whose helpers do not call Lua SetMaterial.
+for _, name in ipairs({"SetColorMaterial", "SetColorMaterialIgnoreZ"}) do
+    local original = nativeRender[name]
+    if original then
+        render[name] = function(...)
+            if active() and ((policy.suppressed and policy.suppressed()) or policy.effect(caller())) then
+                reject("render." .. name, "inert effect material binding ignored", caller()) return
+            end
+            policy.boundInert = false
+            return original(...)
+        end
     end
 end
 
@@ -1180,23 +1198,31 @@ function policy.suppressed()
     end
     return false
 end
-local function pair(tbl, push, pop, kind, validate)
-    local first, last = tbl and tbl[push], tbl and tbl[pop]
+-- Install each closer once. End and End3D share the native 3D counter; End2D has its own
+-- painter counter. Capturing an already wrapped pop as an undo hid aliases (ADR 0122).
+local closers = {}
+local function pair(tbl, push, pop, kind, validate, family, describe)
+    local registered = tbl and closers[tbl]
+    if not registered and tbl then registered = {} closers[tbl] = registered end
+    local first, last = tbl and tbl[push], registered and registered[pop] or (tbl and tbl[pop])
     if not first or not last then return end
+    family = family or kind
     tbl[push] = function(...)
         if busy > 0 then return first(...) end
         sync()
+        local scopeFamily, undo = family, last
+        if describe then scopeFamily, undo = describe(...) end
         if active() then
             local top = stacks[kind][#stacks[kind]]
             local skip = top and top.skipped
             if chainDepth(stacks[kind]) >= 32 then reject(push, "tracked stack limit") skip = true end
             if validate and validate(nil, ...) == false then skip = true end
             if skip then
-                if top and top.skipped and top.owner == frame then top.count = top.count + 1
+                if top and top.skipped and top.owner == frame and top.family == scopeFamily then top.count = top.count + 1
                 else
                     pushed(kind, function() end, function() end)
                     top = stacks[kind][#stacks[kind]]
-                    top.skipped, top.count = true, 1
+                    top.skipped, top.count, top.family = true, 1, scopeFamily
                 end
                 return
             end
@@ -1211,15 +1237,19 @@ local function pair(tbl, push, pop, kind, validate)
             end
         end
         local result = pack(invokeBusy(first, ...))
-        pushed(kind, last, replay)
+        pushed(kind, undo, replay)
+        stacks[kind][#stacks[kind]].family = scopeFamily
         return unpack(result, 1, result.n)
     end
+    if registered[pop] then return end
+    registered[pop] = last
     tbl[pop] = function(...)
         if busy > 0 then return last(...) end
         sync()
         local top = stacks[kind][#stacks[kind]]
         if active() then
             if not top then reject(pop, "no tracked Lua push to pop") return end
+            if top.family ~= family then reject(pop, "closer does not match tracked Lua push") return end
             if frame and top.owner ~= frame and (not top.owner or not top.owner.completed) then
                 reject(pop, "protected callback cannot consume caller-owned state") return
             end
@@ -1282,12 +1312,21 @@ end
 pair(render, "PushRenderTarget", "PopRenderTarget", "rt", targetValues)
 pair(render, "PushCustomClipPlane", "PopCustomClipPlane", "clip")
 pair(cam, "PushModelMatrix", "PopModelMatrix", "model")
-pair(cam, "Start", "End3D", "camera", function(s, view) return viewValues("cam.Start", s, view) end)
-pair(cam, "Start2D", "End2D", "camera")
+pair(cam, "Start", "End", "camera", function(s, view) return viewValues("cam.Start", s, view) end,
+    "camera3d", function(view)
+        if type(view) == "table" and type(view.type) == "string" and view.type:sub(1, 1) == "2" then
+            return "camera2d", nativeCam.End2D
+        end
+        return "camera3d", nativeCam.End
+    end)
+pair(cam, "Start2D", "End2D", "camera", nil, "camera2d")
 pair(cam, "Start3D", "End3D", "camera", function(s, pos, angle, fov, x, y, w, h, near, far)
     return viewValues("cam.Start3D", s, {origin = pos, angles = angle, fov = fov, x = x, y = y, w = w, h = h, znear = near, zfar = far})
-end)
-pair(cam, "Start3D2D", "End3D2D", "camera")
+end, "camera3d")
+-- Start3D2D also pushes a model matrix. An ordinary camera closer cannot unwind that scope,
+-- nor may End3D2D consume an ordinary camera and an unrelated caller-owned matrix.
+pair(cam, "Start3D2D", "End3D2D", "camera", nil, "camera3d2d")
+pair(cam, "StartOrthoView", "EndOrthoView", "camera", nil, "cameraortho")
 if nativeRender.SetRenderTarget then
     render.SetRenderTarget = function(texture, ...)
         if active() and (policy.suppressed() or not targetValues(nil, texture)) then return end
@@ -1366,6 +1405,97 @@ local function sourceOf(f)
     if not source then source = functionSource(f.fn) f.source = source end
     return source
 end
+-- PostRender's suppressed-lighting previews need a raster-safe material after RTX injection.
+-- Studio overrides preserve the caller's entity and its exact submaterial strings.
+do
+    local installedModel, installedSuppress
+    state.model_preview = {installations = 0, draws = 0}
+    local override, byIndex = nativeRender.MaterialOverride, nativeRender.MaterialOverrideByIndex
+    local materials, count, indexed = {}, 0, {}
+    local suppressed = false
+    if byIndex then
+        render.MaterialOverrideByIndex = function(index, mat, ...)
+            if active() and (policy.inertMaterials[mat] or policy.effect(caller()) or
+                (not policy.bundled(caller()) and policy.incompatibleMaterial(mat))) then
+                reject("render.MaterialOverrideByIndex", "unsupported RTX shader draw", caller()) return
+            end
+            local result = pack(byIndex(index, mat, ...))
+            if index == nil then indexed = {} else indexed[index] = mat end
+            return unpack(result, 1, result.n)
+        end
+    end
+    local function previewMaterial(original)
+        if not original or original:IsError() then return end
+        local tex = original:GetTexture("$basetexture")
+        if not tex or tex:IsError() then return end
+        local texture, flags = tex:GetName(), original:GetInt("$flags") or 0
+        local key = original:GetName() .. "\0" .. texture .. "\0" .. flags
+        local cached = materials[key]
+        if cached then return cached.material end
+        if count >= 256 then return end
+        count = count + 1
+        local params = {["$basetexture"] = texture}
+        local mat = CreateMaterial("_nativeloader_model_preview_v1_" .. count, "UnlitGeneric", params)
+        materials[key] = {material = mat}
+        state.model_preview.materials = count
+        return mat
+    end
+    local function installPreview()
+        if render.SuppressEngineLighting and render.SuppressEngineLighting ~= installedSuppress then
+            local suppress = render.SuppressEngineLighting
+            installedSuppress = function(on, ...)
+                suppressed = on and true or false
+                if on and frame then frame.previewSuppressed = true end
+                return suppress(on, ...)
+            end
+            render.SuppressEngineLighting = installedSuppress
+        end
+        local model = render.Model
+        if not model or model == installedModel or not override then return end
+        state.model_preview.installations = state.model_preview.installations + 1
+        installedModel = function(data, entity, ...)
+            state.model_preview.lastEvent = frame and frame.event or "none"
+            state.model_preview.suppressed = suppressed
+            state.model_preview.requested = frame and frame.previewSuppressed or false
+            state.model_preview.overridden = policy.modelOverride ~= nil
+            if policy.previewBusy or not (active() and frame and frame.event == "PostRender" and
+                (suppressed or frame.previewSuppressed) and
+                policy.modelOverride == nil and entity and entity.GetMaterials and entity.GetSubMaterial) then
+                return model(data, entity, ...)
+            end
+            local parts, changes = entity:GetMaterials(), {}
+            if next(indexed) ~= nil then return model(data, entity, ...) end
+            for i, name in ipairs(parts) do
+                if i > 32 then break end
+                if indexed[i - 1] == nil then
+                    local old = entity:GetSubMaterial(i - 1) or ""
+                    local mat = previewMaterial(Material(old ~= "" and old or name))
+                    if mat then changes[1] = {index = i - 1, material = mat} break end
+                end
+            end
+            -- The DX7 studio path's indexed/submaterial overrides still take its black lighting
+            -- branch. A representative base map through the global unlit override remains readable.
+            if #changes == 0 or next(indexed) ~= nil then return model(data, entity, ...) end
+            state.model_preview.draws = state.model_preview.draws + 1
+            policy.previewBusy = true
+            local result = pack(pcall(function(...)
+                override(changes[1].material)
+                return model(...)
+            end, data, entity, ...))
+            local ok = pcall(override, nil)
+            if not ok then report("cleanup_errors", "render.Model", "preview material restoration failed") end
+            policy.previewBusy = false
+            if not result[1] then error(result[2], 0) end
+            return unpack(result, 2, result.n)
+        end
+        render.Model = installedModel
+    end
+    installPreview()
+    hook.Add("Initialize", "nativeloader_model_preview", installPreview)
+    hook.Add("InitPostEntity", "nativeloader_model_preview", installPreview)
+    hook.Add("OnReloaded", "nativeloader_model_preview", installPreview)
+end
+
 local function cleanup(f)
     local actions = f.actions
     busy = busy + 1

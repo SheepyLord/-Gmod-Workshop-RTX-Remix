@@ -23,6 +23,13 @@ R20-B's [handover](handover/R20-B-report.md) records item 49 done and the hint c
 fresh/migrated 20-minute sky panels, the checkbox, simulated off/on states and once-per-process
 behavior across maps, plus waiting for the first-run guide to close. Release checks pass. Item 45's
 native live readback and actual off/on integration acceptance remain open; production hints stay silent.
+R20-D is **done** on `r20-render`: native camera closers and colored dupe previews, automatic
+NoSave Source effect categories, correct alpha canvases and premultiplied filters; runtime
+patches 0034/0035, one final DLL import, locked PoC comparisons and the Release gate
+([report](handover/R20-D-report.md)). The earlier in-progress entry below records its start.
+
+R20-D (items 44 and 51) is **in progress** on `r20-render`: camera alias bookkeeping,
+then automatic particle/decal compatibility and locked PoC comparisons ([brief](handover/R20-D-render-compat.md)).
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader

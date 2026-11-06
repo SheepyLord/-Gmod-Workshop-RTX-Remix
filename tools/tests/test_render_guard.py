@@ -24,6 +24,16 @@ class RenderGuardTests(unittest.TestCase):
     def test_idempotent_early_and_autorun_install_preserves_existing_behavior(self):
         self.run_case("install")
 
+    def test_dupe_camera_aliases_virtual_scopes_and_mismatched_closers(self):
+        self.run_case("camera_aliases")
+
+    def test_effect_observer_preserves_guard_policy_and_original_caller(self):
+        self.run_case("effect_observer")
+
+    def test_raster_previews_restore_each_original_submaterial_even_on_error(self):
+        self.run_case("preview_materials")
+        self.run_case("preview_late")
+
     def test_local_rtx_start_without_the_early_view_installs_from_the_autorun(self):
         self.run_case("autorun")
 

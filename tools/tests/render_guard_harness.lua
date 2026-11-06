@@ -158,6 +158,7 @@ end
 local depthCalls,quadCalls,setMaterialCalls,rtExCalls,targetQueries=0,0,0,0,0
 local currentRT, rtStack=nil,{}
 local cameraDepth,clipDepth,modelDepth=0,0,0
+local cameraModes={}
 local depthRange={0,0.1}
 render={}
 function render.PushRenderTarget(tex) rtStack[#rtStack+1]={value=currentRT} currentRT=tex return "push" end
@@ -176,6 +177,8 @@ local function nativeMaterialArgument(mat)
     return mat
 end
 function render.SetMaterial(mat) nativeMaterialArgument(mat) setMaterialCalls=setMaterialCalls+1 return mat end
+function render.SetColorMaterial(...)return 'white',... end
+render.SetColorMaterialIgnoreZ=render.SetColorMaterial
 function render.MaterialOverride(mat) if mat~=nil then nativeMaterialArgument(mat) end return mat end
 function render.DrawScreenQuad() quadCalls=quadCalls+1 return "quad" end
 render.DrawQuad=render.DrawScreenQuad
@@ -190,15 +193,34 @@ function render.PopCustomClipPlane() assert(clipDepth>0) clipDepth=clipDepth-1 e
 local viewCalls,viewCallback=0,nil
 function render.RenderView(...) viewCalls=viewCalls+1 if viewCallback then return viewCallback(...) end return "view",... end
 cam={}
-function cam.Start() cameraDepth=cameraDepth+1 return "camera" end
-function cam.End3D() assert(cameraDepth>0,"native camera underflow") cameraDepth=cameraDepth-1 end
+function cam.Start(view)
+    cameraDepth=cameraDepth+1
+    cameraModes[cameraDepth]=type(view)=="table" and type(view.type)=="string" and view.type:sub(1,1)=="2" and "2D" or "3D"
+    return "camera"
+end
+function cam.End3D()
+    assert(cameraDepth>0 and cameraModes[cameraDepth]=="3D","native 3D camera underflow/mode mismatch")
+    cameraModes[cameraDepth]=nil cameraDepth=cameraDepth-1
+end
+cam.End=cam.End3D
 function cam.Start2D() return cam.Start({type="2D"}) end
-function cam.End2D() return cam.End3D() end
+function cam.End2D()
+    assert(cameraDepth>0 and cameraModes[cameraDepth]=="2D","native 2D camera underflow/mode mismatch")
+    cameraModes[cameraDepth]=nil cameraDepth=cameraDepth-1
+end
 function cam.Start3D() return cam.Start({type="3D"}) end
 function cam.PushModelMatrix() modelDepth=modelDepth+1 end
 function cam.PopModelMatrix() assert(modelDepth>0) modelDepth=modelDepth-1 end
-function cam.Start3D2D() cam.Start3D() cam.PushModelMatrix() end
-function cam.End3D2D() cam.PopModelMatrix() cam.End3D() end
+function cam.Start3D2D() cameraDepth=cameraDepth+1 cameraModes[cameraDepth]="3D2D" cam.PushModelMatrix() end
+function cam.End3D2D()
+    assert(cameraDepth>0 and cameraModes[cameraDepth]=="3D2D","native 3D2D counter underflow")
+    cam.PopModelMatrix() cameraModes[cameraDepth]=nil cameraDepth=cameraDepth-1
+end
+function cam.StartOrthoView() cameraDepth=cameraDepth+1 cameraModes[cameraDepth]="ortho" end
+function cam.EndOrthoView()
+    assert(cameraDepth>0 and cameraModes[cameraDepth]=="ortho","native ortho counter underflow")
+    cameraModes[cameraDepth]=nil cameraDepth=cameraDepth-1
+end
 local meshEnds=0
 mesh={Begin=function()end,End=function()meshEnds=meshEnds+1 end}
 local hooks={}
@@ -222,6 +244,34 @@ cvars={AddChangeCallback=function(name,fn,id)changes[name]={fn=fn,id=id}end}
 local postCalls=0
 function DrawBloom(...) postCalls=postCalls+1 return "bloom",... end
 halo={Render=function(...)postCalls=postCalls+1 return "halo",... end}
+local previewCalls, previewExpected, previewSlots, previewOverride, deferredPreview = 0, false, {}, nil, nil
+if scenario=="preview_materials" or scenario=="preview_late" then
+    for _,name in ipairs({"preview_a","preview_b","user_choice"}) do
+        local tex=texture(name.."_texture",128,128) tex.IsError=function()return false end
+        local mat=material("VertexLitGeneric_DX6",{["$basetexture"]=tex})
+        mat.GetName=function()return name end
+        mat.GetInt=function(_,key)return key=="$flags" and 2097152 or 0 end
+        nativeMaterials[name]=mat
+    end
+    render.SuppressEngineLighting=function()end
+    render.MaterialOverrideByIndex=function(index,mat)if index==nil then previewSlots={} else previewSlots[index]=mat end end
+    render.MaterialOverride=function(mat)previewOverride=mat return mat end
+    render.Model=function(data,entity,extra)
+        previewCalls=previewCalls+1
+        if previewExpected then
+            assert(previewOverride and previewOverride:GetShader()=="UnlitGeneric")
+        else eq(entity.subs[0],"")eq(entity.subs[1],"user_choice") end
+        if data.fail then error("preview failure") end
+        render.SuppressEngineLighting(false) -- the stock render.Model helper resets this after a draw
+        return nil,"model",extra
+    end
+    local originalMaterialLookup=Material
+    Material=function(name,...)
+        local original=originalMaterialLookup(name,...)
+        return setmetatable({}, {__index=original}) -- native lookups can expose fresh Lua userdata wrappers
+    end
+    if scenario=="preview_late" then deferredPreview=render.Model render.Model=nil render.SuppressEngineLighting=nil end
+end
 local beforeCall,beforeAdd,beforeRT,beforeMaterial=hook.Call,hook.Add,GetRenderTargetEx,CreateMaterial
 local beforeLoad=Material
 local beforeTimer,beforeCvars=timer.Create,cvars.AddChangeCallback
@@ -463,6 +513,102 @@ elseif scenario=="shaders" then
     denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,1,"depth getter is legal; rebuild is inert")
     render.SetMaterial(Material("normal")) render.MaterialOverride(nil) render.DrawScreenQuad()
     eq(quadCalls,1)
+elseif scenario=="preview_materials" or scenario=="preview_late" then
+    if deferredPreview then
+        render.Model=deferredPreview render.SuppressEngineLighting=function()end
+        hook.Call("Initialize")
+    end
+    local entity={subs={[0]="",[1]="user_choice"},
+        GetMaterials=function()return {"preview_a","preview_b"}end,
+        GetSubMaterial=function(self,index)return self.subs[index]end,
+        SetSubMaterial=function(self,index,value)self.subs[index]=value end}
+    local function restored()eq(entity.subs[0],"")eq(entity.subs[1],"user_choice")eq(previewSlots[0],nil)eq(previewSlots[1],nil)end
+    render.SuppressEngineLighting(true)
+    render.Model({},entity,7) restored() -- outside a protected preview
+    hook.Add("HUDPaint","normal",function()render.Model({},entity,7)end)hook.Call("HUDPaint")restored()
+    hook.Add("PostRender","preview",function()
+        render.SuppressEngineLighting(true)
+        local a,b,c=render.Model({},entity,7)eq(a,nil)eq(b,"model")eq(c,7)
+        local d,e,f=render.Model({},entity,8)eq(d,nil)eq(e,"model")eq(f,8)
+        for i=1,300 do render.Model({},entity,i) end
+        eq(guard.model_preview.materials,1,"preview cache counts used identities, not transient Lua wrappers or unused skins")
+        restored()
+    end)
+    previewExpected=true
+    hook.Call("PostRender")restored()eq(#guard.errors,0)
+    local savedModel=render.Model
+    render.Model=function(...)return savedModel(...)end
+    hook.Call("InitPostEntity")hook.Call("PostRender")restored()eq(#guard.errors,0)
+    entity.GetMaterials=function()return {"preview_a"}end
+    hook.Call("PostRender")restored()eq(previewOverride,nil)eq(#guard.errors,0)
+    entity.GetMaterials=function()return {"preview_a","preview_b"}end
+    previewExpected=false
+    render.MaterialOverride(material("UnlitGeneric"))hook.Call("PostRender")restored()
+    eq(#guard.errors,0)eq(#errorReports,0)
+    hook.Remove("PostRender","preview")render.MaterialOverride(nil)
+    hook.Add("PostRender","failure",function()render.SuppressEngineLighting(true)previewExpected=true render.Model({fail=true},entity)end)
+    hook.Call("PostRender")restored()eq(#guard.errors,1)eq(#guard.cleanup_errors,0)
+    hook.Remove("PostRender","failure")previewExpected=false
+    render.SuppressEngineLighting(false)
+    hook.Add("PostRender","lit",function()render.Model({},entity,7)end)hook.Call("PostRender")restored()
+elseif scenario=="effect_observer" then
+    util = {}
+    assert(loadfile((source:gsub("_nativeloader_guard%.lua$","_nativeloader_effect_categories.lua"))))()
+    assert(NativeLoaderEffectCategories)
+    _G.r20dBadMaterial=material("screenspace_general")
+    assert(loadstring([[render.SetMaterial(r20dBadMaterial) render.DrawSprite()]],"@lua/ordinary_particles.lua"))()
+    eq(#guard.blocked,2) eq(quadCalls,0)
+    for _,record in ipairs(guard.blocked) do
+        assert(record.source:find("ordinary_particles.lua",1,true),"observer hid the original caller: "..record.source)
+    end
+    render.SetMaterial(material("UnlitGeneric")) eq(render.DrawSprite(),"quad")
+    for _,helper in ipairs({render.SetColorMaterial,render.SetColorMaterialIgnoreZ}) do
+        render.SetMaterial(r20dBadMaterial)
+        eq(helper(7),'white')eq(render.DrawSprite(),"quad")
+    end
+    eq(quadCalls,3) eq(#guard.errors,0)
+elseif scenario=="camera_aliases" then
+    hook.Add("PostRender","dupe-icon",function()
+        -- Stock icon.lua does 32 cameras per prop per outline pass, plus the final pass.
+        for _=1,257 do cam.Start({type="3D",w=512,h=512}) cam.End() end
+        for _,start in ipairs({cam.Start,cam.Start3D}) do
+            for _,finish in ipairs({cam.End,cam.End3D}) do
+                start() cam.Start3D() cam.End() finish()
+            end
+        end
+        cam.Start2D() cam.Start({type="2D"}) cam.End2D() cam.End2D()
+        cam.Start({type="2d"}) cam.End2D()
+        cam.StartOrthoView() cam.EndOrthoView()
+    end)
+    hook.Call("PostRender")
+    eq(#guard.blocked,0) eq(#guard.errors,0) eq(cameraDepth,0) eq(modelDepth,0)
+    -- Cross-family closers must leave both native stacks intact for the proper closer.
+    hook.Add("HUDPaint","mismatch",function()
+        cam.Start3D2D() cam.End() cam.End2D() cam.End3D()
+        eq(cameraDepth,1) eq(modelDepth,1)
+        cam.End3D2D()
+        cam.Start2D() cam.End3D2D() cam.End() cam.End3D()
+        eq(cameraDepth,1) eq(modelDepth,0) cam.End2D()
+        cam.Start3D() cam.End2D() eq(cameraDepth,1) cam.End()
+    end)
+    hook.Call("HUDPaint")
+    eq(#guard.blocked,7) eq(#guard.errors,0) eq(cameraDepth,0) eq(modelDepth,0)
+    -- Rejected pushes must also be balanced through any ordinary-camera alias.
+    hook.Add("PreRender","virtual",function()
+        for _=1,40 do cam.Start3D() end
+        for _=1,40 do cam.End() end
+        cam.Start({type="2D",w=math.huge}) cam.End2D()
+        eq(cameraDepth,0)
+    end)
+    hook.Call("PreRender") eq(#guard.errors,0) eq(cameraDepth,0)
+    hook.Add("PostDrawOpaqueRenderables","failure",function()
+        cam.Start3D() cam.Start2D() cam.End2D() cam.Start3D2D() error("camera cleanup")
+    end)
+    hook.Call("PostDrawOpaqueRenderables") eq(cameraDepth,0) eq(modelDepth,0) eq(#guard.cleanup_errors,0)
+    hook.Add("PostDrawViewModel","generic-2d",function()cam.Start({type="2D"})error("generic 2D cleanup")end)
+    hook.Call("PostDrawViewModel") eq(cameraDepth,0) eq(#guard.cleanup_errors,0)
+    hook.Add("PostDrawPlayerHands","ortho",function()cam.StartOrthoView()error("ortho cleanup")end)
+    hook.Call("PostDrawPlayerHands") eq(cameraDepth,0) eq(#guard.cleanup_errors,0)
 elseif scenario=="views" then
     render.RenderView(nil) render.RenderView({w=512,h=512}) eq(viewCalls,2,"sequential stock views")
     viewCallback=function()return render.RenderView({})end

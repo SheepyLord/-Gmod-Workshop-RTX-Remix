@@ -39,3 +39,31 @@ queried at binding and then cached. Existing refusal assertions now require
 no escaped error and verify native-call counters; deliberate add-on errors still test containment,
 reporting and quarantine. The leaked-scope limit test balances ignored pushes/pops instead of
 relying on a guard-created exception to unwind a successful callback.
+
+R20-D: ordinary camera closers End/End2D/End3D share tracked scopes; Start3D2D requires
+End3D2D. Regression scenario `camera_aliases` checks 257 icon-style pairs, every ordinary
+start/closer combination, nested calls, cross-family refusal, virtual pushes and error cleanup.
+
+R20-D also loads the real effect observer on top of the real guard (`effect_observer`), rejects
+an untrusted screenspace binding and draw with the original virtual caller, then permits a normal
+UnlitGeneric sprite. The observer's renderer forwarding stays in tail position.
+
+Native-mode correction (ADR 0122): End and End3D are equivalent 3D pops, while End2D, End3D2D and
+EndOrthoView have separate native counters. Generic Start's type selects its family and cleanup.
+The harness models independent modes, checks generic 2D cleanup and optional orthographic scopes,
+and refuses wrong-mode closers without a native call. Native color-material helpers also clear
+stale inert shader state; forwarding through the observer preserves caller policy.
+
+R20-D raster preview compatibility: suppressed-lighting PostRender model previews use bounded,
+cached UnlitGeneric base-texture studio overrides (256 materials, 32 slots) and restore every
+owned override on success/error. Entity submaterial strings are untouched. Explicit caller
+material overrides retain precedence. The wrapper catches late render.Model definitions and
+startup replacements; suppression intent is retained for the protected callback because stock
+helpers can reset the flag between draws. Early/late definitions, multiple parts, caller overrides,
+returns and exception cleanup are exercised by preview_materials / preview_late.
+
+Preview cache follow-up: use stable material/texture names rather than weak Lua userdata keys;
+native lookups can return transient wrappers. The regression repeats 300 preview draws with new
+wrappers without exhausting the material budget. The DX7 fallback uses a representative base map
+through the global studio override; entity submaterials are untouched and explicit indexed/global
+caller overrides retain precedence. Multi-material/custom-shader thumbnails are approximate.

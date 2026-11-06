@@ -13,6 +13,33 @@ separately from unchanged packaged provenance. Integration imports one DLL with 
 runtime patch; `build_runtime.ps1` clears the pending record on import. The guard accepts only
 declared new suffix patches, never changes to packaged inputs. Pending patches still participate in
 every source-tree/build check.
+R20-D adds patches 0034 and 0035 ([report](../docs/handover/R20-D-report.md),
+[ADR 0121](../docs/decisions/0121-source-effect-categories-for-the-session.md),
+[ADR 0122](../docs/decisions/0122-raster-canvases-keep-their-native-draws.md)):
+
+- Three NoSave GMod effect categories, joined with saved particle/decal tags, preserve Source
+  effect vertex color and texture factors. Blended meshes retain their geometry.
+- Non-primary raster canvases preserve native color/alpha write masks and blending before
+  RTX-only rejection and after injection. Explicit ray-traced targets retain precedence.
+- Premultiplied transmission filters use a private legacy blend value within the existing four
+  GPU bits; zero-alpha backgrounds are transparent. The shared CPU/GPU opacity helper is used
+  by every ray path. Dynamic effect alpha/filter draws do not use static opacity micromaps.
+- The fallback introduced by patch 0012 now links the renamed project. The correction is in
+  0034, without rewriting the historical patch series.
+
+Built in the assigned R17 clone on `codex/r20-render`: a5251896 (0034), then 1d53ee00 (0035),
+from 51cf1b8b. Existing recorded NVAPI/RTXDI and DLSS/SHARC state was preserved. Both new patches
+were exported individually with git format-patch -1 and absolute output paths. The Release/Ninja
+wrapper verifies the exact patch/dependency tree and runs both shader/embed passes; optimization 3,
+release DLL CRT, Tracy/shim off, download_apics=false. No GPU record grows and no SDK binary changes.
+The new headers are listed in src/dxvk/meson.build.
+
+Final DLL: 417,502,720 bytes, SHA-256
+`0c961bd62c758d0e2d716c0371c5a772f4fc0aeaf760e5f723df82ea9522968e`, build identity
+`remix-main+1d53ee00`. Imported once after visual acceptance through tools/inputs.py import;
+base.json records all 35 patches. Dedicated test_gmod_effects covers category lifetime/snapshots
+and the filter equation; the existing runtime suite was rebuilt in its separate unit configuration.
+Evidence is in the R20-D worktree's out/r20d/runtime-filter-* and runtime-import-* receipts.
 
 R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
 ([report](../docs/handover/R19-R-report.md)), the runtime's findings of the pre-release review
