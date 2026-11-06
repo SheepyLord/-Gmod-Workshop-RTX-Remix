@@ -57,3 +57,7 @@ The file writes no Remix option, `user.conf` or other settings file. No exit cod
 
 Tests: [QoL harness](../../../../../tools/tests/companion_qol_harness.lua.md) and
 [runner](../../../../../tools/tests/test_companion_qol.py.md).
+
+Integration QA must set the live options after the map first draws, retain an obstructing frame
+while presets/readback converge, and then allow the full delay/poll interval after closing it.
+An InitPostEntity-relative screenshot deadline can precede this script's first-PostRender delay.
