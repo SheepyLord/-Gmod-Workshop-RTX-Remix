@@ -15,3 +15,7 @@ Writes `<out>\provenance-repository.json`: for each module's SHA-256 its part an
 uncommitted changes)" when tracked files differ), how it was built and the run; and `missing`.
 **Exit:** 0 collected; 1 when a module is missing (build first). Tested by
 [test_ci_tools.py](../tests/test_ci_tools.py.md).
+
+It reads only `part`, `path`, `from` and `target` of each entry. The entries' `sources`, `not_sources`
+and `packaged` belong to [`repo_builds.py`](repo_builds.py.md): the record of what the copies stored in
+`packages/`, which development builds use, were built from.

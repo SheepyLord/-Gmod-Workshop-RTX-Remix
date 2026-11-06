@@ -120,6 +120,47 @@ class CheckRepoTests(unittest.TestCase):
                                 'packages/runtime/files.json': json.dumps({'files': {'files/d3d9.dll': {'sha256': 'ee'}}})})
         self.assertEqual(stored, ['packages/runtime/files/d3d9.dll is not the d3d9.dll runtime/base.json "packaged" records'])
 
+    def test_the_stored_repository_modules_must_be_what_their_sources_build(self):
+        # ADR 0126 (after R20-Q: an R4 build of the client module shipped until R20): a module this repository
+        # compiles and stores in packages/ fails the checks while a source differs from its record.
+        import json
+        import repo_builds
+        entry = {'part': 'glass', 'path': 'bin/m.dll', 'from': 'out/build/win64-release/m/m.dll', 'target': 'm',
+                 'sources': ['CMakeLists.txt', 'mod'], 'not_sources': ['mod/tests']}
+        files = {'docs/COMPONENTS.md': 'loader/core, tools/lib and tools/ci\n', 'CMakeLists.txt': 'project(x)\n',
+                 'mod/a.cpp': 'int a;\n', 'mod/a.h': '#pragma once\n', 'mod/README.md': 'a.cpp\n',
+                 'mod/tests/t.cpp': 'int t;\n',
+                 'packages/glass/files.json': json.dumps({'files': {'bin/m.dll': {'sha256': 'aa'}}})}
+        make_repo(self.root, files)  # write_text: CRLF on Windows
+        record = {'sha256': 'aa', 'sources': repo_builds.source_digests(self.root, entry)}
+        files['tools/ci/pins.json'] = json.dumps({'repository_builds': [dict(entry, packaged=record)]})
+        self.assertEqual(self.problems(files), [])
+        # Documentation, what not_sources leaves out, and a checkout's line endings are not sources.
+        self.assertEqual(self.problems({**files, 'mod/README.md': 'more\n', 'mod/tests/t.cpp': 'int u;\n'}), [])
+        (self.root / 'mod' / 'a.cpp').write_bytes(b'int a;\n')
+        self.assertEqual(check_repo.check(self.root), [])
+        changed = self.problems({**files, 'mod/a.cpp': 'int b;\n'})
+        self.assertEqual(len(changed), 1)
+        self.assertIn('packages/glass/bin/m.dll was built from other sources', changed[0])
+        self.assertIn(': mod changed;', changed[0])
+        self.assertIn('repo_builds.py refresh glass/bin/m.dll', changed[0])
+        self.assertEqual(self.problems(files), [])
+        (self.root / 'mod' / 'a.cpp').rename(self.root / 'mod' / 'b.cpp')  # the same content under another name
+        self.assertIn(': mod changed;', check_repo.check(self.root)[0])
+        (self.root / 'mod' / 'b.cpp').rename(self.root / 'mod' / 'a.cpp')
+        more = json.dumps({'repository_builds': [dict(entry, sources=['CMakeLists.txt', 'mod', 'extra.h'], packaged=record)]})
+        self.assertIn(': extra.h is missing;', self.problems({**files, 'tools/ci/pins.json': more})[0])
+        self.assertIn(': extra.h is new;', self.problems({**files, 'extra.h': '', 'tools/ci/pins.json': more})[0])
+        fewer = json.dumps({'repository_builds': [dict(entry, sources=['mod'], packaged=record)]})
+        self.assertIn(': CMakeLists.txt is no longer a source;', self.problems({**files, 'tools/ci/pins.json': fewer})[0])
+        self.assertEqual(self.problems({**files, 'packages/glass/files.json': json.dumps(
+            {'files': {'bin/m.dll': {'sha256': 'bb'}}})}),
+            ['packages/glass/bin/m.dll is not the module tools/ci/pins.json "packaged" records; '
+             'python tools/ci/repo_builds.py refresh glass/bin/m.dll'])
+        unrecorded = self.problems({**files, 'tools/ci/pins.json': json.dumps({'repository_builds': [entry]})})
+        self.assertEqual(len(unrecorded), 1)
+        self.assertIn('has no "packaged" record', unrecorded[0])
+
 
 if __name__ == '__main__':
     unittest.main()

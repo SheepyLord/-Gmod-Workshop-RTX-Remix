@@ -6,6 +6,24 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### After R20: a record of what this repository's own modules were built from
+
+- **`tools\check_repo.py` catches a stale build of the modules this repository compiles itself**
+  ([ADR 0126](docs/decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)), as it
+  has the runtime's since R3: each `tools/ci/pins.json` `repository_builds` entry (the RTX client module
+  in `fixes/modules`, the glass module in `glass/bin`) declares its `sources` and records in `packaged`
+  the SHA-256 of the stored copy and of each source; the check fails while a source differs (naming it)
+  or `files.json` lists another copy. R20 open item: the client module stored since R4 had rejected R6's
+  `remix.performance_tier` in every local package until R20-Q.
+- **`tools/ci/repo_builds.py`** (`status`, `refresh`): builds the Release preset, refuses a build that
+  read a file of the repository outside the module's sources (Ninja's inputs and header log; a test
+  checks the declarations against this checkout's build too), compares the build with the stored copy
+  apart from what every MSVC link changes (time stamps, the PDB's GUID and path, anonymous-namespace
+  names), imports it with `inputs.py` only when it is another image, and writes the record.
+- **Both stored modules are current and were kept**: builds of `a5a3ff1` in folders as long as the ones
+  they were linked in are the same images, so nothing was imported, no Git LFS object was added and the
+  Workshop item's content did not change.
+
 ### R20
 
 - **The user's report of 2026-11-06, items 44-51; loader 0.15.0** ([plan](docs/handover/R20-plan.md),

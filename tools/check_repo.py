@@ -10,6 +10,9 @@ Rules (AGENTS.md explains why):
 6. CLAUDE.md imports AGENTS.md.
 7. runtime/base.json "packaged" matches runtime/ and packages/runtime: the stored d3d9.dll is what
    runtime/build_runtime.ps1 builds from this repository.
+8. tools/ci/pins.json "repository_builds": each native module this repository compiles and stores in
+   packages/ has a "packaged" record, its sources match it, and packages/ holds the recorded file
+   (tools/ci/repo_builds.py; ADR 0126).
 """
 
 import argparse
@@ -19,6 +22,9 @@ import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'ci'))
+import repo_builds  # noqa: E402  (tools/ci/repo_builds.py: the records of this repository's own modules)
 
 SCRIPT_EXTS = {'.ps1', '.psm1', '.py', '.bat', '.cmd', '.lua', '.sh'}
 SOURCE_EXTS = {'.c', '.cc', '.cpp', '.cxx', '.h', '.hh', '.hpp', '.inl', '.asm', '.def', '.rc', '.in'}
@@ -171,11 +177,20 @@ def check_runtime_record(root):
     return problems
 
 
+def check_repository_builds(root):
+    """tools/ci/pins.json "repository_builds" "packaged" says what each module this repository compiles and
+    stores in packages/ was built from: the SHA-256 of the stored file and of each of its sources. While a
+    source differs, the stored module is not what this repository builds (R20-Q: the client module built
+    in R4 shipped in every local package until R20, after R6 had changed the configuration it reads)."""
+    return repo_builds.problems(root)
+
+
 def check(root):
     root = Path(root).resolve()
     files = list(_files(root))
     return (check_script_docs(root, files) + check_module_readmes(root, files) + check_markdown_links(root, files)
-            + check_changelog(root) + check_components(root) + check_claude_md(root) + check_runtime_record(root))
+            + check_changelog(root) + check_components(root) + check_claude_md(root) + check_runtime_record(root)
+            + check_repository_builds(root))
 
 
 def main(argv=None):

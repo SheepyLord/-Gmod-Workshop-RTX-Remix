@@ -64,6 +64,10 @@ branch: 27 native tests, 710 Python tests.
 - **Modules built from this repository** (`repository_builds` in `tools/ci/pins.json`) have no record
   tying the stored input to its source, unlike the runtime's `base.json` `packaged`; nothing caught
   the stale bootstrap. A check like the runtime's would.
+  **Done after R20** ([ADR 0126](../decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)):
+  each entry declares its sources and records them with the stored copy; `tools\check_repo.py` fails
+  while they differ, and `tools/ci/repo_builds.py refresh` rebuilds, compares and imports only another
+  image. Both stored modules were the same images as builds of `a5a3ff1` and were kept.
 ## Release (2026-11-06)
 
 - `main` was pushed at `9abffb7` (the local build went to item 3829070317), tagged **v0.15.0**: the

@@ -17,7 +17,8 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
 
 | File | What |
 |---|---|
-| [`pins.json`](pins.json) | The sources and tools: garrysmod_common and its submodules, premake 5.0.0-beta2 (archive SHA-256), the RTX fixes' public base commit with the GPL patches from `packages/fixes/licenses` and the object ids of the patched native tree they give (`patched_tree`; R19), RTX Water's commit (native Version 4) with its own GPL patch and recorded tree (`rtxwater_patches`, `rtxwater_tree`), the debug module's and the bridge's source copies in `packages/`, this repository's own modules (`repository_builds`), and the files that are fetched (`fetched`: URL, size, SHA-256, a member of an archive, files a packager takes out of them) |
+| [`pins.json`](pins.json) | The sources and tools: garrysmod_common and its submodules, premake 5.0.0-beta2 (archive SHA-256), the RTX fixes' public base commit with the GPL patches from `packages/fixes/licenses` and the object ids of the patched native tree they give (`patched_tree`; R19), RTX Water's commit (native Version 4) with its own GPL patch and recorded tree (`rtxwater_patches`, `rtxwater_tree`), the debug module's and the bridge's source copies in `packages/`, this repository's own modules (`repository_builds`: their sources and the record of what the copies in `packages/` were built from, `packaged`), and the files that are fetched (`fetched`: URL, size, SHA-256, a member of an archive, files a packager takes out of them) |
+| [`repo_builds.py`](repo_builds.py.md) | The record of what this repository's own modules in `packages/` were built from, which [`check_repo.py`](../check_repo.py.md) checks; `refresh` builds a module, checks what the build read, and imports it only when it is another image ([ADR 0126](../../docs/decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)) |
 | [`build_hotloader.ps1`](build_hotloader.ps1.md) | Builds the Model Hotloader's four natives from its source copy in `packages/` with the add-on's own recipe, and regenerates its hash records (`native_policy.lua`, `mmdhl-native-release.json`), with `provenance-hotloader.json` |
 | [`build_modules.ps1`](build_modules.ps1.md) | Builds `gmcl_RTXFixesBinary`, `gmcl_rtxwater`, `gmcl_rtxdebug` and the material editor's bridge from those pins into `out\ci\built\<part>\<path>`, with `provenance-modules.json` |
 | [`collect_runtime.py`](collect_runtime.py.md) | Lays out the runtime build's install folder (`runtime\build_runtime.ps1 -Install`) as the runtime part's files, with `provenance-runtime.json` |
@@ -59,6 +60,29 @@ The provenance records are keyed by each binary's SHA-256, so the report finds a
 packager puts it in the `.gma`. A record says where the binary came from (`repository`, `commit`), how
 (`how`, starting with `compiled:` or `fetched:`) and which run made it (`run`).
 
+## This repository's modules in `packages/`
+
+The workflow compiles the client module and the glass module from source; development builds of the
+package (the git hooks, [ADR 0108](../../docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md))
+take the copies stored in `packages/fixes/modules` and `packages/glass/bin`. Each `repository_builds`
+entry therefore declares the module's `sources` (`not_sources`: the tests inside them) and records in
+`packaged` the SHA-256 of the stored copy and of each source when it was built
+([ADR 0126](../../docs/decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)).
+`tools\check_repo.py` fails while a source differs from the record, naming it (R20-Q found that the
+client module stored since R4 rejected R6's `remix.performance_tier`). After changing `loader/core`,
+`loader/client`, `glass/native`, the root CMake files or the third-party code they link:
+
+```powershell
+python tools\ci\repo_builds.py status     # what differs
+python tools\ci\repo_builds.py refresh    # tools\build.ps1 -Config Release, check, compare, import if needed, record
+```
+
+`refresh` refuses a build that read a file of the repository outside the module's sources (Ninja's
+inputs and header log), and imports with `tools\inputs.py` only a build that is another image than the
+stored copy, apart from what every MSVC link changes (time stamps, the PDB's identity, anonymous-namespace
+names). Never import these modules with `inputs.py` directly: the check then fails until `refresh`
+records them. Details: [repo_builds.py.md](repo_builds.py.md).
+
 ## Locally
 
 R20-E adds the sixth `fixes.patches` entry, `upscaling-state/upscaling-state.patch`, and updates
@@ -76,4 +100,5 @@ tools\ci\build_hotloader.ps1 -Vendor <the add-on's bootstrapped vendor folder>
 python tools\build_package.py --built out\ci\built --out out\r16\ci-package
 ```
 
-Tested by [test_ci_tools.py](../tests/test_ci_tools.py.md).
+Tested by [test_ci_tools.py](../tests/test_ci_tools.py.md) and, for `repo_builds.py`,
+[test_repo_builds.py](../tests/test_repo_builds.py.md).

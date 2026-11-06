@@ -1290,7 +1290,7 @@ See [ADR 0042](decisions/0042-legacy-remix-migration.md) for recovery-source lim
 
 | Level | What | How | Since |
 |---|---|---|---|
-| Conventions | Script docs, module READMEs, links, changelog, component map | `python tools\check_repo.py` | M0 |
+| Conventions | Script docs, module READMEs, links, changelog, component map; the stored runtime and this repository's own modules are what their recorded sources build (ADR 0034, ADR 0126) | `python tools\check_repo.py` | M0 |
 | Python unit tests | `tools/**/tests` | `tools\test.ps1 -SkipNative` | M0 |
 | C++ unit tests | `nl_tests` (CTest) | `tools\build.ps1` | M0 |
 | CLI integration | `nlctl` and `uninstall-loader.ps1` against synthetic packages and scratch game folders | CTest (`nlctl_crosscheck_gmapack`, `nlctl_e2e_plan`, `nlctl_e2e_deploy`, `nlctl_uninstall_loader`) | M2 |
