@@ -121,9 +121,56 @@ Evidence is separate from the original run, under **`out/r20e-followup/`**: `uni
 `portable-tests.log`, `aggregate-native-tests.log`. The amended ADR is additive; its original
 decision text remains intact.
 
-The runtime is re-exported as one 0040 commit directly on `51cf1b8b`, with its pending hash updated.
-The final `-NoImport` build, merged-companion PoC acceptance and full Release gate are in progress.
-Neither native binary is being imported again in this follow-up.
+The runtime is re-exported as one 0040 commit **d9aba9be**, directly on **51cf1b8b**, authored and
+committed as SheepyLord with the requested Codex trailer. Patch SHA-256:
+`1b44ea9bce85fd4da91597ae6aa0d5191d015833e39deb762a5a35f390ade2a5` (updated in `pending_patches`).
+`runtime-build-final.log` records the passing source/dependency verification and two-pass
+`build_runtime.ps1 -NoImport` build. Test DLL: **417,078,272 bytes**, SHA-256
+`7fb71c9e745949df43750ff6d3f57cc379086aede87521778becd29510ce9ab6`. Neither DLL was imported again.
+
+**Merged-companion PoC proof passes.** `package-overlay.json` records extraction of Q's actual
+merged package, changing only its local runtime DLL and manifest index/test version. The sky source
+retains its indexed hash. Q's installer copies its already-built **0.15.0** loader into the PoC;
+Q's source/build outputs were only read. The local test runtime is R19 plus corrected
+0040; the combined R20 runtime remains the lead's build/import job.
+
+The real native getter is sampled every .02 s, with sky **on**, time passing **on**, a **20-minute
+day** and normal .02 s sky updates. An observational setter wrapper forwards every call unchanged
+and counts writes; it never defers a write, pauses the sky or fabricates a getter result. The
+selected GPU is RTX 5090 and all three support flags remain true.
+
+| Steady phase | Ready / total timer reads | Pending / missing / wrong | Ready ratio |
+|---|---:|---:|---:|
+| Original 1/0, at least 30 seconds | 1,500 / 1,500 | 0 / 0 / 0 | 100% |
+| Off 0/0, at least 10 seconds | 507 / 507 | 0 / 0 / 0 | 100% |
+| Both on 1/1, at least 30 seconds | 1,505 / 1,505 | 0 / 0 / 0 | 100% |
+
+Across **71.31 seconds**, there are **27,757** observed sky writes, including **3,517** sun-elevation
+writes (about 49.3/s over the entire interval); sun elevation moves **50.981 to 34.915**. There are
+**zero unrelated ready-to-pending transitions**. Each selector request immediately reads unready,
+then resolves to actual **0/0** or **1/1**. Including those genuine transitions, the timer records
+**3,514 ready / 1 pending / 0 missing**: **99.97%** ready, with no incorrect ready values. Original
+**1/0** is restored in memory. Receipt: `acceptance.json`, with the raw object and phase counts;
+copied session logs/reports/modules/screenshot are in `poc/sky-readiness/game/`.
+
+The game exits **0**, `normal_quit` and `lua_shots_done` true, field/cloud settings restored, no Lua
+errors or device loss. The snapshot strategy reuses Q's move-and-restore isolation: **4,200** original
+files' hashes/timestamps and the video registry match, zero differences; lock held **3.27 minutes**
+and released (`poc/restoration.json`). It preserves Q's refreshed GMod build **26439081**.
+`poc-after.json` verifies **2,877** stock files / **7,282,813,551 bytes** against the field's current
+manifests, with only the pre-existing permitted `autoexec.cfg` difference. No `user.conf` was saved
+or created, no stock file was rewritten, and no field game was launched or ended.
+
+The first full Release run passed all native tests but hit the existing parity test's **20 GiB free
+disk reserve** (14 GiB remained after the separate runtime unit build). This was not bypassed:
+NTFS compression of this task's generated unit/Release build directories retained their contents
+and test receipts, recovering enough space for the normal gate. Compaction receipts are
+`build-compaction.log` and `release-build-compaction.log`. The normal final
+**`tools/test.ps1 -Config Release` passes, exit 0**: **27 CTests and 687 Python tests** (632 tools,
+29 gmapack, 26 Steam; two existing optional-environment skips), ending `All checks passed.`
+Receipt: `release-tests-final.log`. The two dedicated runtime unit tests also pass separately.
+Follow-up implementation commit: **26cdf43**. The final evidence commit follows it, with the same
+configured SheepyLord identity and requested Codex trailer.
 
 ## Open
 
@@ -131,5 +178,7 @@ The combined R20 runtime build/import belongs to integration; the stored `d3d9.d
 provenance remain unchanged. Patch 0040 is explicitly pending in `runtime/base.json`. R20-B's
 unchanged consumer can then use it; combined hint/field QA belongs to R20 integration. Non-5090
 hardware was covered by enum/capability unit cases, not physical-device runs.
-The follow-up's remaining checks are recorded above. No push, merge, tag, Workshop action or
-GitHub workflow was run.
+No E follow-up implementation or required check remains open. Claude still owns the combined R20
+runtime build/import and the resumed R20-Q acceptance matrix; the broader integration findings are
+not declared resolved by this narrowly scoped fix. No push, merge, tag, Workshop action or GitHub
+workflow was run.

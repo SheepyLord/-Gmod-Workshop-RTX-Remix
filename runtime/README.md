@@ -23,6 +23,12 @@ transitions and failed convergence. Run it beside `test_upscaling_state` in `_Co
 The re-exported **single 0040** still applies to `51cf1b8b`; its new hash is in
 `base.json.pending_patches`. The test DLL remains unimported.
 
+Follow-up source commit: `d9aba9be` on `51cf1b8b`; local `-NoImport` DLL SHA-256
+`7fb71c9e745949df43750ff6d3f57cc379086aede87521778becd29510ce9ab6`. The dedicated runtime units
+pass. With Q's merged companion and advancing sky, all 3,512 steady timer reads are ready, with
+3,517 sun writes and zero unrelated invalidations; including selector transitions, readiness is
+99.97%. See the [follow-up report](../docs/handover/R20-E-report.md) and `out/r20e-followup` receipts.
+
 R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
 ([report](../docs/handover/R19-R-report.md)), the runtime's findings of the pre-release review
 ([R19-review.md](../docs/handover/R19-review.md)):

@@ -1,5 +1,12 @@
 # Testing
 
+R20-E after R20-Q: runtime `test_upscaling_options` adds 20,100 continuous unrelated writes through
+the real option reader/resolver, selector/preset transitions and failed convergence. In the merged
+advancing-sky PoC, all 3,512 steady reads are ready (100%); including genuine 0/0 and 1/1 changes,
+3,514/3,515 reads are ready (99.97%). There are 3,517 sun writes and zero unrelated invalidations.
+The refreshed stock build, 4,200 original files and registry are preserved. Receipts and limits are
+in the [R20-E follow-up report](handover/R20-E-report.md), `out/r20e-followup`.
+
 R20-E PoC acceptance passes on RTX 5090, all three capability flags true. The actual getter returns
 unready then effective state across off, TAAU, DLSS, DLSS-G, FSR 3 FG and restoration; a second run
 with the old runtime returns nil. Both normal exits are 0 with no Lua/device errors; `user.conf`
