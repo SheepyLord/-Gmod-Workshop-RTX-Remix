@@ -25,3 +25,6 @@ R21-A adds `stock_materials`: all original shapes in four families, twelve schem
 tints and textures, exact disabled restoration and a fresh baseline after external edits. Subrect
 parents/stains remain untouched; variety off maps blood1 back to bo_blood1. Material doubles expose
 shader/base texture/vector reads so restoration is exercised with non-white initial values.
+The stock scenario returns distinct proxy wrappers with shared backing material state, matching
+engine userdata aliasing. It checks restoration of a model material used by both a stock subrect
+and the mixer, which must have exactly one original snapshot.

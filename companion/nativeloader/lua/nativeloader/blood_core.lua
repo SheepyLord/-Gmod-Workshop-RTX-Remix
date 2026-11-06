@@ -34,13 +34,16 @@ BO.Family = function(code) return FAMILIES[code] end
 BO.StockColour = function(code) return STOCK[code] end
 local cached, originals = {}, {}
 local function remember(mat, model)
-    if originals[mat] then return end
+    -- Separate Lua userdata can refer to the same engine material. Key by its canonical name.
+    local name = string.lower(mat:GetName())
+    if originals[name] then return end
     local key = model and "$color2" or "$color"
     local colour = mat:GetVector(key) or Vector(1, 1, 1)
-    originals[mat] = { texture = mat:GetTexture("$basetexture"), colour = Vector(colour.x, colour.y, colour.z), key = key }
+    originals[name] = { mat = mat, texture = mat:GetTexture("$basetexture"), colour = Vector(colour.x, colour.y, colour.z), key = key }
 end
 local function restore()
-    for mat, original in pairs(originals) do
+    for _, original in pairs(originals) do
+        local mat = original.mat
         if original.texture then mat:SetTexture("$basetexture", original.texture) end
         mat:SetVector(original.key, original.colour)
     end

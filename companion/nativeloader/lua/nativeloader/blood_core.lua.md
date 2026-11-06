@@ -29,5 +29,7 @@ Each changed material snapshots its base texture and effective tint first; maste
 and performs no further painting. Re-enabling snapshots the new baseline, including other add-ons'
 changes made while disabled. InitPostEntity and a zero-delay callback cover native C++ decals before
 a Lua mixer call. Skip foreign shaders/Subrect parents safely; never alter their shared variables.
+Snapshots use the canonical material name, because distinct Lua userdata wrappers may refer to one
+engine material (the original shapes' model VMTs are shared by engine subrects and the mixer).
 Off does not unmount packaged materials/PBR or clear existing decals. Impact off/amount zero only
 controls extra impacts; master off disables schemes and the mixer too.

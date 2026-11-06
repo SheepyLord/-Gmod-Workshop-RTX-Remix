@@ -7,8 +7,13 @@ Never packaged. Needs gm_construct, client console Lua, RTX, the complete candid
 
 Shows the eight original shapes in four families and all twelve schemes; records winning VMT
 SHA-256s, shaders, base textures, tints and Remix texture hashes. Checks master-off restoration
-against the disabled baseline, stamps C++ Blood/YellowBlood decals, shoots citizens, Combine,
+against both the disabled baseline and winning VMT texture/tint values (including shared original
+model materials). Convars use synchronous SetString, since RunConsoleCommand queues changes.
+Grid decals trace the actual brush/displacement surface, rather than assuming a fixed floor Z.
+Stamps C++ Blood/YellowBlood decals, shoots citizens, Combine,
 zombies, antlions and a ragdoll with actual weapons, then stresses the existing impact budgets.
+When the private Physics Blood fixture is mounted, also draws its own drops, pools and stain
+overlays and records counts/render-guard errors; no third-party source is copied into this probe.
 Screenshots use `NL_SHOT`; JSON lines start `R21A_`, final marker is `NL_SHOT_DONE`. Lua assertions
 fail on missing patterns, restoration differences or budget overrun. The server fixture also
 prints `R20C_BULLET`/`R20C_TARGET` lines for actual hit evidence.

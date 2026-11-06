@@ -67,6 +67,15 @@ function Material(name)
     function mat:SetVector(key,value) self[key]=value end
     mats[name]=mat return mat
 end
+if scenario=='stock_materials' then
+    -- GMod may hand Lua distinct userdata wrappers for one underlying material pointer.
+    -- Material mutations still affect the same backing data; wrapper identity is not a key.
+    local original_material=Material
+    Material=function(name)
+        local shared=original_material(name)
+        return setmetatable({}, {__index=shared,__newindex=shared})
+    end
+end
 CreateMaterial = function(name,shader,fields) local m=Material(name) for k,v in pairs(fields) do m[k]=v end return m end
 local emitter_meta = {Add=function(self,mat,pos,...) return {mat=mat,pos=pos,extra={...},
     SetMaterial=function(s,m) s.mat=m s.material_changed=true end} end}
@@ -266,6 +275,8 @@ else
         local oldtex,oldcol=original:GetTexture('$basetexture'),original:GetVector('$color')
         local model=Material('decals/flesh/blood1')
         local modeltex,modelcol=model:GetTexture('$basetexture'),model:GetVector('$color2')
+        local shared_model=Material('decals/bloodoverhaul/red/bo_blood1_model')
+        local shared_tex,shared_col=shared_model:GetTexture('$basetexture'),shared_model:GetVector('$color2')
         local unsafe=Material('decals/yblood2_subrect') unsafe.shader='Subrect'
         local unsafe_tex=unsafe:GetTexture('$basetexture')
         local stain=Material('decals/bloodstain_001')
@@ -287,6 +298,8 @@ else
         RunConsoleCommand('bloodoverhaul_enable','0')
         assert(original:GetTexture('$basetexture')==oldtex and original:GetVector('$color').x==oldcol.x)
         assert(model:GetTexture('$basetexture')==modeltex and model:GetVector('$color2').z==modelcol.z)
+        assert(shared_model:GetTexture('$basetexture')==shared_tex and shared_model:GetVector('$color2').x==shared_col.x,
+            'stock subrect and mixer aliases must share one original model-material snapshot')
         BO.Pattern(0,1) BO.Apply()
         assert(original:GetTexture('$basetexture')==oldtex,'disabled apply must stay restored')
         RunConsoleCommand('bloodoverhaul_enable','1')

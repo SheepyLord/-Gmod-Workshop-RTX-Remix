@@ -9,9 +9,17 @@ end
 local function emit(name, value) print("R21A_" .. name .. " " .. util.TableToJSON(value)) end
 local function add(fn) steps[#steps + 1] = fn end
 local function shot(name) label = name timer.Simple(.8, function() print("NL_SHOT " .. name) end) end
+-- Console commands are queued. Use synchronous client convar writes before inspecting state.
+local function set(name, value) GetConVar(name):SetString(value) end
+local function ground(x, y)
+    local tr = util.TraceLine({ start = Vector(x, y, 500), endpos = Vector(x, y, -700), mask = MASK_SOLID_BRUSHONLY })
+    assert(tr.HitWorld and not tr.HitSky, "grid must hit the actual map surface")
+    return tr
+end
 local names = { "decals/blood1", "decals/blood1_subrect", "decals/yblood1", "decals/yblood1_subrect",
     "decals/flesh/blood1", "decals/flesh/blood1_subrect", "decals/alienflesh/shot1",
-    "decals/alienflesh/shot1_subrect", "decals/antlion/shot1", "decals/antlion/shot1_subrect", "decals/bloodstain_001" }
+    "decals/alienflesh/shot1_subrect", "decals/antlion/shot1", "decals/antlion/shot1_subrect", "decals/bloodstain_001",
+    "decals/bloodoverhaul/red/bo_blood1_model", "decals/bloodoverhaul/red/bo_blood1" }
 local function materials()
     local records = {}
     for _, name in ipairs(names) do
@@ -28,7 +36,25 @@ local function materials()
     end
     return records
 end
-local focus, grid = false, true
+local function check_source(records)
+    for _, entry in ipairs(records) do
+        local body = string.lower(file.Read("materials/" .. entry.name .. ".vmt", "GAME") or "")
+        local expected = body:match('"?%$basetexture"?%s+"([^"]+)"')
+        if expected then assert(entry.texture == expected, "off must restore the winning VMT texture: " .. entry.name) end
+        local shader = string.lower(entry.shader)
+        if shader:find("lightmappedgeneric", 1, true) or shader:find("vertexlitgeneric", 1, true) then
+            local model = shader:find("vertexlitgeneric", 1, true)
+            local key = model and "color2" or "color"
+            local text = body:match('"?%$' .. key .. '"?%s+"%[([^%]]+)%]"')
+            local numbers = {}
+            for value in (text or "1 1 1"):gmatch("[%d%.%-]+") do numbers[#numbers + 1] = tonumber(value) end
+            local colour = Vector(numbers[1], numbers[2], numbers[3])
+            assert(entry[model and "colour2" or "colour"]:DistToSqr(colour) < .0001,
+                "off must restore the winning VMT tint: " .. entry.name)
+        end
+    end
+end
+local grid = true
 hook.Add("CalcView", "r21a", function()
     if grid then return { origin = Vector(-220, -580, 300), angles = Angle(90, 0, 0), fov = 75, drawviewer = false } end
     local target = Vector(-200, -500, -100)
@@ -38,11 +64,20 @@ end)
 hook.Add("HUDPaint", "r21a", function()
     draw.SimpleText("R21-A / " .. label, "DermaDefaultBold", 15, 15, color_white)
 end)
-RunConsoleCommand("cl_drawhud", "0") RunConsoleCommand("r_drawviewmodel", "0")
-RunConsoleCommand("bloodoverhaul_enable", "1") RunConsoleCommand("bloodoverhaul_scheme", "realistic")
-RunConsoleCommand("nativeloader_blood_impacts", "1") RunConsoleCommand("nativeloader_blood_amount", "1")
+set("cl_drawhud", "0") set("r_drawviewmodel", "0")
+set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "realistic")
+set("nativeloader_blood_impacts", "1") set("nativeloader_blood_amount", "1")
+local panels = 0
+for _, tab in ipairs(spawnmenu.GetTools()) do
+    for _, category in ipairs(tab.Items or {}) do
+        for _, item in ipairs(category) do
+            if item.ItemName == "bloodoverhaul_settings" then panels = panels + 1 end
+        end
+    end
+end
+assert(panels == 1, "expected one blood settings panel")
 emit("START", { shapes = #BO.Shapes, schemes = #BO.Schemes, remix = RemixMaterial ~= nil,
-    decal_wrapper = debug.getinfo(util.DecalEx, "S").source, materials = materials() })
+    panels = panels, decal_wrapper = debug.getinfo(util.DecalEx, "S").source, materials = materials() })
 
 local function clear() RunConsoleCommand("r_cleardecals") end
 local function original_grid()
@@ -51,7 +86,8 @@ local function original_grid()
         for i = 1, 8 do
             assert(BO.Shapes[i].key == "bo_blood" .. i)
             local m = assert(BO.Pattern(code, i), "missing original pattern")
-            util.DecalEx(m, game.GetWorld(), Vector(-500 + (i - 1) * 80, -700 + (row - 1) * 80, -143), Vector(0, 0, 1), color_white, 1, 1)
+            local tr = ground(-500 + (i - 1) * 80, -700 + (row - 1) * 80)
+            util.DecalEx(m, tr.Entity, tr.HitPos, tr.HitNormal, color_white, 1, 1)
         end
     end
 end
@@ -59,7 +95,7 @@ add(function() original_grid() shot("eight_originals_four_families") end)
 for _, scheme in ipairs(BO.Schemes) do
     local id = scheme.id
     add(function()
-        RunConsoleCommand("bloodoverhaul_scheme", id)
+        set("bloodoverhaul_scheme", id)
         local rows = {}
         for _, code in ipairs({ 0, 1, 2, 6 }) do
             local m = BO.Pattern(code, 1)
@@ -70,11 +106,13 @@ for _, scheme in ipairs(BO.Schemes) do
     end)
 end
 add(function()
-    clear() RunConsoleCommand("bloodoverhaul_enable", "0")
+    clear() set("bloodoverhaul_enable", "0")
     local baseline = materials()
-    RunConsoleCommand("bloodoverhaul_enable", "1") RunConsoleCommand("bloodoverhaul_scheme", "blue")
-    RunConsoleCommand("bloodoverhaul_enable", "0")
+    check_source(baseline)
+    set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
+    set("bloodoverhaul_enable", "0")
     local restored = materials()
+    check_source(restored)
     for i, entry in ipairs(baseline) do
         local other = restored[i]
         assert(entry.texture == other.texture, "texture restoration failed " .. entry.name)
@@ -85,20 +123,43 @@ add(function()
     emit("RESTORED", { equal = true, materials = restored })
     -- C++ util.Decal bypasses the Lua mixer, as do NPC Blood/YellowBlood decals.
     for i = 1, 8 do
-        local pos = Vector(-500 + (i - 1) * 80, -620, -143)
+        local pos = ground(-500 + (i - 1) * 80, -620).HitPos
         util.Decal("Blood", pos + Vector(0, 0, 4), pos - Vector(0, 0, 4))
-        pos.y = -500
+        pos = ground(-500 + (i - 1) * 80, -500).HitPos
         util.Decal("YellowBlood", pos + Vector(0, 0, 4), pos - Vector(0, 0, 4))
     end
     shot("engine_blood_yellow_master_off")
 end)
 add(function()
-    RunConsoleCommand("bloodoverhaul_enable", "1") RunConsoleCommand("bloodoverhaul_scheme", "blue")
+    set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
     shot("engine_blood_yellow_blue")
 end)
+if ABL and ABL.Drops and ABL.Pools then
+    add(function()
+        clear() grid = false
+        local floor = ground(-220, -500).HitPos
+        ABL.Pools.Create(floor.x, floor.y, floor.z + .1, 0, 0, 1, 60)
+        for i = 1, 12 do
+            local pos = ground(-250 + i * 9, -540).HitPos
+            ABL.Stains.AddOverlay("splat", (i % 4) + 1, pos.x, pos.y, pos.z + .1,
+                0, 0, 1, 1, 0, 0, 0, 1, 0, 12, 12, 120, 1)
+        end
+        timer.Create("r21a_physics", .25, 24, function()
+            for _ = 1, 80 do ABL.Drops.Spawn(-200, -500, floor.z + 74, math.Rand(-50, 50), math.Rand(-50, 50), math.Rand(30, 100), .1) end
+        end)
+        timer.Simple(4, function()
+            local guard = NativeLoaderRenderGuard
+            emit("PHYSICS", { drops = ABL.Drops.Count(), pools = ABL.Pools.Count(),
+                ground = ABL.GroundStains and ABL.GroundStains.Count(),
+                guard_errors = guard and guard.errors, guard_cleanup = guard and guard.cleanup_errors })
+            if NativeLoaderEffectCategories then NativeLoaderEffectCategories.Status() end
+            shot("physics_blood_drops_pools_stains")
+        end)
+    end)
+end
 local function combat(class)
     add(function()
-        grid = false clear() RunConsoleCommand("bloodoverhaul_scheme", "realistic")
+        grid = false clear() set("bloodoverhaul_scheme", "realistic")
         RunConsoleCommand("r20c_spawn", class)
         timer.Simple(1, function() label = class RunConsoleCommand("r20c_fire", "weapon_pistol", "r21a_" .. class) end)
     end)
@@ -135,7 +196,7 @@ local function next_step()
     if steps[index] then timer.Simple(.2, steps[index]) return end
     emit("FINAL", { materials = materials(), stats = BO.ImpactStats, steps = index - 1 })
     hook.Remove("CalcView", "r21a") hook.Remove("HUDPaint", "r21a")
-    for name, value in pairs(saved) do RunConsoleCommand(name, value) end
+    for name, value in pairs(saved) do set(name, value) end
     print("NL_SHOT_DONE")
 end
 concommand.Add("nl_shot_taken", next_step)
