@@ -45,3 +45,10 @@ previous Lua effect. Known ragdolls add the same bounded fluid; client-only ragd
 ray check, source colour when available and surface-type inference otherwise. No new server hook
 or message is needed. Up to 160 checks per second and 64 recent cross-name deduplication entries
 bound this observation. Flesh world collision traces use HitWorld even if their entity is invalid.
+
+The owned analytic droplet/mist also have two small DDS albedos and four hash-keyed opacity material
+entries. The raw sprites were correctly tinted in vanilla but black in path tracing; authoring
+their coverage and a small scene-adaptive intrinsic fill preserves the intended unlit sprite
+appearance. Source tint remains live. World-stain PBR stays non-emissive. These are normal material
+assets for this part's own textures, without a per-add-on Lua category registration or global
+runtime preference. The unchanged VTFs keep exact raster rendering and the same texture hashes.

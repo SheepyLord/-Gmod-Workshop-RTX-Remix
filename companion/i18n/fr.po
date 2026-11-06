@@ -410,6 +410,22 @@ msgstr "Sang"
 msgid "Blood and impacts"
 msgstr "Sang et impacts"
 
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:12
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+msgid "Dynamic toolgun screen"
+msgstr "Écran animé du toolgun"
+
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:354
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
+#: nativeloader/lua/nativeloader/guide_pages.lua:124
+msgid "Rendering"
+msgstr "Rendu"
+
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
 msgid "Choose eye-white materials"
@@ -488,16 +504,6 @@ msgstr "Sommaire"
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:414
 msgid "RTX Remix guide"
 msgstr "Guide RTX Remix"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:354
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
-#: nativeloader/lua/nativeloader/guide_pages.lua:124
-msgid "Rendering"
-msgstr "Rendu"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
@@ -679,10 +685,6 @@ msgstr "Halo lumineux, flou de mouvement et grain de pellicule."
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:97
 msgid "Tone map colour purity"
 msgstr "Pureté des couleurs"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
-msgid "Dynamic toolgun screen"
-msgstr "Écran animé du toolgun"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
 msgid "No tier layer is available."

@@ -19,5 +19,9 @@ Toolgun screen, and removes the redundant Utilities shortcut. The tracking tool'
 presets, preview and translations remain those of the original add-on. No standalone folder is
 renamed or deleted. See [ADR 0118](../../docs/decisions/0118-bundled-toolgun-screen-and-owned-blood-patterns.md).
 
+An attached fallback also keeps the independent part's tool/settings in RTX Remix / Rendering
+when the complete companion is absent. It is inactive in the combined package and keeps the
+screen's own translated title; no old Tools/Utilities panel remains in either case.
+
 LFS: one PNG, **24,316 compressed bytes**. All other inputs are text. Import/update with the
 `package_content.py` inventory and `inputs.py import`; do not edit indexed bytes by hand.

@@ -410,6 +410,22 @@ msgstr "血液"
 msgid "Blood and impacts"
 msgstr "血液与命中效果"
 
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:12
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+msgid "Dynamic toolgun screen"
+msgstr "动态工具枪屏幕"
+
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:354
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
+#: nativeloader/lua/nativeloader/guide_pages.lua:124
+msgid "Rendering"
+msgstr "渲染"
+
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
 msgid "Choose eye-white materials"
@@ -488,16 +504,6 @@ msgstr "目录"
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:414
 msgid "RTX Remix guide"
 msgstr "RTX Remix 指南"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:354
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
-#: nativeloader/lua/nativeloader/guide_pages.lua:124
-msgid "Rendering"
-msgstr "渲染"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
@@ -679,10 +685,6 @@ msgstr "泛光、动态模糊和胶片颗粒。"
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:97
 msgid "Tone map colour purity"
 msgstr "色调映射色彩纯度"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
-msgid "Dynamic toolgun screen"
-msgstr "动态工具枪屏幕"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
 msgid "No tier layer is available."

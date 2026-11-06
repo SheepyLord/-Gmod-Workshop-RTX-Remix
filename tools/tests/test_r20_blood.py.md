@@ -1,7 +1,9 @@
 # test_r20_blood.py
 
-Also validates the final imported index and USD: exactly the owned VTF/DDS names and 72 material
-hashes, lazy texture loading, and an audit explicitly excluding the old blood8-derived droplet.
+Also validates the final imported index and USD: exactly the owned VTF/DDS names and 76 material
+hashes (72 patterns, four analytic sprites), lazy loading, non-emissive world stains, and the audit
+excluding the old blood8-derived droplet. PNG/CRC round-trip and output-path refusal cover the
+sprite-opacity generator without invoking NVTT in normal tests.
 
 Runs the R20-C Lua harness with installed LuaJIT and checks the provenance filter's source allowlist,
 rejection of originals/derived DDS paths, deterministic new droplet/mist VTF coverage and two-part

@@ -68,14 +68,40 @@ class BloodInputsTests(unittest.TestCase):
         self.assertEqual(vtfs, expected_vtfs)
         dds = {Path(p).name for p in index if p.endswith('.dds')}
         self.assertEqual(dds, {f'{key}{suffix}.rtex.dds' for key in prep.PATTERNS
-                              for suffix in ('.a', '_n.a', '.n', '.r')})
+                              for suffix in ('.a', '_n.a', '.n', '.r')} |
+                         {f'nlfluid_{name}.a.rtex.dds' for name in ('drop', 'mist')})
         layer = (part / 'nl_blood_overhaul_rtx/replacements.usda').read_text()
-        self.assertEqual(len(re.findall(r'over "mat_[0-9A-F]{16}"', layer)), 72)
+        self.assertEqual(len(re.findall(r'over "mat_[0-9A-F]{16}"', layer)), 76)
         self.assertEqual(set(re.findall(r'@\./textures/([^@]+)@', layer)), dds)
         self.assertNotIn('preload_textures = 1', layer)
         audit = json.loads((part / 'licenses/provenance.json').read_text())
         self.assertEqual(len(audit['selected']), 109)
         self.assertIn('dist/addon_companion/materials/particle/bo_droplets/drop.vtf', audit['excluded'])
+        patterns, sprites = layer.split('        # BEGIN R20-C PARTICLE MATERIALS', 1)
+        self.assertEqual(patterns.count('bool inputs:enable_emission = 0'), 72)
+        self.assertEqual(sprites.count('inputs:emissive_adaptive_intensity = 0.05'), 4)
+
+    def test_procedural_sprite_png_is_lossless_rgba(self):
+        import struct
+        import zlib
+        import prepare_blood_particles as sprites
+        pixels = bytes((210, 210, 210, 0, 210, 210, 210, 255))
+        png = sprites.png_rgba(2, 1, pixels)
+        self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
+        at, raw = 8, b''
+        while at < len(png):
+            length = struct.unpack_from('>I', png, at)[0]
+            kind, payload = png[at+4:at+8], png[at+8:at+8+length]
+            self.assertEqual(struct.unpack_from('>I', png, at+8+length)[0], zlib.crc32(kind + payload))
+            if kind == b'IDAT':
+                raw += payload
+            at += length + 12
+        self.assertEqual(zlib.decompress(raw), b'\0' + pixels)
+
+    def test_sprite_asset_generator_refuses_game_outputs(self):
+        import prepare_blood_particles as sprites
+        with self.assertRaisesRegex(ValueError, 'only under'):
+            sprites.build(Path('H:/SteamLibrary/steamapps/common/GarrysMod_PoC'), REPO/'out/unused', Path('nvtt.exe'))
 
     def test_new_parts_are_local_package_content_without_new_trust(self):
         config = json.loads((REPO / 'tools/workshop.json').read_text())
@@ -97,7 +123,7 @@ class BloodInputsTests(unittest.TestCase):
 @unittest.skipUnless(Path(LUA).is_file(), 'LuaJIT is not installed')
 class BloodLuaTests(unittest.TestCase):
     def test_controllers(self):
-        for scenario in ('budget', 'dts_bootstrap', 'coexist', 'preloaded', 'absent', 'menu', 'impacts', 'saturation',
+        for scenario in ('budget', 'dts_bootstrap', 'coexist', 'preloaded', 'absent', 'menu', 'menu_fallback', 'impacts', 'saturation',
                          'blood_menu', 'ragdolls', 'previous_impact', 'world_landing'):
             with self.subTest(scenario=scenario):
                 run = subprocess.run([LUA, str(REPO / 'tools/tests/r20_blood_harness.lua'), str(REPO), scenario],

@@ -41,6 +41,36 @@
     "dirty": false
    },
    "imported": "2026-11-06T10:26:05+00:00"
+  },
+  "nl_blood_overhaul_rtx/replacements.usda": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx\\replacements.usda",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "d3c37912fe1ff77af63ec40717add691d104376d",
+    "dirty": false
+   },
+   "imported": "2026-11-06T12:40:22+00:00"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_drop.a.rtex.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx\\textures\\nlfluid_drop.a.rtex.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "d3c37912fe1ff77af63ec40717add691d104376d",
+    "dirty": false
+   },
+   "imported": "2026-11-06T12:40:22+00:00"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_mist.a.rtex.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx\\textures\\nlfluid_mist.a.rtex.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "d3c37912fe1ff77af63ec40717add691d104376d",
+    "dirty": false
+   },
+   "imported": "2026-11-06T12:40:22+00:00"
   }
  },
  "files": {
@@ -51,9 +81,9 @@
    "stored": "plain"
   },
   "nl_blood_overhaul_rtx/replacements.usda": {
-   "size": 91014,
-   "sha256": "4e8734c8a4843ce4ac1e0e7d6f18ed37b8cdf9459eceec62ea0f4fe4915f337b",
-   "mtime_ns": 1793960291351898600,
+   "size": 95650,
+   "sha256": "d51a37e3d0c8688ac9608e02d8196171c461c7f47a10f8fdb7517e4be9ff2b18",
+   "mtime_ns": 1793968393729588300,
    "stored": "plain"
   },
   "nl_blood_overhaul_rtx/textures/arterial_trail.a.rtex.dds": {
@@ -407,6 +437,22 @@
    "stored": "xz",
    "stored_size": 610852,
    "stored_sha256": "fff43d4560512a12d32e06d023943da765f5413f23fa95db126f8ccb9e1288b3"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_drop.a.rtex.dds": {
+   "size": 22020,
+   "sha256": "c948044452ab4eb038039f0d8f141575176a4d0cf3d30513f1ddd0dd163ada07",
+   "mtime_ns": 1793968393424135300,
+   "stored": "xz",
+   "stored_size": 2000,
+   "stored_sha256": "5b1bd5d008ec11c1a7804ea73c781bbd1c860a0ff18d9da6ef8a3a31992a9d69"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_mist.a.rtex.dds": {
+   "size": 5636,
+   "sha256": "4640d2710f31295096267522a35cbd437cf877e0721574a93810d813a9097858",
+   "mtime_ns": 1793968393654073100,
+   "stored": "xz",
+   "stored_size": 2768,
+   "stored_sha256": "aa63918bb1dc244856aff4c550edf62663d988d2b112ac2fd801f6f593ca6b0e"
   },
   "nl_blood_overhaul_rtx/textures/pooled_smear.a.rtex.dds": {
    "size": 1398276,

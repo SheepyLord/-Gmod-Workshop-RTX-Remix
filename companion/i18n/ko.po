@@ -410,6 +410,22 @@ msgstr "혈액"
 msgid "Blood and impacts"
 msgstr "혈액과 충돌 효과"
 
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:12
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+msgid "Dynamic toolgun screen"
+msgstr "동적 툴건 화면"
+
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:354
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
+#: nativeloader/lua/nativeloader/guide_pages.lua:124
+msgid "Rendering"
+msgstr "렌더링"
+
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
 msgid "Choose eye-white materials"
@@ -488,16 +504,6 @@ msgstr "목차"
 #: nativeloader/lua/autorun/client/nativeloader_guide.lua:414
 msgid "RTX Remix guide"
 msgstr "RTX Remix 가이드"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:354
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
-#: nativeloader/lua/nativeloader/guide_pages.lua:124
-msgid "Rendering"
-msgstr "렌더링"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
@@ -679,10 +685,6 @@ msgstr "블룸, 모션 블러, 필름 그레인."
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:97
 msgid "Tone map colour purity"
 msgstr "톤 매핑 색 순도"
-
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
-msgid "Dynamic toolgun screen"
-msgstr "동적 툴건 화면"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
 msgid "No tier layer is available."

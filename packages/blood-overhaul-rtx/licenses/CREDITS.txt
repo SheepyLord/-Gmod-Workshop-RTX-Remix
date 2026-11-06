@@ -8,3 +8,5 @@ redistribute those was assumed. This package does not require his add-on; subscr
 The old flying droplet, derived from Crunchy's blood8, is excluded. R20-C's small droplet and mist
 are original analytic textures made by tools/prepare_blood.py, without any source image.
 The selected/excluded source paths and SHA-256 values are recorded in provenance.json.
+The two analytic sprites have two additional DDSs and four authored opacity materials. Their
+unchanged VTF hashes and provenance are in particle-pbr.json; no Crunchy pixels are used.

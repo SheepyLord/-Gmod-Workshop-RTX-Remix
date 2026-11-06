@@ -2,6 +2,13 @@
 
 ## R20-C: owned blood assets and the stock dispatch (2026-11-06)
 
+- Both raw analytic VTF hashes were confirmed in the native draw cache: drop XXH64
+  `be79e0c9c18bc626`, mist `cac5d215d939df47`; their computed XXH3 counterparts are retained too.
+  Authored opacity material entries, BC7 albedos and a .05 scene-adaptive intrinsic fill restored
+  dark maroon tint and soft coverage (`out/r20c/integration-pbr-probe`), without a global option or
+  Lua hash registration. The two DDSs add only 4,768 compressed bytes. The new parts total
+  55,547,528 compressed bytes (52.97 MiB). All original analytic VTFs remain byte-identical.
+
 - The first locked sessions (`out/r20c/on-clean`, `off-clean`) confirmed NPC red/antlion/zombie
   events and remote NPC dispatch. Engine amounts included 35 (pistol), 15/60 (other hits), and 50
   for the NPC shooter's scripted bullet. Server ragdolls instead dispatched `Impact`, damage 2 or

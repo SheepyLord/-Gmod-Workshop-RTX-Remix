@@ -157,6 +157,15 @@ elseif scenario=='coexist' or scenario=='absent' or scenario=='preloaded' then
             assert(not hooks.InitPostEntity.bloodoverhaul_apply and not hooks.AddToolMenuCategories.bloodoverhaul_menu)
         end
     end
+elseif scenario=='menu_fallback' then
+    NativeLoaderBundledDTS=true
+    dofile(source('autorun/client/nativeloader_bundled_panels.lua'))
+    local adapter=spawnmenu.AddToolMenuOption
+    dofile(source('autorun/client/nativeloader_bundled_panels.lua')) assert(adapter==spawnmenu.AddToolMenuOption)
+    spawnmenu.AddToolMenuOption('Utilities','dts.menu.category','dts_settings','Settings','','',function() end)
+    spawnmenu.AddToolMenuOption('Main','Render','dynamic_toolgun_screen','Screen','gmod_tool dynamic_toolgun_screen','',function() end)
+    assert(#calls.panels==1 and calls.panels[1][1]=='RTX Remix' and calls.panels[1][2]=='Rendering')
+    assert(calls.panels[1][5]=='gmod_tool dynamic_toolgun_screen')
 elseif scenario=='menu' then
     NativeLoaderBundledDTS=true
     dofile(source('autorun/client/nativeloader_menu.lua'))

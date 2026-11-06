@@ -8,6 +8,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- Authored opacity materials keep the new blood droplets and mist coloured under path tracing,
+  with a small scene-adaptive fill; physical world stains retain their wet, non-emissive PBR.
+
 - Bundle Dynamic Toolgun Screen (all thirteen languages) and the owned Blood Overhaul RTX patterns,
   colour schemes and wet PBR maps; settings live in the RTX tab and coexist with standalone copies.
   Crunchy's original/derived textures are excluded; the new patterns disclose AI generation.

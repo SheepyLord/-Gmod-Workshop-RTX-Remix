@@ -21,6 +21,9 @@ original prompts are in `licenses/prompts.json` and the selection audit is in
 - New world/model VMTs for red, yellow, green/zombie and worker blood; twelve original colour schemes
   and a private eighteen-shape list. No stock material names are overridden.
 - Original analytic 128px droplet and 64px mist textures, generated without an existing image.
+- Two small sprite-opacity DDSs and four material entries retain their live tint in path tracing,
+  with a low scene-adaptive intrinsic fill. World stains remain non-emissive. Their source hashes
+  and recipe are in `licenses/particle-pbr.json` and `tools/prepare_blood_particles.py`.
 - The packager attaches the maintained companion bootstrap, core, budgets, effect and settings panel
   from `companion/nativeloader`, plus the licence and shipped credits.
 
@@ -47,7 +50,7 @@ Hard bounds: 640 particles/s, 512 live, 42 per event, 80 events/s; 48 stains/s a
 decal clearing/map cleanup. Effect scale approximates damage; the event has no exit-wound data.
 See [ADR 0119](../../docs/decisions/0119-client-blood-impacts-with-bounded-spatter.md).
 
-259 indexed inputs; 110 binaries, **55,518,444 compressed bytes** (about 52.95 MiB). Source PNGs and
+261 indexed inputs; 112 binaries, **55,523,212 compressed bytes** (about 52.95 MiB). Source PNGs and
 unneeded original/derived maps are excluded; natural/neutral variants share normal/roughness maps.
 Import only the final inventory through `inputs.py import`, once per binary. The SHA-256 audit and
 prompts are part documents, not extra game assets; CREDITS.txt and LICENSE are shipped too.

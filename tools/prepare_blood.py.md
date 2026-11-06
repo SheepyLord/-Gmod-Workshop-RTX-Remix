@@ -1,5 +1,9 @@
 # prepare_blood.py
 
+After preparing the owned patterns, run `prepare_blood_particles.py` for the two analytic sprites'
+authored opacity DDS/material entries; these retain their tint under path tracing. Only its final
+two DDSs and updated text layer are imported. The VTFs produced here remain unchanged.
+
 Read-only provenance filter for R20-C's Blood Overhaul RTX project. Run from the worktree root:
 
 ```powershell

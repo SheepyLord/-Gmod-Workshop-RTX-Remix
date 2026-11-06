@@ -1,7 +1,7 @@
 # test_render_guard_addons.py
 
 R20-C preserves the exact legacy exemption inventory but explicitly keeps the new screen/blood
-parts and seven new companion modules out of it. They use ordinary particle/decal/material paths for
+parts and eight new companion modules out of it. They use ordinary particle/decal/material paths for
 R20-D's general compatibility work. The inventory test rejects either stale legacy exemptions or
 an accidental new exemption for these files; packaging a part does not grant rendering-policy trust.
 

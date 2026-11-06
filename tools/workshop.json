@@ -214,7 +214,10 @@
         "companion/nativeloader/lua/nativeloader/dts_bootstrap.lua",
         "--add-to-addon",
         "nldynamic_toolgun_screen/lua/dynamic_toolgun_screen/nl_original_init.lua",
-        "out/inputs/toolgun-screen/dynamic_toolgun_screen/lua/autorun/dynamic_toolgun_screen.lua"
+        "out/inputs/toolgun-screen/dynamic_toolgun_screen/lua/autorun/dynamic_toolgun_screen.lua",
+        "--add-to-addon",
+        "nldynamic_toolgun_screen/lua/autorun/client/nativeloader_bundled_panels.lua",
+        "companion/nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua"
       ]
     },
     {

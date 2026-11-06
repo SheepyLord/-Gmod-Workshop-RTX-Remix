@@ -1,5 +1,9 @@
 # Components
 
+R20-C's `tools/prepare_blood_particles.py` authors opacity DDSs/materials for the original procedural
+droplet and mist. Its PNG codec, safe output paths and final indexed coverage are checked by
+`tools/tests/test_r20_blood.py`; normal package builds use the stored assets and need no encoder.
+
 R20-C adds `toolgun-screen` and `blood-overhaul-rtx` package inputs (see their part READMEs), and
 `tools/prepare_blood.py` for provenance filtering and original procedural particle textures. The
 companion's `!nativeloader_blood.lua` bootstrap guards duplicate standalone initialization;

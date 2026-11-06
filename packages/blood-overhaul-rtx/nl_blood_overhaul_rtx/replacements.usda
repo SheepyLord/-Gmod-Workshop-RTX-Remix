@@ -2023,5 +2023,99 @@ over "RootNode"
                 int inputs:alpha_test_type = 7
             }
         }
+        # BEGIN R20-C PARTICLE MATERIALS
+        over "mat_BE79E0C9C18BC626"
+        {
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/nlfluid_drop.a.rtex.dds@
+                float inputs:reflection_roughness_constant = 0.18
+                float inputs:metallic_constant = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+                bool inputs:enable_emission = 1
+                asset inputs:emissive_mask_texture = @./textures/nlfluid_drop.a.rtex.dds@
+                color3f inputs:emissive_color_constant = (1, 1, 1)
+                float inputs:emissive_intensity = 0.01
+                float inputs:emissive_adaptive_intensity = 0.05
+            }
+        }
+        over "mat_34A076E1DF1531DC"
+        {
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/nlfluid_drop.a.rtex.dds@
+                float inputs:reflection_roughness_constant = 0.18
+                float inputs:metallic_constant = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+                bool inputs:enable_emission = 1
+                asset inputs:emissive_mask_texture = @./textures/nlfluid_drop.a.rtex.dds@
+                color3f inputs:emissive_color_constant = (1, 1, 1)
+                float inputs:emissive_intensity = 0.01
+                float inputs:emissive_adaptive_intensity = 0.05
+            }
+        }
+        over "mat_CAC5D215D939DF47"
+        {
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/nlfluid_mist.a.rtex.dds@
+                float inputs:reflection_roughness_constant = 0.18
+                float inputs:metallic_constant = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+                bool inputs:enable_emission = 1
+                asset inputs:emissive_mask_texture = @./textures/nlfluid_mist.a.rtex.dds@
+                color3f inputs:emissive_color_constant = (1, 1, 1)
+                float inputs:emissive_intensity = 0.01
+                float inputs:emissive_adaptive_intensity = 0.05
+            }
+        }
+        over "mat_4A17298FF372BF04"
+        {
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/nlfluid_mist.a.rtex.dds@
+                float inputs:reflection_roughness_constant = 0.18
+                float inputs:metallic_constant = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+                bool inputs:enable_emission = 1
+                asset inputs:emissive_mask_texture = @./textures/nlfluid_mist.a.rtex.dds@
+                color3f inputs:emissive_color_constant = (1, 1, 1)
+                float inputs:emissive_intensity = 0.01
+                float inputs:emissive_adaptive_intensity = 0.05
+            }
+        }
+        # END R20-C PARTICLE MATERIALS
     }
 }
