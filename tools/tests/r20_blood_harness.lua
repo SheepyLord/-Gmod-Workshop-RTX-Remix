@@ -302,6 +302,11 @@ else
         assert(original:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/bo_blood1_n')
         assert(model:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/flesh1_n')
         assert(model:GetVector('$color2').z>model:GetVector('$color2').x)
+        local used=BO.Pattern(0,1)
+        calls.watch_material=used:GetName() calls.material_writes=0
+        RunConsoleCommand('bloodoverhaul_scheme','violet')
+        assert(calls.material_writes==0,'tint-only changes must not rebind textures or invalidate existing decal draws')
+        calls.watch_material=nil
         calls.watch_material=shared_model:GetName() calls.material_writes=0
         RunConsoleCommand('bloodoverhaul_enable','0')
         assert(calls.material_writes==1,'one restore for each underlying engine material, including wrapper aliases')

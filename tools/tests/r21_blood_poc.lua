@@ -95,7 +95,7 @@ local function clear(after)
     -- Clearing is queued too: stamping now would erase the new decals on the next frame.
     if after then timer.Simple(.2, after) end
 end
-local function original_grid()
+local function original_grid(name)
     clear(function()
     for row, code in ipairs({ 0, 1, 2, 6 }) do
         for i = 1, 8 do
@@ -105,7 +105,7 @@ local function original_grid()
             util.DecalEx(m, tr.Entity, tr.HitPos, tr.HitNormal, color_white, 1, 1)
         end
     end
-    shot("eight_originals_four_families")
+    shot(name or "eight_originals_four_families")
     end)
 end
 add(function() RunConsoleCommand("r21a_grid") timer.Simple(.6, original_grid) end)
@@ -119,7 +119,7 @@ for _, scheme in ipairs(BO.Schemes) do
             rows[#rows + 1] = { code = code, texture = m:GetTexture("$basetexture"):GetName(), tint = m:GetVector("$color") }
         end
         emit("SCHEME", { id = id, rows = rows, materials = materials() })
-        shot("scheme_" .. id)
+        original_grid("scheme_" .. id)
     end)
 end
 add(function()
@@ -127,8 +127,6 @@ add(function()
     set("bloodoverhaul_enable", "0")
     local baseline = materials()
     check_source(baseline)
-    set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
-    set("bloodoverhaul_enable", "0")
     local restored = materials()
     check_source(restored)
     for i, entry in ipairs(baseline) do
@@ -141,19 +139,21 @@ add(function()
     emit("RESTORED", { equal = true, materials = restored })
     -- Server util.Decal broadcasts the engine decal, matching native NPC bleeding dispatch.
     RunConsoleCommand("r21a_native")
-    shot("engine_blood_yellow_master_off", 3)
+    shot("engine_blood_yellow_master_off", 5)
     end)
 end)
 add(function()
     set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
-    shot("engine_blood_yellow_blue")
+    RunConsoleCommand("r21a_native")
+    shot("engine_blood_yellow_blue", 4)
 end)
 add(function()
     set("bloodoverhaul_enable", "0")
     local restored = materials()
     check_source(restored)
     emit("NATIVE_RESTORED", { equal = true, materials = restored })
-    shot("engine_blood_yellow_restored", 2)
+    RunConsoleCommand("r21a_native")
+    shot("engine_blood_yellow_restored", 4)
 end)
 if ABL and ABL.Drops and ABL.Pools then
     add(function()

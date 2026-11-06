@@ -47,8 +47,11 @@ local function restore()
     for _, original in pairs(originals) do
         local mat = original.mat
         -- Retain the original ITexture above, but rebind by name like normal scheme painting.
-        -- Passing the userdata back left native engine decal draws missing under RTX in QA.
-        if original.texture_name then mat:SetTexture("$basetexture", original.texture_name) end
+        -- Use the same filename binding path as scheme painting, including after texture eviction.
+        local current = mat:GetTexture("$basetexture")
+        if original.texture_name and (not current or current:GetName() ~= original.texture_name) then
+            mat:SetTexture("$basetexture", original.texture_name)
+        end
         mat:SetVector(original.key, original.colour)
     end
     originals = {}
@@ -60,7 +63,8 @@ local function paint(name, texture, col, model)
     local shader = string.lower(mat:GetShader())
     if not shader:find(model and "vertexlitgeneric" or "lightmappedgeneric", 1, true) then return end
     remember(mat, model)
-    mat:SetTexture("$basetexture", texture)
+    local current = mat:GetTexture("$basetexture")
+    if not current or current:GetName() ~= texture then mat:SetTexture("$basetexture", texture) end
     mat:SetVector(model and "$color2" or "$color", Vector(col.r / 255, col.g / 255, col.b / 255))
     return mat
 end
@@ -111,8 +115,7 @@ end
 function BO.Apply()
     local previous = cached
     cached = {}
-    restore()
-    if cv.enable:GetBool() then apply_stock() end
+    if cv.enable:GetBool() then apply_stock() else restore() end
     -- Only already-used materials need retinting. Do not load every shape/PBR map at startup.
     for family, code in pairs(CODES) do
         for i, s in ipairs(BO.Shapes) do

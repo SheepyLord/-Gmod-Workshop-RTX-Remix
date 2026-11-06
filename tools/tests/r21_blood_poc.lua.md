@@ -20,7 +20,8 @@ When the private Physics Blood fixture is mounted, also draws its own drops, poo
 overlays and records counts/render-guard errors; no third-party source is copied into this probe.
 Screenshots use `NL_SHOT`; JSON lines start `R21A_`, final marker is `NL_SHOT_DONE`.
 Large records use numbered `R21A_CHUNK` lines below Source's 4,095-character print limit. The
-native broadcast frame allows three seconds for delivery and first-use lazy PBR texture loading.
+native broadcast frame allows five seconds for delivery and first-use lazy PBR texture loading;
+the palette-change frame waits two seconds.
 Lua assertions fail on missing patterns, restoration differences or budget overrun. The server fixture also
 prints `R20C_BULLET`/`R20C_TARGET` lines for actual hit evidence.
 

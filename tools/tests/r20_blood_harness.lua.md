@@ -30,3 +30,5 @@ engine userdata aliasing. It checks restoration of a model material used by both
 and the mixer, which must have exactly one original snapshot.
 Texture doubles expose ITexture-style GetName, exercising filename snapshots and rebindings with
 the same interface as the game rather than returning a raw string from GetTexture.
+Tint-only blue-to-violet changes must not rebind the used world material's texture. Originals stay
+captured until disabling, and the shared model still receives one restoration.
