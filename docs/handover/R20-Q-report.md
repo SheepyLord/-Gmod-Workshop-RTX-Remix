@@ -155,3 +155,25 @@ screen and wall-stain views, the other effects' controlled visual comparison, al
 main/pause-menu reminder/persistence checks, and the 4K
 current/old-package diagnosis. Integration/release approval remains with the lead. The repository
 release record is deliberately not advanced, and this branch has not published anything.
+
+## After the readiness fix
+
+Resumed from `f7bfe41` after R20-E's dependency-scoped invalidation fix and the combined runtime's
+single rebuild/import. The earlier stop above is historical; this section records the follow-up.
+The refreshed PoC remains on GMod build 26439081. Evidence is under **`out/r20q/afterfix/`**.
+
+The loader Release build passes all 27 CTests. A fresh thirteen-part merged package was built
+and validated with this branch's `nlctl`; the synthetic menu package changes only its test version
+and the hash-indexed release record. The repository record stays 0.14.0.
+
+| Open check | Follow-up result | Evidence under out/r20q/afterfix |
+|---|---|---|
+| 45, full matrix with running sky | **Pass.** Real 0/0, 0/2 (upscaling off with FSR 3 FG), 1/0 and 1/1 states; correct single hint for the three off cases, none with both on, `cl_showhints 0` or the actual RTX checkbox clicked off. No hint while obstructed. Across steady samples: 3,140 ready / 0 pending / 0 wrong, with continuing sky writes and a running 20-minute day. | `hints/*/game/console.log`, two native-size captures per case, `hints/*/session.json`; `hints/optout/game/shot-01-checkbox_off.png` |
+| 48, wall stains and sharp live screen | In progress. | `views-driver.log` |
+| 44, controlled other-add-on comparison | Prepared; not yet run. | `compare-cases.json` |
+| 46/50, English and CJK live menus | Prepared; not yet run. | `synthetic-validation.json`, `menus-en-cases.json`, `menus-zh-cases.json` |
+| 4K current/old runtime | Pending. | Follow-up evidence will be recorded here. |
+
+The hint batch's `restoration.json` verifies 4,200 original files/timestamps and the video registry,
+with zero differences; lock hold 6.89 minutes. Its own verified binary copies were removed after
+restoration, retaining screenshots, logs, text and JSON receipts (`hints/binary-cleanup.json`).

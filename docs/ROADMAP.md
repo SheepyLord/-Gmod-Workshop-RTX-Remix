@@ -1,5 +1,10 @@
 # Roadmap
 
+R20-Q **resumed after the readiness fix**, on combined runtime `00124bf6`. The complete live hint
+matrix passes with the sky running (3,140 steady ready samples, zero pending/wrong); the restored
+PoC stays on build 26439081. The follow-up screen, effects, menu and 4K checks are in progress
+([report, follow-up section](handover/R20-Q-report.md#after-the-readiness-fix)).
+
 R20-Q is **stopped at its runtime boundary**, with the PoC restored: patch 0040 invalidates live
 upscaling readiness on unrelated sky-option writes. Dupes, Physics Blood, combat/sky and two live
 off-state hint cases pass; full effect/hint/screen/menu/4K acceptance awaits the runtime follow-up.
