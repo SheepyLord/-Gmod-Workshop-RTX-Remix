@@ -1,8 +1,11 @@
 # Roadmap
 
-R20-T (the toolgun's nearly black display in the night field check) is **in progress** on
-`r20-toolgun`: isolate the live render target, HUD redraw and inspect overlay under fixed noon/night
-lighting in the locked PoC ([brief](handover/R20-T-toolgun-night.md)).
+R20-T (the toolgun's nearly black display in the night field check) is **done** on `r20-toolgun`
+([brief](handover/R20-T-toolgun-night.md), [report](handover/R20-T-report.md)): disable depth on
+the companion's private HUD material so it always rasterizes after upscaling, even as the first HUD
+draw. Fixed noon/night 4K views pass with loaders 0.14.0 and 0.15.0; native RTX-off views and the
+older runtime comparison pass; the PoC is restored and the Release gate passes. Field retest and
+manager integration/publication follow.
 
 R20 (the user's report of 2026-11-06, items 44-51) is **done** on `r20-int`, with loader **0.15.0**
 ([plan](handover/R20-plan.md), [report](handover/R20-report.md)): particle and decal add-ons such as

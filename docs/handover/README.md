@@ -5,6 +5,10 @@ The latest round is R20, the user's report of 2026-11-06 (items 44-51), loader 0
 ([A](R20-A-report.md), [B](R20-B-report.md), [C](R20-C-report.md), [D](R20-D-report.md),
 [E](R20-E-report.md), [Q](R20-Q-report.md)).
 
+R20-T diagnoses the night field finding and fixes the toolgun's HUD material depth state:
+[brief](R20-T-toolgun-night.md), [report](R20-T-report.md), branch `r20-toolgun`. The report keeps
+the 4K before/after views, older-runtime comparison, native RTX-off cases and preservation receipts.
+
 Before it, R19: the pre-release review's findings fixed and release v0.14.0: [R19-report.md](R19-report.md), with its [plan](R19-plan.md) and the [verified review](R19-review.md); before it R18, R17's sky limits addressed (thin decks that close, a middle deck with its own patches, sun dogs and the other ice halos, a milky haze, a longer twilight): [R18-report.md](R18-report.md); before it R17, a sky that fits the weather (cloud genera for each weather, a sun disc, a high cloud layer) and the package workflow started by hand: [R17-report.md](R17-report.md); before it R16, the sky at a map's start and the RTX package built on GitHub with every native binary and a hash report: [R16-report.md](R16-report.md); and R15, imported characters' painted shadows and solid hair, then the loader's release candidate: [R15-report.md](R15-report.md).
 
 The latest QoL batch fixes [player bodies, arms and shadows](../decisions/0043-player-body-viewmodel-and-shadows.md).

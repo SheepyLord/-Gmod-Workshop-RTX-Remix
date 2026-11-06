@@ -1,5 +1,23 @@
 # Testing
 
+## R20-T: the screen must be the first HUD draw too
+
+[R20-T's report](handover/R20-T-report.md) records the nearly black toolgun's cause and fix.
+The production-Lua harness now exercises both HUD orders; the old opaque material fails when
+the screen draws first, although capture/draw counts and its projection pass. Live acceptance
+also calls the production screen before the other HUD hooks, then after a known UI draw, at
+3840x2160 with real ready DLSS/DLSS-G 1/1, at fixed noon/night. Both loaders 0.14.0 and 0.15.0 pass.
+The white panel remains RGB 255 by day/night and RGB 128 with the add-on's half backlight.
+
+Do not use a HUD corner mirror as the only way to inspect this failure: that preview can trigger
+Remix's UI injection before the faulty draw and conceal it. Read the render target after the
+frame instead. The task's `out/r20t/acceptance.json` indexes eight selected cases and 53 captures;
+`final-restoration.json` and `depot-final.json` separately prove file/registry restoration and stock
+depot bytes. The report explicitly excludes three defective diagnostic runs and distinguishes the
+exact old runtime from two unavailable old CI module builds. Field acceptance remains a follow-up.
+The final `tools/test.ps1 -Config Release` gate passes 27 CTests and 710 Python tests (two existing
+environment skips), exit 0; `out/r20t/release-final.log` retains the complete output.
+
 ## R20-Q after the corrected readback
 
 The full matrix and real English/zh-CN menu, restart, wall/screen and 4K checks are recorded in

@@ -5760,3 +5760,13 @@ is documented, rather than altering game shaders or persistent materials.
   [Valve's IMaterial flags](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/public/materialsystem/imaterial.h).
   The fix remains in this private HUD material, preserving the screen renderer's pixels and the
   existing 2D redraw design. No persistent category, exposure adjustment or native binary changes.
+- The validated pre-R20 comparison (`out/r20t/followups/v014-complete/`) repeats that dependence
+  with the distributed v0.14.0 runtime `b311f0d9...`, old companion Lua and standalone DTS. Two
+  missing CI-built modules were recovered from v0.14.0's own indexed inputs; exact substitutions
+  and validation are recorded in `v014-completion.json`, rather than claiming full old archive
+  identity. `git blame` dates the missing private-material flag to `6c45603` (2026-10-30).
+- Corrected-probe captures with release loader 0.14.0 and loader 0.15.0 keep the screen bright
+  with its production HUD hook deliberately first, and after another UI draw. Static RT colours
+  match at noon/night; the sampled white panel is RGB 255 in both RT and displayed screen, or
+  128 with the add-on's own half backlight. Three blue/white/green patches are measured in
+  `out/r20t/pixel-measurements.json` (maximum RT-to-screen filtered-channel difference 3.8).
