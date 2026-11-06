@@ -1,0 +1,69 @@
+[h3]NVIDIA RTX Remix is an open-sourced platform built on NVIDIA Omniverse that allows modders to create stunning RTX remasters of classic games.[/h3]
+
+This add-on installs and manages the RTX Remix and ReShade runtimes, along with the enhancement add-ons they depend on. 
+
+[h1]Installation[/h1]
+[olist]
+[*]Download the Install Manager from the [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]latest release on GitHub[/url]: the gmod-native-loader zip, under 1 MB.
+[*]Unzip it into your Garry's Mod folder, the one that holds gmod.exe. If Windows asks to merge folders, say yes. To find the folder, right-click Garry's Mod in your Steam library and choose Manage > Browse local files.
+[b]Correct:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
+[b]Wrong:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
+[*]Subscribe to this add-on.
+[*]In Steam, start the game in x86-64 version.
+[/olist]
+The zip adds two files: bin\win64\winmm.dll (the loader) and native-loader\config.json (its settings). 
+
+[b]Updating:[/b] this add-on updates itself through the Workshop, but the Install Manager does not. When a new release comes out, replace bin\win64\winmm.dll with the new you you loaded.
+
+[b]中国大陆的测试者[/b]：请通过百度网盘下载（请自行补全链接）：/s/1eD4RjU1JmI1jluIp7UEXPg?pwd=mdvw 提取码：mdvw
+
+[h1]In the game[/h1]
+[list]
+[*]Every RTX setting is in the spawn menu's [b]RTX Remix[/b] tab.
+[*]The console command [b]nativeloader_guide[/b] opens the guide. It also opens automatically when you launch it the first time.
+[*]Compatible with ReShade. ReShade is only turned on if your game already had ReShade set up, so a game without ReShade stays without it.
+[/list]
+
+[h1]Uninstallation[/h1]
+Disable this add-on in the addon menu, or unsubscribe from it, then restart the game. All settings are kept.
+To remove the Install Manager too (full uninstallation), delete bin\win64\winmm.dll.
+To play without RTX but keep everything installed, set "remix": { "enabled": false } in native-loader\config.json.
+
+[h1]Hardware Requirements[/h1]
+A modern, mid-tier computer is needed. Please update your graphics driver. This currently only works on Windows, while we are working on a Linux compatibility update.
+[b]Minimum:[/b]
+[list]
+[*][b]OS:[/b] Windows 11, 64-bit
+[*][b]Processor:[/b] Intel Core i5-10600K / AMD Ryzen 5 5600X
+[*][b]Memory:[/b] 16 GB of RAM
+[*][b]Graphics:[/b] 8 GB of video memory or more: NVIDIA GeForce RTX 4060 8 GB Laptop GPU / AMD Radeon RX 6700 XT 12 GB
+[*][b]Driver:[/b] NVIDIA GeForce Game Ready or Studio Driver 616.92 or later (September 9, 2026); AMD: the latest driver
+[*][b]Resolution:[/b] 1920 x 1080 or higher
+[*][b]Storage:[/b] an SSD
+[/list]
+[b]Additional notes:[/b] Please enable frame generation to ensure framerate.
+
+[h1]Features[/h1]
+[list]
+[*]No need to disable any addons, this should works with all existing addons.
+[*]Realistic sky, water and glass simulation
+[*]Auto-detects imported PBR resources from: Arknights Endfield, Wuthering Waves, Sliver Palace and Neverness to Everness
+[*]Native multiplayer support, you could join any servers with RTX-Remix enabled
+[/list]
+
+[h1]Antivirus warnings[/h1]
+Some antivirus programs, especially those that scan with AI might flag these files. Whitelist them, or don't use this add-on if antivirus warning is a concern:
+[list]
+[*]GarrysMod\bin\win64\winmm.dll: loads and manages the Remix installation
+[*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe: imports models, textures and PBR
+[/list]
+This project is open-sourced and bulit by GitHub Actions: winmm.dll in [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], and this add-on's package, the worker included, in [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. Each package run's summary lists the SHA-256 of the .gma and of every file in it. A release update's Change Note on this page says "built on GitHub" and names its run and the .gma's SHA-256, so you can check that the files you got from Steam are the ones GitHub built.
+
+[h1]Credits[/h1]
+[list]
+[*][b]NVIDIA RTX Remix for Gmod Workshop by:[/b] SheepyLord
+[*][b]Developers, with code contributions:[/b] 0xNULLderef, BlueAmulet, King David, Nak2, NVIDIA, sambow23, SheepyLord, vlazed, Xenthio, Yosuke Nathan
+[*][b]Testers, without code contributions:[/b] [url=http://steamcommunity.com/profiles/76561198983415472]Smalldream802[/url], [url=https://steamcommunity.com/profiles/76561198803423331/]凉凉凉Official[/url], [url=https://steamcommunity.com/profiles/76561199042844827/]Kona疏[/url]
+[/list]
+
+License: GPL-2.0
