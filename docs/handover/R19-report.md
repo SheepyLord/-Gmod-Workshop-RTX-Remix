@@ -88,7 +88,49 @@ away from the sun and toward the horizon is where grazing rays take the most pro
 
 ## Release
 
-(Filled in when published.)
+**Published.**
+- **Merged and pushed.** `r19-int` was merged into `main` as `3b0bed6` and pushed (`30a9741..3b0bed6`).
+  - The post-merge hook built the development package here and uploaded it to item 3829070317 as
+    0.0.0-dev.20261105231916+ad5cf8e8.
+  - The pre-push hook found the same inputs and did nothing.
+  - CI on `main` passed (run 42128850015).
+- **The GitHub release.** The annotated tag `v0.14.0` on `3b0bed6` made the GitHub release
+  [Native loader v0.14.0](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/tag/v0.14.0)
+  (tag build 42130227170). It has `gmod-native-loader-0.14.0+3b0bed6a.zip` (742,854 bytes) and its
+  `-symbols` zip. Its notes were then rewritten for players.
+- **The release package, built on GitHub.** Claude started the package workflow on `main` at `3b0bed6`,
+  as the user allowed for this release (run 42130241622).
+  - It compiled 13 native binaries and fetched 41; none came from `packages/`.
+  - The `.gma` is 1,814,986,442 bytes, SHA-256 `12c404dc...`.
+  - Its `d3d9.dll` has SHA-256 `b311f0d9...` and reports `remix-main+b2129b8e`. The stored one, which
+    the PoC tested, is `34287de8...`, built here from the same patches.
+- **On the Workshop.** `publish_workshop.py --from-ci` waited for the run and checked the `.gma` against
+  the run's `SHA256SUMS.txt`. It then uploaded exactly that file to item 3829070317 as
+  0.0.0-dev.20261106004558+ad5cf8e8 (2026-11-06 00:50 UTC).
+  - Its inputs fingerprint is the development build's (`ad5cf8e8`); only the native binaries differ.
+
+**Checked in the field.** Before each start, no other lab, game or PoC lock was active.
+`tools\steam\verify_install.py` found the field install intact before and after; only the user's
+`autoexec.cfg` differs. The field's `cfg/client.vdf` was saved first and is byte-identical afterwards;
+`config.cfg` was put back by the session.
+
+| Start | Result |
+|---|---|
+| Loader 0.14.0 with the development package (`out\r19field\`) | The `winmm.dll` from the GitHub release's zip (SHA-256 `256f245f...`) replaced loader 0.13.0, which is kept in `out\r19field\winmm.dll.0.13.0` in the main checkout. The first start deployed 0.0.0-dev.20261105231916+ad5cf8e8 and activated it, with the render guard installed early. The R19 checks passed as in the PoC (ToPBR, the Remix option, the bridge), with no Lua error. The sky probe's views took 7.74-8.32 ms (average 7.95), and the game quit normally. |
+| The release package (`out\r19release\`) | Steam had fetched the updated item within a minute of the upload, and the `.gma` on disk has GitHub's SHA-256. One start deployed and activated 0.0.0-dev.20261106004558+ad5cf8e8. All 207 runtime files match the run's hash report, `d3d9.dll` included. The R19 checks passed again, with no Lua error and no complaint from the DDS readers. The views took 7.78-8.67 ms (average 7.98), and the game quit normally. |
+
+- **ToPBR's folder stays the player's.** 85 of the 931 root files differ from the report. All are in
+  ToPBR's output folder `rtx-remix/mods/~gmod_topbr`, which is `create-only`. So the textures ToPBR made
+  in this game since 2026-10-29, and its rewritten `materials.usda`, were kept; the loader's status notes
+  say so.
+- **The Remix log's 70 `err:` lines are the same** as in R18's field run, line for line. They are:
+  - 28 shader-model notices;
+  - one disposal note;
+  - 39 textures that the user's own `Poolday` mod names but does not have;
+  - two 11059x8847 textures in the user's `ai_pbr` mod, too big for the streaming staging memory and
+    uploaded at once instead.
+- **The session marker check** reads FAIL as in the PoC: `file.Exists` does not see the held marker, and
+  the guard's `file.Find` does.
 
 ## Open issues
 

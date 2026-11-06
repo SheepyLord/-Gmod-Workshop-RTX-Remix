@@ -105,6 +105,9 @@ Versions follow the loader's CMake project version once it ships; until then eve
       - Pillow is pinned;
       - the vanilla-copy tool reports unhashed files;
       - `pins.json` records the patched fixes' tree ids, and RTX Water has patches of its own.
+- **Released as v0.14.0.** The GitHub release has loader 0.14.0's bundle and its symbols. The RTX package
+  that GitHub's workflow built for it (run 42130241622, `.gma` SHA-256 `12c404dc...`) is on Workshop item
+  3829070317 as 0.0.0-dev.20261106004558+ad5cf8e8.
 
 ### R18
 
