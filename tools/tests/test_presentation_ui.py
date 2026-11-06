@@ -32,7 +32,7 @@ class PresentationUITests(unittest.TestCase):
                 self.assertLessEqual(len(data), 8192)
                 self.assertNotIn('\0', text)
                 self.assertEqual(set(re.findall(r'\{([a-z]+)\}', text)), {'hotkey', 'seconds'})
-                self.assertIn('https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix', text)
+                self.assertIn('https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix', text)
                 self.assertNotIn('Xenthio', text)
 
     def test_mainmenu_labels_complete(self):

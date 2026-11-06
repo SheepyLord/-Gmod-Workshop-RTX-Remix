@@ -6,7 +6,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\packages\\reshade\\ReShade_Setup_6.8.0.exe",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "bbab69e83f237a1a1387c58a3169f90680cc7a15",
     "dirty": false
    },

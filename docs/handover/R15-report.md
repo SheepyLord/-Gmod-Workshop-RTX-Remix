@@ -113,7 +113,7 @@ publishes the release, so it stayed a draft (GitHub had answered the first push 
 error). The draft was published with `gh release edit --draft=false --latest` (one more 502, then it
 went through), and the notes gained a release-candidate summary: the loader's memory profiles, and what
 the Workshop item brings since v0.12.1.
-<https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/tag/v0.13.0-rc.1>
+<https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v0.13.0-rc.1>
 
 ## Open items
 

@@ -6,7 +6,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-glass\\out\\build\\win64-release\\glass\\native\\gmcl_nlglass_win64.dll",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-glass",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "baba026d55b1ff12fe4dbaba5cf00753dd2f8271",
     "dirty": false
    },

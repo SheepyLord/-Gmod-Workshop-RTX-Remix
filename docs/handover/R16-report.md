@@ -77,8 +77,8 @@ the Python suites).
 
 | Run | Commit | Result |
 |---|---|---|
-| [41962240202](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/runs/41962240202) | `f44f510` (the merge of item 45) | Both build jobs failed in two minutes, each on something only a runner shows: `build_runtime.ps1` restored `GIT_OBJECT_DIRECTORY` as an empty variable (PowerShell 7.5 on .NET 9 keeps it; Windows PowerShell removes it), so git took the new worktree for an invalid repository; and `git restore --source` did not fetch RTX Water's blob in the blob-filtered fixes clone. Fixed in `dac2b8a` |
-| [41962824677](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/runs/41962824677) | `a141826` | **Success in 64 minutes.** `modules` 4 min (the four modules; the bridge's test passed), `runtime` 53 min (445 build steps on two cores; `d3d9.dll` 397,908,480 bytes, 512 fewer than this machine's build; 189 files, 41 binaries collected), `package` 12 min |
+| [41962240202](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/runs/41962240202) | `f44f510` (the merge of item 45) | Both build jobs failed in two minutes, each on something only a runner shows: `build_runtime.ps1` restored `GIT_OBJECT_DIRECTORY` as an empty variable (PowerShell 7.5 on .NET 9 keeps it; Windows PowerShell removes it), so git took the new worktree for an invalid repository; and `git restore --source` did not fetch RTX Water's blob in the blob-filtered fixes clone. Fixed in `dac2b8a` |
+| [41962824677](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/runs/41962824677) | `a141826` | **Success in 64 minutes.** `modules` 4 min (the four modules; the bridge's test passed), `runtime` 53 min (445 build steps on two cores; `d3d9.dll` 397,908,480 bytes, 512 fewer than this machine's build; 189 files, 41 binaries collected), `package` 12 min |
 
 The runner had 2 cores, 8 GB, 79-81 GB free on C: and 73-96 GB on D:, git 2.56.0. Both builds were
 cached by their sources, so the next run that leaves them unchanged takes only the `package` job.
@@ -164,7 +164,7 @@ runtime 10,736,640 (512 more). The client has `SetSecondaryWater`, `SetSecondary
 the shipped one only in the 2.3.1 entry's build (`f2e32f99f0a5-...`, this repository's commit and the
 configure time) and the four hashes.
 
-**On GitHub** ([run 41977506299](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/runs/41977506299),
+**On GitHub** ([run 41977506299](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/runs/41977506299),
 commit `f83d7ad`): the runtime and modules came from their caches in seconds; the `hotloader` job
 fetched every pinned dependency and built the four natives in 17 minutes, all four exactly the shipped
 sizes (the runtime too, 10,736,128 bytes); the package job took 12. On the runner the source is built

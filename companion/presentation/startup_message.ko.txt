@@ -2,6 +2,6 @@ Garry's Mod RTX Remix
 {hotkey} 키를 눌러 Remix 메뉴를 엽니다.
 
 프로젝트 및 문제 보고:
-https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix
+https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix
 
 {seconds}초 후 닫힙니다.

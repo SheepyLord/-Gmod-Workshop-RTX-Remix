@@ -134,7 +134,7 @@
     project = element('a', panel); project.href = '#';
     project.onclick = function (event) {
       event.preventDefault();
-      if (window.lua && window.lua.Run) window.lua.Run('gui.OpenURL( %s )', 'https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix');
+      if (window.lua && window.lua.Run) window.lua.Run('gui.OpenURL( %s )', 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix');
     };
     update(); window.setInterval(update, 500);
   }

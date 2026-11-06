@@ -6,7 +6,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
     "dirty": false
    },
@@ -36,7 +36,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\fr\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -46,7 +46,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\ja\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -56,7 +56,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\translation-review\\packages\\model-hotloader\\mmd_hotloader\\lua\\weapons\\gmod_tool\\stools\\mmdhl_prop.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/translation-review",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "7d79c12606d8def4ca08e009008e4ac3524f8aa7",
     "dirty": true
    },
@@ -66,7 +66,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\ru\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -76,7 +76,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\hotloader-depth\\packages\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\native_render.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/hotloader-depth",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "77a80dc7c03b58d6b5a880e2e0449c9136ebf190",
     "dirty": false
    },
@@ -86,7 +86,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\hotloader-depth\\packages\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\native_render.lua.md",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/hotloader-depth",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "77a80dc7c03b58d6b5a880e2e0449c9136ebf190",
     "dirty": false
    },
@@ -96,7 +96,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\lua\\mmdhl\\ui.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -106,7 +106,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\addon-workflow-inputs\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\ui.lua.md",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "00cfdfb154cba4878837e460eb07f8ab0bec21be",
     "dirty": false
    },
@@ -116,7 +116,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\en\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -126,7 +126,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\ko\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -136,7 +136,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\zh-cn\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -146,7 +146,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-normals\\mmd_hotloader\\resource\\localization\\zh-tw\\mmdhl.properties",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -156,7 +156,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r5\\out\\tmp\\stage-r5-mmdhl2\\workshop.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r5",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "df8014758067c7ed95474a9d8ef50e131e26b87b",
     "dirty": false
    },
@@ -166,7 +166,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r13-hotloader\\out\\r13-a\\stage\\mmdhl.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r13-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "70acb49cbd3ab0ebe34ed502c8144bea45485ad7",
     "dirty": false
    },
@@ -176,7 +176,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r13-hotloader\\out\\r13-a\\stage\\actors.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r13-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "70acb49cbd3ab0ebe34ed502c8144bea45485ad7",
     "dirty": false
    },
@@ -186,7 +186,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r10-hotloader\\out\\r10\\stage\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\morph_geometry.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r10-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1c120831a7e874271a4fd0d1f24dd01f5a934b5b",
     "dirty": false
    },
@@ -196,7 +196,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\lua\\mhl\\mmd_hotloader\\lua\\mmdhl\\carrier.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -206,7 +206,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r12-hotloader\\out\\r12-a\\stage\\library.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r12-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "2dd303333624bcc50f8c2a024377d5760c44dd8f",
     "dirty": false
    },
@@ -216,7 +216,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r15\\out\\r15\\stage\\materials.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r15",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "786d9a9c0177ca46f036e30b5e6db4ed57029273",
     "dirty": false
    },
@@ -226,7 +226,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r13-hotloader\\out\\r13-a\\stage\\persistence.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r13-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "70acb49cbd3ab0ebe34ed502c8144bea45485ad7",
     "dirty": false
    },
@@ -236,7 +236,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\lua\\mhl\\mmd_hotloader\\lua\\mmdhl\\sharing.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -246,7 +246,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r16\\out\\r16\\hotloader-stage",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r16",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "f2e32f99f0a56b096aa0c26db8bde147d70486e1",
     "dirty": false
    },
@@ -256,7 +256,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\lua\\mhl\\mmd_hotloader\\lua\\mmdhl\\server.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -266,7 +266,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\lua\\mhl\\mmd_hotloader\\lua\\mmdhl\\props\\server.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -276,7 +276,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\lua\\mhl\\mmd_hotloader\\lua\\mmdhl\\scene_sharing.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -286,7 +286,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\THIRD_PARTY.md",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -296,7 +296,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\assets.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -306,7 +306,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\dependency_scope.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -316,7 +316,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\dependency_scope.hpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -326,7 +326,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\file_access.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -336,7 +336,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\file_access.hpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -346,7 +346,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\module.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -356,7 +356,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\props\\import.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -366,7 +366,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\props\\material_overrides.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -376,7 +376,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\props\\texture_resolver.hpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -386,7 +386,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\runtime.hpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -396,7 +396,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\scene_share.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -406,7 +406,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\native\\scene_share.hpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -416,7 +416,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\scripts\\bootstrap.py",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -426,7 +426,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\tests\\actor_tests.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -436,7 +436,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\tests\\file_access_tests.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -446,7 +446,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\tests\\import_error_tests.cpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -456,7 +456,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\stage\\mmdhl\\tests\\props\\texture_resolver_tests.hpp",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -466,7 +466,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\source-docs\\Source.md",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -476,7 +476,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\source-docs\\r19-changes.patch",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -486,7 +486,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\built\\model-hotloader\\bin\\gmcl_mmdhl_win64.dll",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -496,7 +496,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\built\\model-hotloader\\bin\\gmsv_mmdhl_win64.dll",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -506,7 +506,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\built\\model-hotloader\\bin\\mmdhl_runtime_win64.dll",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -516,7 +516,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\built\\model-hotloader\\bin\\mmdhl_worker.exe",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -526,7 +526,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\built\\model-hotloader\\bin\\mmdhl-native-release.json",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },
@@ -536,7 +536,7 @@
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\built\\model-hotloader\\mmd_hotloader\\lua\\mmdhl\\native_policy.lua",
    "git": {
     "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
-    "remote": "https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix.git",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
     "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
     "dirty": false
    },

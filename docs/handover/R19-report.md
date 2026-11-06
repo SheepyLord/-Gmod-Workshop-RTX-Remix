@@ -95,7 +95,7 @@ away from the sun and toward the horizon is where grazing rays take the most pro
   - The pre-push hook found the same inputs and did nothing.
   - CI on `main` passed (run 42128850015).
 - **The GitHub release.** The annotated tag `v0.14.0` on `3b0bed6` made the GitHub release
-  [Native loader v0.14.0](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/tag/v0.14.0)
+  [Native loader v0.14.0](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v0.14.0)
   (tag build 42130227170). It has `gmod-native-loader-0.14.0+3b0bed6a.zip` (742,854 bytes) and its
   `-symbols` zip. Its notes were then rewritten for players.
 - **The release package, built on GitHub.** Claude started the package workflow on `main` at `3b0bed6`,

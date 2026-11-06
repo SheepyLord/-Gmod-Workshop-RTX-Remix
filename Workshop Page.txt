@@ -7,7 +7,7 @@ NVIDIA RTX Remix Runtime for Garry's Mod [Win64] (Effects)
 
 [h1]Installation[/h1]
 [olist]
-[*]Download the Install Manager from the [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]latest release on GitHub[/url]: the gmod-native-loader zip, under 1 MB.
+[*]Download the Install Manager from the [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]latest release on GitHub[/url]: the gmod-native-loader zip, under 1 MB.
 [*]Unzip it into your Garry's Mod folder, the one that holds gmod.exe. If Windows asks to merge folders, say yes. To find the folder, right-click Garry's Mod in your Steam library and choose Manage > Browse local files.
 [b]Correct:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]Wrong:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -60,7 +60,7 @@ Some antivirus programs, especially those that scan with AI might flag these fil
 [*]GarrysMod\bin\win64\winmm.dll: loads and manages the Remix installation
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe: imports models, textures and PBR
 [/list]
-This project is open-sourced and bulit by GitHub Actions: winmm.dll in [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], and this add-on's package, the worker included, in [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. Each package run's summary lists the SHA-256 of the .gma and of every file in it. A release update's Change Note on this page says "built on GitHub" and names its run and the .gma's SHA-256, so you can check that the files you got from Steam are the ones GitHub built.
+This project is open-sourced and bulit by GitHub Actions: winmm.dll in [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], and this add-on's package, the worker included, in [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. Each package run's summary lists the SHA-256 of the .gma and of every file in it. A release update's Change Note on this page says "built on GitHub" and names its run and the .gma's SHA-256, so you can check that the files you got from Steam are the ones GitHub built.
 
 [h1]Credits[/h1]
 [list]
@@ -80,7 +80,7 @@ License: GPL-2.0
 
 [h1]安装[/h1]
 [olist]
-[*]从 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub 上的最新版本[/url]下载安装管理器：即 gmod-native-loader 压缩包，不到 1 MB。
+[*]从 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]GitHub 上的最新版本[/url]下载安装管理器：即 gmod-native-loader 压缩包，不到 1 MB。
 [*]将其解压到你的 Garry's Mod 文件夹，也就是存放 gmod.exe 的那个文件夹。如果 Windows 询问是否合并文件夹，请选择“是”。要找到该文件夹，请在 Steam 库中右键点击 Garry's Mod，然后选择“管理 > 浏览本地文件”。
 [b]正确：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]错误：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -133,7 +133,7 @@ License: GPL-2.0
 [*]GarrysMod\bin\win64\winmm.dll：加载并管理 Remix 的安装
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe：导入模型、纹理和 PBR
 [/list]
-本项目开源，并由 GitHub Actions 构建：winmm.dll 由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] 构建，本插件的包（包括 worker）由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] 构建。每次打包运行的摘要都会列出 .gma 及其中每个文件的 SHA-256。本页面上正式版本更新的更新说明（Change Notes）会写明“built on GitHub”，并注明对应的运行和 .gma 的 SHA-256，你可以据此核对从 Steam 获得的文件是否正是 GitHub 构建的文件。
+本项目开源，并由 GitHub Actions 构建：winmm.dll 由 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] 构建，本插件的包（包括 worker）由 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] 构建。每次打包运行的摘要都会列出 .gma 及其中每个文件的 SHA-256。本页面上正式版本更新的更新说明（Change Notes）会写明“built on GitHub”，并注明对应的运行和 .gma 的 SHA-256，你可以据此核对从 Steam 获得的文件是否正是 GitHub 构建的文件。
 
 [h1]致谢[/h1]
 [list]
@@ -153,7 +153,7 @@ License: GPL-2.0
 
 [h1]安裝[/h1]
 [olist]
-[*]從 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub 上的最新版本[/url]下載安裝管理器：即 gmod-native-loader 壓縮檔，不到 1 MB。
+[*]從 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]GitHub 上的最新版本[/url]下載安裝管理器：即 gmod-native-loader 壓縮檔，不到 1 MB。
 [*]將其解壓縮到你的 Garry's Mod 資料夾，也就是存放 gmod.exe 的資料夾。若 Windows 詢問是否合併資料夾，請選擇「是」。要找到這個資料夾，請在 Steam 收藏庫中對 Garry's Mod 按右鍵，然後選擇「管理 > 瀏覽本機檔案」。
 [b]正確：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]錯誤：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -206,7 +206,7 @@ License: GPL-2.0
 [*]GarrysMod\bin\win64\winmm.dll：載入並管理 Remix 的安裝
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe：匯入模型、材質與 PBR
 [/list]
-本專案為開源專案，並由 GitHub Actions 建置：winmm.dll 由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] 建置，此插件的套件（包含 worker）由 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] 建置。每次套件建置的摘要都會列出 .gma 及其中每個檔案的 SHA-256。本頁面上正式版本更新的變更說明（Change Notes）會註明「built on GitHub」，並列出對應的執行與 .gma 的 SHA-256，讓你可以核對從 Steam 取得的檔案是否正是 GitHub 建置的檔案。
+本專案為開源專案，並由 GitHub Actions 建置：winmm.dll 由 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] 建置，此插件的套件（包含 worker）由 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] 建置。每次套件建置的摘要都會列出 .gma 及其中每個檔案的 SHA-256。本頁面上正式版本更新的變更說明（Change Notes）會註明「built on GitHub」，並列出對應的執行與 .gma 的 SHA-256，讓你可以核對從 Steam 取得的檔案是否正是 GitHub 建置的檔案。
 
 [h1]致謝[/h1]
 [list]
@@ -226,7 +226,7 @@ Garry's Mod 用 NVIDIA RTX Remix ランタイム [Win64]（エフェクト）
 
 [h1]インストール[/h1]
 [olist]
-[*][url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub の最新リリース[/url]からインストールマネージャーをダウンロードします。gmod-native-loader の zip ファイルで、1 MB 未満です。
+[*][url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]GitHub の最新リリース[/url]からインストールマネージャーをダウンロードします。gmod-native-loader の zip ファイルで、1 MB 未満です。
 [*]Garry's Mod のフォルダ（gmod.exe があるフォルダ）に展開します。Windows からフォルダの統合を確認されたら「はい」を選んでください。フォルダは、Steam ライブラリで Garry's Mod を右クリックし、「管理 > ローカルファイルを閲覧」を選ぶと開けます。
 [b]正しい例：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]間違った例：[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -279,7 +279,7 @@ zip によって 2 つのファイルが追加されます：bin\win64\winmm.dll
 [*]GarrysMod\bin\win64\winmm.dll：Remix のインストールを読み込み、管理します
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe：モデル、テクスチャ、PBR をインポートします
 [/list]
-このプロジェクトはオープンソースで、GitHub Actions でビルドされています。winmm.dll は [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] で、ワーカーを含むこのアドオンのパッケージは [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] でビルドされます。パッケージの各実行のサマリーには、.gma とその中のすべてのファイルの SHA-256 が記載されます。このページにあるリリース更新の変更履歴（Change Notes）には「built on GitHub」と書かれ、その実行と .gma の SHA-256 が記されているので、Steam から受け取ったファイルが GitHub でビルドされたものと同じかどうかを確認できます。
+このプロジェクトはオープンソースで、GitHub Actions でビルドされています。winmm.dll は [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url] で、ワーカーを含むこのアドオンのパッケージは [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url] でビルドされます。パッケージの各実行のサマリーには、.gma とその中のすべてのファイルの SHA-256 が記載されます。このページにあるリリース更新の変更履歴（Change Notes）には「built on GitHub」と書かれ、その実行と .gma の SHA-256 が記されているので、Steam から受け取ったファイルが GitHub でビルドされたものと同じかどうかを確認できます。
 
 [h1]クレジット[/h1]
 [list]
@@ -299,7 +299,7 @@ Garry's Mod용 NVIDIA RTX Remix 런타임 [Win64] (이펙트)
 
 [h1]설치[/h1]
 [olist]
-[*][url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]GitHub의 최신 릴리스[/url]에서 설치 관리자를 다운로드하세요. 1MB 미만의 gmod-native-loader zip 파일입니다.
+[*][url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]GitHub의 최신 릴리스[/url]에서 설치 관리자를 다운로드하세요. 1MB 미만의 gmod-native-loader zip 파일입니다.
 [*]Garry's Mod 폴더, 즉 gmod.exe가 있는 폴더에 압축을 푸세요. Windows에서 폴더를 병합할지 물으면 "예"를 선택하세요. 폴더를 찾으려면 Steam 라이브러리에서 Garry's Mod를 마우스 오른쪽 버튼으로 클릭한 다음 "관리 > 로컬 파일 보기"를 선택하세요.
 [b]올바른 예:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]잘못된 예:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -352,7 +352,7 @@ zip 파일은 두 파일을 추가합니다: bin\win64\winmm.dll(로더), native
 [*]GarrysMod\bin\win64\winmm.dll: Remix 설치를 불러오고 관리합니다
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe: 모델, 텍스처, PBR을 가져옵니다
 [/list]
-이 프로젝트는 오픈 소스이며 GitHub Actions로 빌드됩니다. winmm.dll은 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url]에서, 워커를 포함한 이 애드온의 패키지는 [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]에서 빌드됩니다. 각 패키지 빌드 실행의 요약에는 .gma와 그 안에 있는 모든 파일의 SHA-256이 나열됩니다. 이 페이지에 있는 릴리스 업데이트의 변경 사항(Change Notes)에는 "built on GitHub"라는 문구와 함께 해당 실행과 .gma의 SHA-256이 적혀 있으므로, Steam에서 받은 파일이 GitHub에서 빌드한 파일과 같은지 확인할 수 있습니다.
+이 프로젝트는 오픈 소스이며 GitHub Actions로 빌드됩니다. winmm.dll은 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url]에서, 워커를 포함한 이 애드온의 패키지는 [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]에서 빌드됩니다. 각 패키지 빌드 실행의 요약에는 .gma와 그 안에 있는 모든 파일의 SHA-256이 나열됩니다. 이 페이지에 있는 릴리스 업데이트의 변경 사항(Change Notes)에는 "built on GitHub"라는 문구와 함께 해당 실행과 .gma의 SHA-256이 적혀 있으므로, Steam에서 받은 파일이 GitHub에서 빌드한 파일과 같은지 확인할 수 있습니다.
 
 [h1]크레딧[/h1]
 [list]
@@ -372,7 +372,7 @@ Runtime NVIDIA RTX Remix pour Garry's Mod [Win64] (Effets)
 
 [h1]Installation[/h1]
 [olist]
-[*]Téléchargez le gestionnaire d'installation depuis la [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]dernière version sur GitHub[/url] : le fichier zip gmod-native-loader, moins de 1 Mo.
+[*]Téléchargez le gestionnaire d'installation depuis la [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]dernière version sur GitHub[/url] : le fichier zip gmod-native-loader, moins de 1 Mo.
 [*]Décompressez-le dans votre dossier Garry's Mod, celui qui contient gmod.exe. Si Windows demande s'il faut fusionner les dossiers, répondez Oui. Pour trouver ce dossier, faites un clic droit sur Garry's Mod dans votre bibliothèque Steam, puis choisissez Gérer > Parcourir les fichiers locaux.
 [b]Correct :[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]Incorrect :[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -425,7 +425,7 @@ Certains antivirus, en particulier ceux qui analysent par IA, peuvent signaler c
 [*]GarrysMod\bin\win64\winmm.dll : charge et gère l'installation de Remix
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe : importe les modèles, les textures et le PBR
 [/list]
-Ce projet est open source et compilé par GitHub Actions : winmm.dll dans [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], et le paquet de cet addon, worker compris, dans [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. Le résumé de chaque exécution du paquet indique le SHA-256 du .gma et de chacun des fichiers qu'il contient. Sur cette page, la note de mise à jour (Change Notes) d'une nouvelle version indique « built on GitHub », ainsi que l'exécution et le SHA-256 du .gma : vous pouvez donc vérifier que les fichiers reçus de Steam sont bien ceux que GitHub a compilés.
+Ce projet est open source et compilé par GitHub Actions : winmm.dll dans [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], et le paquet de cet addon, worker compris, dans [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. Le résumé de chaque exécution du paquet indique le SHA-256 du .gma et de chacun des fichiers qu'il contient. Sur cette page, la note de mise à jour (Change Notes) d'une nouvelle version indique « built on GitHub », ainsi que l'exécution et le SHA-256 du .gma : vous pouvez donc vérifier que les fichiers reçus de Steam sont bien ceux que GitHub a compilés.
 
 [h1]Crédits[/h1]
 [list]
@@ -445,7 +445,7 @@ Licence : GPL-2.0
 
 [h1]Установка[/h1]
 [olist]
-[*]Скачайте менеджер установки из [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest]последнего релиза на GitHub[/url]: это zip-архив gmod-native-loader размером меньше 1 МБ.
+[*]Скачайте менеджер установки из [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest]последнего релиза на GitHub[/url]: это zip-архив gmod-native-loader размером меньше 1 МБ.
 [*]Распакуйте его в папку Garry's Mod — ту, в которой лежит gmod.exe. Если Windows спросит, объединить ли папки, ответьте «Да». Чтобы найти эту папку, щёлкните правой кнопкой мыши по Garry's Mod в библиотеке Steam и выберите «Управление > Просмотреть локальные файлы».
 [b]Правильно:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod
 [b]Неправильно:[/b] C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod
@@ -498,7 +498,7 @@ Licence : GPL-2.0
 [*]GarrysMod\bin\win64\winmm.dll: загружает установку Remix и управляет ею
 [*]GarrysMod\garrysmod\lua\bin\mmdhl_worker.exe: импортирует модели, текстуры и PBR
 [/list]
-Это проект с открытым исходным кодом, и он собирается в GitHub Actions: winmm.dll — в [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], а пакет этого аддона вместе с worker — в [url=https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. В сводке каждого запуска сборки пакета перечислены SHA-256 файла .gma и каждого файла в нём. В списке изменений (Change Notes) релизного обновления на этой странице написано «built on GitHub» и указаны запуск и SHA-256 файла .gma, так что вы можете убедиться, что файлы, полученные из Steam, — именно те, что собрал GitHub.
+Это проект с открытым исходным кодом, и он собирается в GitHub Actions: winmm.dll — в [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml]Build winmm.dll[/url], а пакет этого аддона вместе с worker — в [url=https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/package.yml]Build the RTX package[/url]. В сводке каждого запуска сборки пакета перечислены SHA-256 файла .gma и каждого файла в нём. В списке изменений (Change Notes) релизного обновления на этой странице написано «built on GitHub» и указаны запуск и SHA-256 файла .gma, так что вы можете убедиться, что файлы, полученные из Steam, — именно те, что собрал GitHub.
 
 [h1]Авторы[/h1]
 [list]

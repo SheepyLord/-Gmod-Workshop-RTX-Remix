@@ -6,7 +6,7 @@
 One file in the game folder and one Workshop subscription. No patched copy of the game, and no
 fighting Steam updates.
 
-[![Build](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml)
+[![Build](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml)
 [![Steam Workshop](https://img.shields.io/badge/Steam%20Workshop-3829070317-1b2838?logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=3829070317)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)](#requirements)
 [![License](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
@@ -14,7 +14,7 @@ fighting Steam updates.
 ![A tiled pool corridor in Garry's Mod, path traced with RTX Remix](companion/nativeloader/materials/nativeloader/guide/rtx_on.jpg)
 
 [Features](#features) · [Requirements](#requirements) · [Installation](#installation) ·
-[Troubleshooting](#troubleshooting) · [FAQ](#faq) · [Download](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest)
+[Troubleshooting](#troubleshooting) · [FAQ](#faq) · [Download](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest)
 
 </div>
 
@@ -91,7 +91,7 @@ and the Character Motion Importer.
 
 1. Close Garry's Mod.
 2. Download `gmod-native-loader-<version>.zip` from the
-   [latest release](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/releases/latest). You
+   [latest release](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/latest). You
    only need the `-symbols` zip if you are analysing a crash.
 3. Extract it into your Garry's Mod folder, the one that contains `gmod.exe`. To find it, right-click
    Garry's Mod in Steam and choose **Manage → Browse local files**. A typical path is

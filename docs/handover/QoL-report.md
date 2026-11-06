@@ -815,8 +815,8 @@ was created, and this update did not change item visibility or the field install
 The tested loader bundle is `gmod-native-loader-0.10.0+6e427e52.zip`, SHA-256
 `de16eb5fbe6ebec8a922b77cd1a3c5ab2695c97f8bf9aa94cd87c8e7ea9333dc`, in `out/c13-delivery`.
 Its DLL is the tested `95303c86` build. Existing bootstrap versions need the 0.10.0 update.
-CI tracking: [loader main workflow](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/workflows/build.yml)
-and [release package run](https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix/actions/runs/41192435920).
+CI tracking: [loader main workflow](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/workflows/build.yml)
+and [release package run](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/actions/runs/41192435920).
 CI has no NVIDIA GPU; its checks supplement the local rendering sessions.
 
 Owned clients and the dedicated server are closed. The dedicated probe and video registry were

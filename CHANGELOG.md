@@ -6,6 +6,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R20
+
+- **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
+  from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main
+  menu's project link, the Workshop page and the package indexes' origins points at the new name
+  (206 links). Runtime patch 0012's compiled-in fallback text keeps the old name until the runtime is
+  rebuilt; GitHub redirects it. Plan of the round: [R20-plan.md](docs/handover/R20-plan.md).
+
 ### R19
 
 - **The pre-release review's findings fixed; release v0.14.0 with loader 0.14.0** (the user's request;

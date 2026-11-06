@@ -111,8 +111,9 @@ patched copy of GMod managed by RTXLauncher.
    interface data in `companion/i18n/addons` is also GPL-2.0; the package carries its editable catalogs
    and `COPYING` ([ADR 0038](docs/decisions/0038-complete-bundled-interface-translations.md)).
    Third-party code goes in `third_party/<name>/` with its licence file; a part in `packages/` keeps
-   its source's licence beside it. The repository is private: making it public needs a licence
-   review of `packages/` first.
+   its source's licence beside it. The repository is public (the user made it so by 2026-11-06, as
+   https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix): everything in `packages/` is published
+   with it, so a part holds only what may be redistributed.
 
 8. **Parallel milestones stay apart.** Each runs on its own branch in its own git worktree, and only
    touches the paths its brief in [docs/handover/](docs/handover/README.md) assigns. Shared docs

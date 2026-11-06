@@ -65,7 +65,7 @@ for (const [code, catalog] of Object.entries(labels)) {
 const link = all(panel).find(item => item.tag === 'a');
 link.onclick({preventDefault() {}});
 assert.equal(calls[1][0], 'gui.OpenURL( %s )');
-assert.equal(calls[1][1], 'https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix');
+assert.equal(calls[1][1], 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix');
 gScope.InGame = true; tick(); assert.equal(panel.style.display, 'none');
 gScope.InGame = false; window.location.hash = '#/addons/'; tick(); assert.equal(panel.style.display, 'none');
 window.location.hash = '#/'; gScope.Language = 'zh-cn'; tick();

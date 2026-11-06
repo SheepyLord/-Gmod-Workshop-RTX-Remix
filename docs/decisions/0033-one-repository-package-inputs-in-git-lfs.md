@@ -1,7 +1,7 @@
 # 0033: One repository: the RTX package's inputs in packages/ (Git LFS), the runtime as patches
 
 - Status: Accepted 2026-10-30
-- Decided by: the user ("please keep everything to https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix,
+- Decided by: the user ("please keep everything to https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix,
   main branch. This repo is where we organizes everything. Please do a clean up of what we have. Do
   not depend on other repos. If some files are large please consider GitHub lfs. Setup the full build
   workflow"), Claude choosing how

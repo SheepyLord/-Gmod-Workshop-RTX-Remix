@@ -2,6 +2,6 @@ Garry's Mod RTX Remix
 {hotkey} を押すと Remix メニューが開きます。
 
 プロジェクト / 問題の報告：
-https://github.com/SheepyLord/-Gmod-Workshop-RTX-Remix
+https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix
 
 {seconds} 秒後に閉じます。
