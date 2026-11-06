@@ -463,14 +463,14 @@
    "imported": "2026-11-05T22:41:28+00:00"
   },
   "source/Source.md": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\source-docs\\Source.md",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r21-hotloader\\out\\r21b\\stage\\Source.md",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r19-hotloader",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r21-hotloader",
     "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
-    "commit": "1e4cb10d1a765a0d59effab35372db4e6e0a8ce3",
+    "commit": "9e596255c197063624794058d544b9ed5d0bb271",
     "dirty": false
    },
-   "imported": "2026-11-05T22:41:28+00:00"
+   "imported": "2026-11-06T22:22:52+00:00"
   },
   "source/r19-changes.patch": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r19-hotloader\\out\\r19-h\\source-docs\\r19-changes.patch",
@@ -541,6 +541,16 @@
     "dirty": false
    },
    "imported": "2026-11-05T22:49:46+00:00"
+  },
+  "overrides/installation.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r21-hotloader\\out\\r21b\\stage\\installation.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r21-hotloader",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "9e596255c197063624794058d544b9ed5d0bb271",
+    "dirty": false
+   },
+   "imported": "2026-11-06T22:22:52+00:00"
   }
  },
  "files": {
@@ -1281,9 +1291,9 @@
    "stored_sha256": "776efdbd2bbaf1e4caf44c7c573ae28b8b39270e5bd1dbeacb42c758b4b83fd2"
   },
   "overrides/installation.lua": {
-   "size": 45221,
-   "sha256": "1c415bd79d23aa7505cb17dd3b4d18fa5e3d13fe310cbeeb01fcc620ba5f2711",
-   "mtime_ns": 1793255049449096100,
+   "size": 45586,
+   "sha256": "d019a35befe1a83ee6e0b133ec3a6c59472074d87d346531e2bdd7d56bc15c23",
+   "mtime_ns": 1794003672784581200,
    "stored": "plain"
   },
   "source/mmdhl/CMakeLists.txt": {
@@ -3351,9 +3361,9 @@
    "stored": "plain"
   },
   "source/Source.md": {
-   "size": 4460,
-   "sha256": "90d33a7e59709b6a85d3fe5a6f8958e0e51d51fe36dd287b042f5931320bbcad",
-   "mtime_ns": 1793918395421603300,
+   "size": 5588,
+   "sha256": "15224c84300683948d89b195b5ca8bdef7ab929c0fbdc127680e6ff11274eabb",
+   "mtime_ns": 1794003672784581200,
    "stored": "plain"
   },
   "source/staged-changes.patch": {
