@@ -1,5 +1,8 @@
 # R20-F: published-package field QA
 
+The initial stop below is historical. The authorized follow-up is recorded in
+[After the toolgun fix and the 0.15.0 loader](#after-the-toolgun-fix-and-the-0150-loader).
+
 Branch `r20-field`, from `8332e03`; [brief](R20-F-field-qa.md), [shared plan](R20-plan.md).
 **Field sign-off withheld: the live toolgun display is nearly black in the actual field profile.**
 Live QA stopped at the brief's failure boundary. Only this report is committed; scratch drivers
@@ -121,3 +124,49 @@ combat/stain, Physics Blood pool/flow, stock-dupe/icon and heavy-scene timing ch
 acceptance is **open**, despite passing repository checks and clean shutdowns. Q's darker stock
 ragdoll cloud and unisolated historical 4K cause also remain its documented review items; neither
 was retested or resolved here.
+
+## After the toolgun fix and the 0.15.0 loader
+
+Resumed on `r20-field` at **`e94aba0`**, after the manager published [R20-T](R20-T-report.md) and
+the real 0.15.0 release record. The follow-up authorizes replacing **only** the field DLL after
+the old-loader checks, retaining the new loader. Evidence is under this worktree's
+**`out/r20f/afterfix/`**, with the release ZIP/candidate under `out/r20f/release/`.
+
+The new publication is **`0.0.0-dev.20261106175032+169e5e26`**, **1,955,100,824 bytes**,
+SHA-256 **`eaeffd3a26f56bc245e0e9de42ebc4d36ba6d8250ec75e6b172a6360aef30efe`**.
+Steam fetched it during the first start; the accepted old-loader process deployed **generation
+67** and activated it with **loader 0.14.0**. The runtime remains the exact R20 final binary
+`00124bf6009ee6acb2b2ffbc64d8a724aeb0ed700fa88b0dc4dbb7a8720b05a1`.
+The actual deployed `garrysmod/addons/nativeloader/resource/loader-release.json` says **0.15.0**
+and names the real release URL. `deployment-verified.json` and `downloaded-package.json` retain
+these checks.
+
+| Follow-up check | Result | Evidence under out/r20f/afterfix |
+|---|---|---|
+| Before: Steam files, settings, standalone add-ons and dismissal preferences | **Pass.** Fresh independent backup/inventory and depot verification; no existing loader-update ignore file or either menu dismissal cookie. | `before.json`, `before/`, `verify-before.json`, `preferences-before.json` |
+| Published package / actual runtime / release record | **Pass.** Exact downloaded archive hash, new deployed version and unchanged final runtime; real 0.15.0 record. | `published.json`, `downloaded-package.json`, `deployment-verified.json`, `04-reminder-night/status.json` |
+| 0.14.0 companion reminder | **Pass in the accepted map session.** One actual reminder, current/latest 0.14.0/0.15.0, one observed **Later** click; no ignore preference written. | `04-reminder-night/shot-01-update_reminder_014.png`, `console.log`: `R20F2_REMINDER_*`, `R20F2_LATER_CLICK` |
+| Toolgun at the retained field night | **Pass.** Bright, readable, live 512x512 display in the same inspect view, real ready DLSS/DLSS-G 1/1; frames **2,293 to 2,593**, backlight 1 / dim 0, clock approximately **20.54-20.66**. No corner-preview draw, brightness gain or graphics/sky change. | `04-reminder-night/shot-02-fixed_night_toolgun_first.png`, `shot-03-fixed_night_toolgun_second.png`, `console.log`; `04-reminder-night-receipt.json` |
+| Citizen/ragdoll pistol and shotgun; stains; Physics Blood; stock dupe; combined frame time | Running; no acceptance claimed yet. | `05-effects-dupe/`, task-local probes |
+| Verified release ZIP and candidate | **Pass, staged only.** ZIP SHA-256 matches GitHub's release-asset digest. Candidate DLL is 1,662,464 bytes, SHA-256 `0999cd017515a37de8ec86112f104f54ad8761baf766a13a4b13fc9f6c2d8418`. | `release-metadata.json`, `release-verification.json`; ZIP in `../release/` |
+| Manual loader update, 0.15.0 menu/pause warnings, no reminder | Pending old-loader acceptance. | Receipts to follow |
+| Final preservation/depot audit and Release gate | Pending. Initial Release gate passes all 27 CTests and 710 Python tests. | `release-initial.log`; final receipts to follow |
+
+The ZIP digest supplied by GitHub is
+**`7f0258207d82aa754a941614b592eeaff1d3a815dd8b58c760ef01fa41f391e7`** for
+`gmod-native-loader-0.15.0+9abffb71.zip` (**753,836 bytes**). Only the DLL is extracted into
+the evidence candidate directory; the bundled default config is not used.
+
+The first fetch start is **excluded from acceptance**: its scratch command named a nonexistent
+probe path. This was caught during the run; a separate settings-back execution succeeded, then
+the standard harness's exception cleanup ended its owned game. Two earlier rescue attempts
+declined input while the Workshop update/map load had the window busy; a later quit request also
+raced the map load. `03-fetch-driver.log`, `03-fetch-rescue.json` and `03-fetch-recovery.json`
+retain the exact distinction. The game had written an intermediate config without its bindings;
+no settings were manually overwritten to conceal that. Subsequent drivers use the fresh original
+config backup as their settings-back source. The accepted **04** session quit normally and
+`04-config-restored.json` verifies **zero changed, added or removed settings**, bindings included.
+Its client.vdf was restored byte for byte and its lock released. No product failure is attributed
+to the mistyped QA path. The launcher now checks fixture existence before acquiring the lock.
+
+Follow-up completion remains in progress; no product code or package input is edited here.
