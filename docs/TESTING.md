@@ -2,6 +2,11 @@
 
 ## R20-C: screen, owned blood PBR and client impacts
 
+Final evidence: `out/r20c/final-release.log` (27 CTests and 689 Python tests; two existing skips),
+`final-checks.json` (all exit codes 0), `acceptance.json` (82 accepted combat screenshots and hard
+budget/panel assertions), plus the [R20-C report](handover/R20-C-report.md). Corrected multiplayer
+runs verify the PoC against its own October 26 depot manifests, rather than the newer field build.
+
 `tools/tests/test_r20_blood.py` runs fourteen production-Lua scenarios through LuaJIT: rolling budgets,
 screen startup idempotence, standalone/packaged precedence, server-preloaded legacy cleanup, absent
 parts, moved panels, stock forwarding/colours/LOD, sustained particle/stain saturation and the blood

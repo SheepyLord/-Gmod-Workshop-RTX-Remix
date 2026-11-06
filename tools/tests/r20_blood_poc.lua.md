@@ -1,5 +1,9 @@
 # r20_blood_poc.lua
 
+The diagnostic stores GetBloodColor's result before tostring: some ragdolls return zero Lua
+results. Earlier accepted combat runs retain three logging-only errors at this line, after their
+targets were fully spawned/aimed; shot, effect, panel, budget and restoration evidence is intact.
+
 The runner prefixes R20C_QA_MODE. A probe mode runs only the material/HUD comparison and leaves
 90 seconds for diagnostics; ordinary modes run the combat matrix. Weapons aim at a chest bone
 from closer range with view punch reset, so thin ragdoll collision meshes are actually hit. Extra

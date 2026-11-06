@@ -37,7 +37,8 @@ if SERVER then
             end
         end
         p:SetEyeAngles((aim_point(target) - p:EyePos()):Angle())
-        print("R20C_TARGET " .. class .. " " .. target:EntIndex() .. " blood=" .. tostring(target:GetBloodColor()))
+        local blood_colour=target:GetBloodColor() -- ragdolls can return zero Lua results, not one nil result
+        print("R20C_TARGET " .. class .. " " .. target:EntIndex() .. " blood=" .. tostring(blood_colour))
     end)
     concommand.Add("r20c_resume", function()
         game.ConsoleCommand("host_timescale 1\n")

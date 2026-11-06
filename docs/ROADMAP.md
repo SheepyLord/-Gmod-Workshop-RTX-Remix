@@ -1,8 +1,11 @@
 # Roadmap
 
-R20-C (item 48) is **in progress** on `r20-blood`: bundle Dynamic Toolgun Screen and only the owned
-Blood Overhaul RTX patterns/PBR, move their settings into the RTX tab, and build bounded client blood
-impacts ([brief](handover/R20-C-blood-and-toolgun.md), ADRs [0118](decisions/0118-bundled-toolgun-screen-and-owned-blood-patterns.md)
+R20-C (item 48) is **done** on `r20-blood`: Dynamic Toolgun Screen and only the owned Blood Overhaul
+RTX patterns/PBR, settings in the RTX tab, bounded client blood impacts including ragdolls, and
+single-player/RTX-on/off/legacy-copy multiplayer evidence. Release checks pass (27 CTests,
+689 Python tests; two existing skips), matching PoC depots/restoration verified; integration and
+field release QA remain the manager's steps ([report](handover/R20-C-report.md),
+[brief](handover/R20-C-blood-and-toolgun.md), ADRs [0118](decisions/0118-bundled-toolgun-screen-and-owned-blood-patterns.md)
 and [0119](decisions/0119-client-blood-impacts-with-bounded-spatter.md)).
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
