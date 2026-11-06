@@ -4,7 +4,8 @@ The redistributable part of SheepyLord's Blood Overhaul RTX, plus R20-C's new cl
 Read-only source: `H:\BACKUP_20260815\Modding\ipg\PBR_map\blood_overhaul_rtx`.
 The owner's original README explicitly distinguishes the new patterns from Crunchy's originals.
 `tools/prepare_blood.py` makes an import-ready tree from that project. Builds thereafter use only
-this repository. The owned code/assets use this repository's MIT licence at the owner's request.
+this repository. The owned code and assets are the user's own project, shipped under this
+repository's MIT licence.
 Credit Crunchy's [2022 Blood Overhaul](https://steamcommunity.com/sharedfiles/filedetails/?id=2683396098)
 for the base/style; subscribing is optional. **The eighteen new patterns were made with an AI image
 model**, using Crunchy's textures as style references. No reference image is distributed. The

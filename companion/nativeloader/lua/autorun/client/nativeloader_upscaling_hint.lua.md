@@ -17,9 +17,13 @@ vendor id (`4318`) and `non_nvidia = false`. Only recognized RTX 20/30/40/50 mod
 DLSS-G is suggested only for an RTX 40/50 with a positive live capability flag. RTX 20/30 can receive
 FSR 3 advice when its live capability flag is true. A file-only getter is never consulted.
 
-## Live snapshot contract and current limitation
+## Live snapshot contract
 
-The optional native `RemixConfig.GetUpscalingState()` must return a fresh, atomic table:
+The native `RemixConfig.GetUpscalingState()` returns a fresh, atomic table. Since R20-E the fixes'
+module provides it (sixth GPL patch, `packages/fixes/licenses/oversized-skinning/upscaling-state`),
+reading the snapshot runtime patch 0040 publishes as `rtx.runtime.upscalingState`
+([ADR 0123](../../../../../docs/decisions/0123-live-upscaling-readback.md)); with an older runtime
+it returns `nil` and the hint stays silent:
 
 | Field | Meaning |
 |---|---|
@@ -31,15 +35,12 @@ The optional native `RemixConfig.GetUpscalingState()` must return a fresh, atomi
 | `fsr_frame_generation_supported` | Boolean true only when FSR 3 frame generation is usable |
 
 `nil`, a raised error, `ready ~= true`, unknown enum values and absent capability flags never
-produce advice about the corresponding feature. **The currently packaged native module does not
-provide this function.** Its `GetConfigVariable` reads only `rtx.conf`, and the runtime's startup
-log precedes device-dependent graphics presets. Production hints therefore remain silent until
-that native contract is implemented outside R20-B's assigned Lua/docs/test paths. An injected
-snapshot in QA demonstrates the consumer, not a live runtime readout.
+produce advice about the corresponding feature. `GetConfigVariable` is never used for this: it reads
+only `rtx.conf`, and the runtime's startup log precedes device-dependent graphics presets.
 
-Readiness also requires internally consistent effective state: the runtime UI adopts legacy
-`rtx.dlfg.enable` / `rtx.fsrfg.enable` into its selector. A provider must resolve that state or return
-not ready, rather than report frame generation off from a zero selector while a backend is enabled.
+In this runtime `rtx.frameGenerationType` is the control that enables frame generation: its change
+handler drives `rtx.dlfg.enable` / `rtx.fsrfg.enable` (`rtx_options.h`, `FrameGenerationType` and
+`fork_hooks::applyFrameGenerationType`), so the published selector is the effective state.
 
 ## Lifetime and side effects
 
