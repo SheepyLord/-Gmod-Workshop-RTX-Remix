@@ -6,6 +6,10 @@
   (R20-A, item 50; accepted 2026-11-06).
 - [0123: live effective upscaling readback](0123-live-upscaling-readback.md) (R20-E): runtime-owned
   atomic game-value snapshot, defensive native Lua getter and explicit pending-patch provenance.
+- [0126: A record of what this repository's own modules were built from](0126-a-record-of-what-this-repositorys-modules-were-built-from.md)
+  (after R20-Q; accepted 2026-11-06): `pins.json` `repository_builds` declares each module's sources and
+  records them with the stored copy; `check_repo.py` fails while they differ; `tools/ci/repo_builds.py
+  refresh` builds, compares and imports only another image.
 
 One file per decision, numbered in order: `NNNN-short-title.md`. An accepted record is never
 rewritten; a later record supersedes it and both say so. Add one whenever a choice would surprise

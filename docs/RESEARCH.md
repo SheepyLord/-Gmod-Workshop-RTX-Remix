@@ -5770,3 +5770,33 @@ is documented, rather than altering game shaders or persistent materials.
   match at noon/night; the sampled white panel is RGB 255 in both RT and displayed screen, or
   128 with the add-on's own half backlight. Three blue/white/green patches are measured in
   `out/r20t/pixel-measurements.json` (maximum RT-to-screen filtered-channel difference 3.8).
+
+## After R20: what two MSVC links of the same sources differ in (2026-11-06)
+
+Measured for [ADR 0126](decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)
+with the Release preset, MSVC 19.44.35228.0, Ninja 1.12.1 (VS 2022 Build Tools):
+
+- **The PDB path's length moves the data after it.** The CodeView record (`RSDS`, the PDB's GUID, age
+  and absolute path) lies in the middle of `.rdata`, before the VC_FEATURE and POGO debug data and other
+  constants. The glass module built in `.claude\worktrees\heuristic-yalow-28cab7` (PDB path 17
+  characters longer than the stored module's `out\worktrees\r19-glass`) differed from it in 69,147
+  bytes in 4,802 runs: the export directory's address, `.rdata`'s size and RIP-relative displacements
+  all through `.text`. The client module against `r20-qa`: 23,929 bytes in 1,483 runs.
+- **With a path of the same length** (`out\worktrees\rbv-cl` for `r20-qa`, `rbv-glass` for
+  `r19-glass`, both at commit `a5a3ff1`), the client module differed from the stored one only in 32
+  bytes: the file header's time stamp, the three debug directory entries' time stamps, the PDB GUID
+  (age 1 in both) and the path's characters. The glass module also differed in the PDB age (2 in the
+  stored module, linked twice into one PDB; 1 in the new build) and in five 8-character
+  anonymous-namespace names in RTTI type names in `.data` (`.?AVBroadLayers@?A0x10cb2338@glass@nl@@`
+  against `?A0xe1781ab7`): MSVC derives them from the source file's path. 71 bytes in 11 runs.
+- **Neither module contains the loader's version**: `nl::version()` (`loader/core/src/version.cpp`) is
+  not linked into the client module, and no `0.15.0` string is in either DLL. The glass module's only
+  source change between its build (`baba026d`, R19-G) and `a5a3ff1` was that version in the root
+  `CMakeLists.txt`.
+- **What Ninja knows of a build**: `ninja -t inputs <dll>` lists the sources of the module and of every
+  library it links (with their objects and the phony order targets); `ninja -t deps` lists each object's
+  headers from MSVC's `/showIncludes`, without the compiler's and the Windows SDK's. The client module
+  read 83 files (all under `loader/client`, `loader/core`, `third_party/gmod`, `third_party/lzma`), the
+  glass module 443 (`glass/native`, `third_party/gmod`, `third_party/jolt`, `third_party/lzma`) besides
+  the generated headers in the build folder (`bootstrap_data.h`, Jolt's precompiled header). `ninja -n
+  <target>` prints `ninja: no work to do.` when the target is current.

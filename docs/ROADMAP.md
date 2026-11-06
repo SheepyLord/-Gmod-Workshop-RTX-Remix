@@ -14,6 +14,10 @@ package ([R20-F](handover/R20-F-report.md)) found the toolgun's display nearly b
 HUD material that wrote depth (older than R20); [R20-T](handover/R20-T-report.md) fixed it. The
 package GitHub's workflow built for the release commit (run 42265333187) is on item 3829070317 as
 0.0.0-dev.20261106182636+169e5e26; the field check then passed every item, and the field runs loader 0.15.0.
+After R20, its open item on modules built from this repository is **done**: `tools\check_repo.py` fails
+while the client or glass module stored in `packages/` is not what its recorded sources build, and
+`tools/ci/repo_builds.py refresh` rebuilds, compares and imports only another image
+([ADR 0126](decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)).
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader
