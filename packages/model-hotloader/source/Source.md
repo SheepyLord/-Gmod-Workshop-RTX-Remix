@@ -48,6 +48,21 @@ a local machine. `lib_coacd.dll` is CoACD's own wheel build, which the workflow 
 - **F-03:** `scripts/bootstrap.py` fetches the locked commits with git instead of GitHub's archives.
 - The C++ tests for these, and `THIRD_PARTY.md`'s sentence on the bootstrap.
 
+## Lua installation override (R21-B)
+
+`../overrides/installation.lua` replaces the add-on's `mmdhl/installation.lua` through
+`tools/workshop.json`'s `--addon-file`; it originated in the Vulkan repository and carries this
+repository's local policy. R21-B (ADR 0125) keeps game-build findings only in
+`status.compatibility`, outside installation warnings and problem counts. Neither the banner nor
+the notice asks players to dismiss an unverified build, a failed or unavailable check, or native
+interface/slot/class findings. The installation window omits these findings too; Copy diagnostics
+still includes the report. One plain console line in each realm's Lua session names unverified
+libraries and findings, after pending libraries settle or reach the retry limit; Recheck does not
+repeat it. The native source, binaries, guards and feature gating are unchanged. Missing libraries
+still wait, and every other warning remains. The user accepts current and future game updates and
+will fix actual failures as they occur; R20's separate new-build validation/evidence-refresh task
+is dropped. The origin repository is untouched.
+
 ## Build
 
 ```powershell

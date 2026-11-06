@@ -10,7 +10,7 @@ end
 M.Decode=decode
 -- Model Hotloader always tries its native files; it never refuses them. An issue without
 -- warning is a problem: something that keeps a feature off (the module did not load, the
--- worker did not start, the game build failed its compatibility check). Every other issue
+-- worker did not start). Game-build findings are diagnostics only (ADR 0125). Every other issue
 -- is a warning that disables nothing, above all files that match no release this addon
 -- knows: a test build, a newer release, modified, damaged or mixed files.
 local function issue(status,code,component,message,feature)
@@ -459,6 +459,20 @@ end
 local function removeIssues(feature)
  for i=#status.issues,1,-1 do if status.issues[i].feature==feature then table.remove(status.issues,i) end end
 end
+local compatibilityLogged
+-- One plain diagnostic per realm's Lua session, after pending libraries have loaded (or
+-- the retry limit). Recheck retains the raw report, but never repeats the console line.
+local function logCompatibility(report,failure)
+ if compatibilityLogged then return end
+ compatibilityLogged=true
+ local unverified,findings={},{}
+ for _,v in ipairs(report and report.libraries or {}) do if v.match=='unverified' then unverified[#unverified+1]=tostring(v.name) end end
+ for _,v in ipairs(report and report.issues or {}) do findings[#findings+1]=tostring(v.code)..' ('..tostring(v.component)..'): '..tostring(v.message) end
+ if failure then findings[#findings+1]=failure end
+ if report and report.pending then findings[#findings+1]='game libraries still pending' end
+ local line='Game compatibility: unverified libraries: '..(#unverified>0 and table.concat(unverified,', ') or 'none')..'; findings: '..(#findings>0 and table.concat(findings,'; ') or 'none')
+ MsgN('[Model Hotloader / '..status.realm..'] '..(line:gsub('%c',' ')))
+end
 function M.RefreshGameCompatibility()
  if not rawNative or not status.features.core then return end
  local feature=SERVER and 'physics' or 'rendering'
@@ -466,7 +480,7 @@ function M.RefreshGameCompatibility()
  -- A module from before this addon checked game builds relies on its own guards.
  if type(rawNative.CheckCompatibility)~='function' then
   status.features[feature]=true
-  warn(status,'game_unchecked','game',L('install.warning.game_unchecked',{recommended=tostring(policy.recommended)}),feature)
+  logCompatibility(nil,'native module has no game-build check')
   notifyChanged()
   return
  end
@@ -474,21 +488,14 @@ function M.RefreshGameCompatibility()
  local report=ok and decode(value,err)
  -- Only a library the game has not loaded yet keeps the feature off for now (the binary's
  -- renderer would keep that absence for the session). A game build the binary's interface,
- -- slot or class checks reject is a warning: Model Hotloader tries anyway, and the same
+ -- slot or class checks reject is diagnostic only: Model Hotloader tries anyway, and the same
  -- checks still guard every engine call the binary makes (a refused call fails cleanly).
  status.features[feature]=not (report and report.pending)
  status.compatibility=report
- if not report then warn(status,'game_check_failed','game',L('install.warning.game_incompatible',{message=tostring(err or value)}),feature)
- else
-  for _,v in ipairs(report.issues or {}) do warn(status,v.code,v.component,L('install.warning.game_incompatible',{message=tostring(v.message)}),feature) end
-  -- Game libraries change with Garry's Mod updates. A build no profile describes
-  -- ("unverified") still runs; the player gets a warning that disables nothing and
-  -- that Dismiss hides. From 2.1.0-native.7 the native module also follows the
-  -- default branch's IAppSystem layout (four fewer methods, every later slot lower).
-  local unverified={}
-  for _,v in ipairs(report.libraries or {}) do if v.match=='unverified' then unverified[#unverified+1]=tostring(v.name) end end
-  if #unverified>0 then status.issues[#status.issues+1]={code='game_unverified',component='game',message=L('install.warning.game_untested',{libraries=table.concat(unverified,', ')}),feature=feature,warning=true} end
- end
+ -- The user accepts current and future game updates (R21-B, ADR 0125). Keep all
+ -- findings in compatibility for Copy diagnostics, outside issues and the UI counts.
+ if not report then logCompatibility(nil,'check failed: '..tostring(err or value))
+ elseif not report.pending then logCompatibility(report) end
  notifyChanged()
  return report and report.pending
 end
@@ -662,7 +669,7 @@ function M.CheckInstallation(recheck)
  end
  if type(rawNative.ConfigureCompatibility)=='function' then
   -- The profiles describe Windows builds of the game; Linux binaries take their own ABI
-  -- family, with no profiles yet: every Linux game build is unverified (a warning).
+  -- family, with no profiles yet: every Linux game build is unverified (diagnostic only).
   local configured,configError,without
   if status.platform=='win64' then configured,configError,without=configureCompatibility(include('mmdhl/compatibility_policy.lua'))
   else configured,configError=decode(rawNative.ConfigureCompatibility('{"schema":1,"family":"source-'..tostring(status.platform)..'-v1","libraries":[]}')) end
@@ -685,6 +692,7 @@ hook.Add('InitPostEntity','MMDHL.InstallationCompatibility',function()
    elseif attempts==20 then
     -- Still not loaded: tried anyway, as any other game check.
     local feature=SERVER and 'physics' or 'rendering'
+    logCompatibility(status.compatibility)
     warn(status,'game_not_ready','game',L'install.error.game_not_ready',feature) status.features[feature]=true notifyChanged()
    end
   end)
