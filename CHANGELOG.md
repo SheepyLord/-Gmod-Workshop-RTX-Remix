@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Readable dupe thumbnails:** suppressed-lighting raster previews use a bounded, restored unlit
+  base-map override, with stable cache identities and late-helper handling, so saved props show
+  their textures as well as saving without the camera underflow. Complex thumbnails remain a
+  flat approximation; world materials and dupe data are unchanged.
+
 - **Native effect rendering:** offscreen alpha canvases keep their native blend/write operations,
   premultiplied transmission filters no longer draw opaque black backgrounds, and changing effect
   alpha avoids static opacity micromaps. Camera tracking distinguishes native 2D, 3D, 3D2D and

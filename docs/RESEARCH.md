@@ -5517,3 +5517,13 @@ transmission combinations to the native destination factor; authored MDL blend v
 The PoC matches its original cached depot manifests exactly: 7,279,873,012 verified bytes and zero
 missing/size/hash/reparse/unverified entries (10-comparison/stock-verification.json). It predates
 the field's current manifests, whose comparison yields 46 differences. No depot file was rewritten.
+
+R20-D preview follow-up: the camera fix removed native errors but left lit raster thumbnails black.
+Lighting-mode/depth experiments did not restore them; an UnlitGeneric base-map studio override
+was verified live. Stock helpers reset suppression between draws, so callback-local preview intent
+must survive that reset. Native Material lookups can produce transient Lua wrappers: weak-key cache
+misses consumed 256 material names during outline passes. Stable name/texture keys survived 129
+live draws with eight identities and 300 synthetic draws without budget exhaustion. The accepted
+colored JPEG is in out/r20d/21-preview; entity submaterials never change. Only the representative
+map is now looked up, avoiding unused skins. The remaining multi-material preview approximation
+is documented, rather than altering game shaders or persistent materials.

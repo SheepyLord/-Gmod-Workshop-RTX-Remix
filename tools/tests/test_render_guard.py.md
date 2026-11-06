@@ -53,3 +53,17 @@ EndOrthoView have separate native counters. Generic Start's type selects its fam
 The harness models independent modes, checks generic 2D cleanup and optional orthographic scopes,
 and refuses wrong-mode closers without a native call. Native color-material helpers also clear
 stale inert shader state; forwarding through the observer preserves caller policy.
+
+R20-D raster preview compatibility: suppressed-lighting PostRender model previews use bounded,
+cached UnlitGeneric base-texture studio overrides (256 materials, 32 slots) and restore every
+owned override on success/error. Entity submaterial strings are untouched. Explicit caller
+material overrides retain precedence. The wrapper catches late render.Model definitions and
+startup replacements; suppression intent is retained for the protected callback because stock
+helpers can reset the flag between draws. Early/late definitions, multiple parts, caller overrides,
+returns and exception cleanup are exercised by preview_materials / preview_late.
+
+Preview cache follow-up: use stable material/texture names rather than weak Lua userdata keys;
+native lookups can return transient wrappers. The regression repeats 300 preview draws with new
+wrappers without exhausting the material budget. The DX7 fallback uses a representative base map
+through the global studio override; entity submaterials are untouched and explicit indexed/global
+caller overrides retain precedence. Multi-material/custom-shader thumbnails are approximate.

@@ -62,3 +62,22 @@ The transient legacy-effect category therefore disables opacity micromaps for th
 this filter mode is independently ineligible for micromaps. Primary, visibility and indirect
 rays all use the same opacity evaluator. A shared CPU/GPU helper is checked against the native
 destination factor at sixteen coverage/transmission combinations, plus saturation boundaries.
+
+## Raster model preview materials
+
+Removing the camera underflow alone leaves the saved icon's lit-model pass black under the DX7
+RTX session. A live experiment found that lighting modes and depth overrides did not fix it,
+while a plain UnlitGeneric material retaining the model's base texture did. Keep that fallback
+inside suppressed-lighting PostRender previews, using studio overrides rather than mutating
+entities. Preserve explicit caller overrides and restore original override state on normal return or
+error. The fallback is a flat representative-map thumbnail; authored alpha/cull/shader fidelity is
+not promised for this preview, and world materials are unchanged. Bound the material cache and number of slots. Catch late helper definitions
+at startup and retain a callback's suppression request when a helper resets the global flag.
+This is a flat texture preview, not a change to world/path-traced materials or saved configurations.
+
+Preview implementation follow-up: weak Lua material keys were not stable across native lookups and
+spent the material budget during the many outline draws. Cache by stable material/texture identity.
+The DX7 studio path still lights indexed/submaterial overrides black, so use a representative base
+map via the working global unlit override. Existing caller overrides are left alone; original
+entity submaterials never change. This prioritizes a readable thumbnail over exact multi-material
+or custom-shader fidelity, and remains confined to preview callbacks.

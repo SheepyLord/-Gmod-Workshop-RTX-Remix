@@ -1,5 +1,10 @@
 # Roadmap
 
+R20-D is **done** on `r20-render`: native camera closers and colored dupe previews, automatic
+NoSave Source effect categories, correct alpha canvases and premultiplied filters; runtime
+patches 0034/0035, one final DLL import, locked PoC comparisons and the Release gate
+([report](handover/R20-D-report.md)). The earlier in-progress entry below records its start.
+
 R20-D (items 44 and 51) is **in progress** on `r20-render`: camera alias bookkeeping,
 then automatic particle/decal compatibility and locked PoC comparisons ([brief](handover/R20-D-render-compat.md)).
 

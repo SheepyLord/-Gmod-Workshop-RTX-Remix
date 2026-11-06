@@ -2213,3 +2213,15 @@ The rules were also run over the field library's 6,684 parts (read only, `out/r1
 `r15` worktree): they hide 92 parts, all of them shadows. PoC sessions use the branch's own package
 (`tools\build_package.py`, then `allow.local`), with characters copied from the read-only field cache
 and removed afterwards; see [the R15 report](handover/R15-report.md).
+
+## R20-D accepted PoC and final gate receipts
+
+The R20-D worktree's out/r20d/12-final holds matched before/after/RTX-off effect captures and
+own console logs; 11-filter reaches 420 droplets and confirms canvas alpha 205 (baseline 255).
+21-preview holds the readable colored dupe JPEG from the production guard and its restored
+snapshot/stock verification. The guard harness also checks late model-helper definitions,
+transient material wrappers across 300 draws, preview caller overrides and error cleanup.
+The runtime's rebuilt 35 ordinary unit cases pass; its existing threading stress test needed
+360 seconds and passed at 293.28 seconds. Repository CTests run serially in the final local gate
+(same 27 tests, unchanged assertions) to avoid concurrent fixture startup timeouts. Full evidence
+and remaining rendering limits are in [R20-D-report.md](handover/R20-D-report.md).

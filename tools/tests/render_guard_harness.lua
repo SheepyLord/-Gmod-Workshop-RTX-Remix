@@ -244,6 +244,34 @@ cvars={AddChangeCallback=function(name,fn,id)changes[name]={fn=fn,id=id}end}
 local postCalls=0
 function DrawBloom(...) postCalls=postCalls+1 return "bloom",... end
 halo={Render=function(...)postCalls=postCalls+1 return "halo",... end}
+local previewCalls, previewExpected, previewSlots, previewOverride, deferredPreview = 0, false, {}, nil, nil
+if scenario=="preview_materials" or scenario=="preview_late" then
+    for _,name in ipairs({"preview_a","preview_b","user_choice"}) do
+        local tex=texture(name.."_texture",128,128) tex.IsError=function()return false end
+        local mat=material("VertexLitGeneric_DX6",{["$basetexture"]=tex})
+        mat.GetName=function()return name end
+        mat.GetInt=function(_,key)return key=="$flags" and 2097152 or 0 end
+        nativeMaterials[name]=mat
+    end
+    render.SuppressEngineLighting=function()end
+    render.MaterialOverrideByIndex=function(index,mat)if index==nil then previewSlots={} else previewSlots[index]=mat end end
+    render.MaterialOverride=function(mat)previewOverride=mat return mat end
+    render.Model=function(data,entity,extra)
+        previewCalls=previewCalls+1
+        if previewExpected then
+            assert(previewOverride and previewOverride:GetShader()=="UnlitGeneric")
+        else eq(entity.subs[0],"")eq(entity.subs[1],"user_choice") end
+        if data.fail then error("preview failure") end
+        render.SuppressEngineLighting(false) -- the stock render.Model helper resets this after a draw
+        return nil,"model",extra
+    end
+    local originalMaterialLookup=Material
+    Material=function(name,...)
+        local original=originalMaterialLookup(name,...)
+        return setmetatable({}, {__index=original}) -- native lookups can expose fresh Lua userdata wrappers
+    end
+    if scenario=="preview_late" then deferredPreview=render.Model render.Model=nil render.SuppressEngineLighting=nil end
+end
 local beforeCall,beforeAdd,beforeRT,beforeMaterial=hook.Call,hook.Add,GetRenderTargetEx,CreateMaterial
 local beforeLoad=Material
 local beforeTimer,beforeCvars=timer.Create,cvars.AddChangeCallback
@@ -485,6 +513,44 @@ elseif scenario=="shaders" then
     denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,1,"depth getter is legal; rebuild is inert")
     render.SetMaterial(Material("normal")) render.MaterialOverride(nil) render.DrawScreenQuad()
     eq(quadCalls,1)
+elseif scenario=="preview_materials" or scenario=="preview_late" then
+    if deferredPreview then
+        render.Model=deferredPreview render.SuppressEngineLighting=function()end
+        hook.Call("Initialize")
+    end
+    local entity={subs={[0]="",[1]="user_choice"},
+        GetMaterials=function()return {"preview_a","preview_b"}end,
+        GetSubMaterial=function(self,index)return self.subs[index]end,
+        SetSubMaterial=function(self,index,value)self.subs[index]=value end}
+    local function restored()eq(entity.subs[0],"")eq(entity.subs[1],"user_choice")eq(previewSlots[0],nil)eq(previewSlots[1],nil)end
+    render.SuppressEngineLighting(true)
+    render.Model({},entity,7) restored() -- outside a protected preview
+    hook.Add("HUDPaint","normal",function()render.Model({},entity,7)end)hook.Call("HUDPaint")restored()
+    hook.Add("PostRender","preview",function()
+        render.SuppressEngineLighting(true)
+        local a,b,c=render.Model({},entity,7)eq(a,nil)eq(b,"model")eq(c,7)
+        local d,e,f=render.Model({},entity,8)eq(d,nil)eq(e,"model")eq(f,8)
+        for i=1,300 do render.Model({},entity,i) end
+        eq(guard.model_preview.materials,1,"preview cache counts used identities, not transient Lua wrappers or unused skins")
+        restored()
+    end)
+    previewExpected=true
+    hook.Call("PostRender")restored()eq(#guard.errors,0)
+    local savedModel=render.Model
+    render.Model=function(...)return savedModel(...)end
+    hook.Call("InitPostEntity")hook.Call("PostRender")restored()eq(#guard.errors,0)
+    entity.GetMaterials=function()return {"preview_a"}end
+    hook.Call("PostRender")restored()eq(previewOverride,nil)eq(#guard.errors,0)
+    entity.GetMaterials=function()return {"preview_a","preview_b"}end
+    previewExpected=false
+    render.MaterialOverride(material("UnlitGeneric"))hook.Call("PostRender")restored()
+    eq(#guard.errors,0)eq(#errorReports,0)
+    hook.Remove("PostRender","preview")render.MaterialOverride(nil)
+    hook.Add("PostRender","failure",function()render.SuppressEngineLighting(true)previewExpected=true render.Model({fail=true},entity)end)
+    hook.Call("PostRender")restored()eq(#guard.errors,1)eq(#guard.cleanup_errors,0)
+    hook.Remove("PostRender","failure")previewExpected=false
+    render.SuppressEngineLighting(false)
+    hook.Add("PostRender","lit",function()render.Model({},entity,7)end)hook.Call("PostRender")restored()
 elseif scenario=="effect_observer" then
     util = {}
     assert(loadfile((source:gsub("_nativeloader_guard%.lua$","_nativeloader_effect_categories.lua"))))()

@@ -1057,6 +1057,7 @@ for _, name in ipairs({"SetMaterial", "MaterialOverride", "BrushMaterialOverride
             local denied = on and (policy.inertMaterials[mat] or
                 (not policy.bundled(source) and (policy.effect(source) or policy.incompatibleMaterial(mat))))
             if name == "SetMaterial" then policy.boundInert = denied end
+            if name == "MaterialOverride" and not denied then policy.modelOverride = mat end
             if denied then
                 reject("render." .. name, "unsupported RTX shader draw", source)
                 if name == "SetMaterial" then return original(policy.inertMaterial(), ...) end
@@ -1403,6 +1404,97 @@ local function sourceOf(f)
     if not source then source = functionSource(f.fn) f.source = source end
     return source
 end
+-- PostRender's suppressed-lighting previews need a raster-safe material after RTX injection.
+-- Studio overrides preserve the caller's entity and its exact submaterial strings.
+do
+    local installedModel, installedSuppress
+    state.model_preview = {installations = 0, draws = 0}
+    local override, byIndex = nativeRender.MaterialOverride, nativeRender.MaterialOverrideByIndex
+    local materials, count, indexed = {}, 0, {}
+    local suppressed = false
+    if byIndex then
+        render.MaterialOverrideByIndex = function(index, mat, ...)
+            if active() and (policy.inertMaterials[mat] or policy.effect(caller()) or
+                (not policy.bundled(caller()) and policy.incompatibleMaterial(mat))) then
+                reject("render.MaterialOverrideByIndex", "unsupported RTX shader draw", caller()) return
+            end
+            local result = pack(byIndex(index, mat, ...))
+            if index == nil then indexed = {} else indexed[index] = mat end
+            return unpack(result, 1, result.n)
+        end
+    end
+    local function previewMaterial(original)
+        if not original or original:IsError() then return end
+        local tex = original:GetTexture("$basetexture")
+        if not tex or tex:IsError() then return end
+        local texture, flags = tex:GetName(), original:GetInt("$flags") or 0
+        local key = original:GetName() .. "\0" .. texture .. "\0" .. flags
+        local cached = materials[key]
+        if cached then return cached.material end
+        if count >= 256 then return end
+        count = count + 1
+        local params = {["$basetexture"] = texture}
+        local mat = CreateMaterial("_nativeloader_model_preview_v1_" .. count, "UnlitGeneric", params)
+        materials[key] = {material = mat}
+        state.model_preview.materials = count
+        return mat
+    end
+    local function installPreview()
+        if render.SuppressEngineLighting and render.SuppressEngineLighting ~= installedSuppress then
+            local suppress = render.SuppressEngineLighting
+            installedSuppress = function(on, ...)
+                suppressed = on and true or false
+                if on and frame then frame.previewSuppressed = true end
+                return suppress(on, ...)
+            end
+            render.SuppressEngineLighting = installedSuppress
+        end
+        local model = render.Model
+        if not model or model == installedModel or not override then return end
+        state.model_preview.installations = state.model_preview.installations + 1
+        installedModel = function(data, entity, ...)
+            state.model_preview.lastEvent = frame and frame.event or "none"
+            state.model_preview.suppressed = suppressed
+            state.model_preview.requested = frame and frame.previewSuppressed or false
+            state.model_preview.overridden = policy.modelOverride ~= nil
+            if policy.previewBusy or not (active() and frame and frame.event == "PostRender" and
+                (suppressed or frame.previewSuppressed) and
+                policy.modelOverride == nil and entity and entity.GetMaterials and entity.GetSubMaterial) then
+                return model(data, entity, ...)
+            end
+            local parts, changes = entity:GetMaterials(), {}
+            if next(indexed) ~= nil then return model(data, entity, ...) end
+            for i, name in ipairs(parts) do
+                if i > 32 then break end
+                if indexed[i - 1] == nil then
+                    local old = entity:GetSubMaterial(i - 1) or ""
+                    local mat = previewMaterial(Material(old ~= "" and old or name))
+                    if mat then changes[1] = {index = i - 1, material = mat} break end
+                end
+            end
+            -- The DX7 studio path's indexed/submaterial overrides still take its black lighting
+            -- branch. A representative base map through the global unlit override remains readable.
+            if #changes == 0 or next(indexed) ~= nil then return model(data, entity, ...) end
+            state.model_preview.draws = state.model_preview.draws + 1
+            policy.previewBusy = true
+            local result = pack(pcall(function(...)
+                override(changes[1].material)
+                return model(...)
+            end, data, entity, ...))
+            local ok = pcall(override, nil)
+            if not ok then report("cleanup_errors", "render.Model", "preview material restoration failed") end
+            policy.previewBusy = false
+            if not result[1] then error(result[2], 0) end
+            return unpack(result, 2, result.n)
+        end
+        render.Model = installedModel
+    end
+    installPreview()
+    hook.Add("Initialize", "nativeloader_model_preview", installPreview)
+    hook.Add("InitPostEntity", "nativeloader_model_preview", installPreview)
+    hook.Add("OnReloaded", "nativeloader_model_preview", installPreview)
+end
+
 local function cleanup(f)
     local actions = f.actions
     busy = busy + 1
