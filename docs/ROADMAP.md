@@ -9,6 +9,11 @@ R20-A (items 46 and 50) is in progress on `r20-menu`: loader 0.15.0's published-
 the older-loader companion fallback and the multiplayer entry warning. The release record stays
 at 0.14.0 until the next GitHub release exists. The R20 integration/release remains with the lead;
 see [the task brief](handover/R20-A-loader-menu.md).
+R20-E (item 45's native half) is **done** on `r20-native`: the atomic live
+publisher and `RemixConfig.GetUpscalingState()` report effective settings and device capabilities.
+Both builds, live edits through all supported backends, older-runtime nil fallback and exact PoC
+restoration pass; the module is imported once. Runtime 0040 awaits the combined R20 integration
+import ([report](handover/R20-E-report.md), [ADR 0123](decisions/0123-live-upscaling-readback.md)).
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader

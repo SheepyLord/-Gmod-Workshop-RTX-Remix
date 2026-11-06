@@ -29,6 +29,21 @@ the Release checks, commit and push main. Its Workshop build carries the new rem
 derive the record from CMake or bump it before publication; do not raise `requires_loader` for it.
 See [ADR 0115](decisions/0115-released-loader-record-and-reminders.md) and
 [ADR 0116](decisions/0116-multiplayer-entry-warning.md).
+R20-E PoC acceptance passes on RTX 5090, all three capability flags true. The actual getter returns
+unready then effective state across off, TAAU, DLSS, DLSS-G, FSR 3 FG and restoration; a second run
+with the old runtime returns nil. Both normal exits are 0 with no Lua/device errors; `user.conf`
+stays absent. Exact restoration checks 4,022 files and timestamps, plus 2,877 stock files against the
+PoC's original depot manifests (the field has newer revisions). Evidence and limits:
+[R20-E report](handover/R20-E-report.md), worktree `out/r20e/poc`.
+
+R20-E: `tools/tests/test_upscaling_readback.py` compiles the production runtime game-value store
+and its unit test from patch 0040, and the GPL bounded reader test, with optimized MSVC x64 and
+warnings as errors. It covers startup/pending readiness, failed callback convergence, read-only
+namespace, all enum/capability combinations, device lifetime, 100,000 concurrent publications and
+malformed, missing, oversized, failed and unterminated reads. `test_pending_runtime_patches.py`
+proves only declared hash-pinned new suffix patches may await import; shipped input checks remain.
+Both run in `tools/test.ps1 -Config Release`. Build/PoC receipts live in this worktree's `out/r20e`
+(ADR 0123); the runtime DLL is tested locally without a package import.
 
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,

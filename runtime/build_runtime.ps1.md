@@ -64,6 +64,11 @@ runtime\build_runtime.ps1 -Fork <clone> -Worktree <existing patched tree> -Verif
    built from (the commit, `submodules`, `clones` and every patch file's SHA-256).
    [`tools/check_repo.py`](../tools/check_repo.py.md) fails while `runtime\` differs from that record.
 
+   R20-E permits explicitly hashed new `pending_patches` in `base.json` while integration waits for
+   parallel runtime tasks. These are still included in the source verification and build above.
+   An import clears `pending_patches` as it records every built patch; `-NoImport` leaves both the
+   packaged and pending records intact. Existing packaged inputs cannot be exempted this way.
+
 **Needs:** git, the fork's toolchain (Visual Studio 2022 Build Tools, Windows SDK, Meson, the Vulkan
 SDK; see the fork's `.agents/skills/build-remix`), Python. **Writes:** the worktree and its build
 folder in the fork clone; `packages\runtime\files\d3d9.dll.xz`, `packages\runtime\files.json` and

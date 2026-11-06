@@ -61,6 +61,10 @@ packager puts it in the `.gma`. A record says where the binary came from (`repos
 
 ## Locally
 
+R20-E adds the sixth `fixes.patches` entry, `upscaling-state/upscaling-state.patch`, and updates
+`fixes.patched_tree.source`; the pins' shape and build procedure are unchanged. It supplies
+`RemixConfig.GetUpscalingState()` and returns `nil` with older runtimes.
+
 Every script runs on this machine too, without network where local copies are given:
 
 ```powershell

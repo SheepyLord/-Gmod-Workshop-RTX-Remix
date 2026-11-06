@@ -15,6 +15,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   The server browser first explains server rules/kick or ban risks, PBR map resources, uncertain
   performance/stability and the player's responsibility; Continue/Back and permanent dismissal work
   in the main and pause menus. Release record remains 0.14.0 until 0.15.0 is published.
+- **Live upscaling readback for the startup hint (R20-E).** The fixes' native module adds
+  `RemixConfig.GetUpscalingState()`, with atomic effective settings and selected-device capability
+  flags from runtime patch 0040 after presets/callbacks resolve. Old runtimes return `nil` safely.
+  The runtime patch awaits the combined integration import; a hash-pinned pending-patch record keeps
+  source changes separate from unchanged shipped DLL provenance ([ADR 0123](docs/decisions/0123-live-upscaling-readback.md)).
 
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main

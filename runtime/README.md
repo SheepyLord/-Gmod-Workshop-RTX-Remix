@@ -1,5 +1,19 @@
 # runtime/
 
+R20-E adds `0040-Publish-live-upscaling-state-for-startup-advice.patch`
+([ADR 0123](../docs/decisions/0123-live-upscaling-readback.md)). The selected device publishes one
+versioned atomic snapshot at `rtx.runtime.upscalingState`, through the existing
+`remixapi_GetGameValue`; plugins cannot write the reserved `rtx.runtime.` namespace. Readiness waits
+for startup graphics/DLSS presets and pending callbacks, is invalidated by option edits and refreshed
+at each present. The fixes' `RemixConfig.GetUpscalingState()` reads it for R20-B's startup hint.
+Unit test: `test_upscaling_state` (also compiled from the patch by the aggregate Release gate).
+
+**0040 is not yet in the imported `d3d9.dll`.** Its exact hash is in `base.json`'s `pending_patches`,
+separately from unchanged packaged provenance. Integration imports one DLL with every reviewed R20
+runtime patch; `build_runtime.ps1` clears the pending record on import. The guard accepts only
+declared new suffix patches, never changes to packaged inputs. Pending patches still participate in
+every source-tree/build check.
+
 R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
 ([report](../docs/handover/R19-R-report.md)), the runtime's findings of the pre-release review
 ([R19-review.md](../docs/handover/R19-review.md)):
@@ -230,6 +244,7 @@ NVIDIA's SDKs, is about 3.6 GB and keeps its own history, so this repository hol
 | `0031-Atmosphere-cloud-genera-per-weather-...` | Cloud genera as weather fields (low layer base, billows, cell size and bake cover, the middle deck, the high layer), presets mapped to genera; the sun disc; a 2D high cloud layer (cirrus, cirrostratus with its halo, cirrocumulus); the galaxy and nebula after astronomical twilight ([ADR 0109](../docs/decisions/0109-cloud-genera-per-weather-a-sun-disc-and-a-high-cloud-layer.md)) |
 | `0032-Atmosphere-...` | R17's limits: a profile depth per weather so thin stratiform decks close; the middle deck's own patch mask and cloudlet size; sun dogs, the circumzenithal arc and the 46 degree halo; the aerosol's absorption and phase per weather (a milky haze); the twilight kept to 8 degrees down ([ADR 0110](../docs/decisions/0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md)) |
 | `0033-Bound-the-DDS-readers-...` | The pre-release review's runtime findings: both DDS readers check a file's headers against the file before reading it; string options copied under the update mutex beside the render thread; a shared texture takes its users' strongest preload; the middle deck's patch probes and moon-shadow taps; config saves through links and non-finite floats ([R19-R report](../docs/handover/R19-R-report.md)) |
+| `0040-Publish-live-upscaling-...` | Runtime-owned atomic effective upscaling/frame-generation state and capabilities, gated on presets and callback convergence, for the native startup hint readback; pending the combined R20 runtime import ([ADR 0123](../docs/decisions/0123-live-upscaling-readback.md)) |
 
 - [`build_runtime.ps1`](build_runtime.ps1.md): applies them in a worktree of a fork clone, builds, and
   stores the new `d3d9.dll` in [`packages/runtime`](../packages/README.md).

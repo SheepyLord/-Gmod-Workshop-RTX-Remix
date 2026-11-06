@@ -4,6 +4,8 @@
   (R20-A, item 46; accepted 2026-11-06).
 - [0116: Multiplayer entry warning](0116-multiplayer-entry-warning.md)
   (R20-A, item 50; accepted 2026-11-06).
+- [0123: live effective upscaling readback](0123-live-upscaling-readback.md) (R20-E): runtime-owned
+  atomic game-value snapshot, defensive native Lua getter and explicit pending-patch provenance.
 
 One file per decision, numbered in order: `NNNN-short-title.md`. An accepted record is never
 rewritten; a later record supersedes it and both say so. Add one whenever a choice would surprise

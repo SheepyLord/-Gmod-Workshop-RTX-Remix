@@ -24,11 +24,16 @@
       "packages/fixes/licenses/oversized-skinning/memory-limits/no-memory-limits.patch",
       "packages/fixes/licenses/oversized-skinning/backrooms/backrooms-native.patch",
       "packages/fixes/licenses/oversized-skinning/autopbr/autopbr.patch",
-      "packages/fixes/licenses/oversized-skinning/autopbr/lua-paths.patch"
+      "packages/fixes/licenses/oversized-skinning/autopbr/lua-paths.patch",
+      "packages/fixes/licenses/oversized-skinning/upscaling-state/upscaling-state.patch"
     ],
-    "patch_paths": ["source/*", "premake5.lua", "public/*"],
+    "patch_paths": [
+      "source/*",
+      "premake5.lua",
+      "public/*"
+    ],
     "patched_tree": {
-      "source": "d2a0c6f980e1384092deacbd85abf2327d0472a9",
+      "source": "68b5778182983e59c2d5491699cd7f0996bcd0d1",
       "public": "7165af4dc4ab4d841a19b7405211b27190bddea6",
       "premake5.lua": "b308ed2f6b0b31aa7b69f0ee576c0bcf5f666cd1"
     },
@@ -59,14 +64,29 @@
     "source": "packages/model-hotloader/source",
     "source_prefix": "source/mmdhl/",
     "release": "2.3.1",
-    "files": ["gmcl_mmdhl_win64.dll", "gmsv_mmdhl_win64.dll", "mmdhl_runtime_win64.dll", "mmdhl_worker.exe"],
+    "files": [
+      "gmcl_mmdhl_win64.dll",
+      "gmsv_mmdhl_win64.dll",
+      "mmdhl_runtime_win64.dll",
+      "mmdhl_worker.exe"
+    ],
     "policy": "packages/model-hotloader/mmd_hotloader/lua/mmdhl/native_policy.lua",
     "policy_in_part": "mmd_hotloader/lua/mmdhl/native_policy.lua",
     "why": "the shipped 2.3.1 natives were built from that commit with staged, uncommitted changes (buoyancy, secondary water); this repository keeps that source (ADR 0107)"
   },
   "repository_builds": [
-    {"part": "fixes", "path": "modules/gmsv_nlrtxclient_win64.dll", "from": "out/build/win64-release/loader/client/gmsv_nlrtxclient_win64.dll", "target": "nl_rtx_client"},
-    {"part": "glass", "path": "bin/gmcl_nlglass_win64.dll", "from": "out/build/win64-release/glass/native/gmcl_nlglass_win64.dll", "target": "nl_glass_client"}
+    {
+      "part": "fixes",
+      "path": "modules/gmsv_nlrtxclient_win64.dll",
+      "from": "out/build/win64-release/loader/client/gmsv_nlrtxclient_win64.dll",
+      "target": "nl_rtx_client"
+    },
+    {
+      "part": "glass",
+      "path": "bin/gmcl_nlglass_win64.dll",
+      "from": "out/build/win64-release/glass/native/gmcl_nlglass_win64.dll",
+      "target": "nl_glass_client"
+    }
   ],
   "fetched": [
     {
@@ -76,7 +96,9 @@
       "url": "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe",
       "size": 4075064,
       "sha256": "207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4",
-      "contains": {"ReShade64.dll": "b2945c29e7095491a901746b400e58db9b1592ab092bacf2a888ce37f02d08da"},
+      "contains": {
+        "ReShade64.dll": "b2945c29e7095491a901746b400e58db9b1592ab092bacf2a888ce37f02d08da"
+      },
       "repository": "https://github.com/crosire/reshade",
       "commit": "v6.8.0",
       "why": "ReShade's signed setup from its author (reshade.me); the package takes ReShade64.dll out of it, checked by tools/package_reshade.py"

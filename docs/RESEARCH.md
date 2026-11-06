@@ -21,6 +21,33 @@
   core components and compares numeric prerelease identifiers by decimal length/text. The menu and
   companion use the same bounds and ordering without double-precision conversion. The separate
   published-release record accepts no build metadata and its exact URL is derived only for validation.
+## R20-E: effective upscaling state, 2026-11-06
+
+- PoC: RTX 5090 reports DLSS/DLSS-G/FSR 3 FG support all true. Startup is unready at 04:01:49.660
+  and ready after presets at 04:01:52.054. Six in-memory edits read unready first, then effective
+  **0/0, 3/0, 1/0, 1/1, 3/2, 1/0** (upscaler/FG). The new module with the old runtime returns nil.
+  Both games exit 0 with no Lua/device errors. Evidence: `out/r20e/poc/validation.json`.
+- PoC stock still matches ENVIRONMENT.md's original manifests, while the field names newer ones:
+  4001/7488132547021413298 and 4002/7341198560151933050 verify 2,877 files / 7,279,873,012 bytes
+  before and after. Rollback uses those verified real manifests; all 4,022 copied tree files'
+  hashes/timestamps match afterward, with a clean rollback and lock release.
+
+- The fixes' original disk getter is `remixapi.cpp:1111` in the bundled memory-limits source. Runtime
+  `src/dxvk/rtx_render/rtx_initializer.cpp:129` applies DLSS/graphics presets later, and `:151`
+  resolves their callbacks. The disk getter cannot serve R20-B's startup hint.
+- In runtime patch 0040 (`codex/r20-native`), `rtx_fork_game_state.h:26` names the atomic wire value;
+  `:46` rejects plugin writes to the runtime namespace; `:54` starts an unready device; `:81` records
+  callback convergence. `rtx_option.cpp:356` invalidates readiness on every dirty option, and
+  `rtx_option_manager.cpp:244` records convergence before its existing dirty-map clear.
+  `rtx_initializer.cpp:184` reads actual DLSS/DLFG/FSR capabilities and both effective enums under
+  the option update mutex. Publication runs after initialization and at every present.
+- The GPL binding is `upscaling-state/source/remixapi/config_lua_bindings.cpp:69`, registered at
+  `:290`. It uses an export lookup and bounded thirteen-byte schema-1 value, with no optional
+  interface offset, config read or save. Publisher/reader checks pass with MSVC `/O2 /W4 /WX`.
+- Pinned premake drops `!` in generated intermediate paths in this nested worktree. The direct
+  module build failed with C1083/D8040; a temporary `subst W:` pointing into this worktree's `out`
+  gives correct paths. The unchanged build script then built the 5,515,264-byte module, SHA-256
+  `53da14f9269f042869510fe8be56b8b055263acd7c80a54d3e6178dbbfa94e73`.
 
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 

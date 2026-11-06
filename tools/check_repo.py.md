@@ -27,3 +27,11 @@ python tools\check_repo.py --root D:\x    # another checkout
 ```
 
 Tests: [`tests/test_check_repo.py`](tests/test_check_repo.py.md).
+
+R20-E's `runtime/base.json` may declare `pending_patches: {why, files}` while parallel runtime work
+awaits one integration import. `files` must be a nonempty map of exact SHA-256 values for **new**
+`patches/NNNN-*.patch` files sorted after every packaged patch. These alone are excluded from the
+packaged comparison. A changed/missing pending patch, an existing packaged patch, an undeclared
+addition, a changed submodule/clone/base or a changed packaged DLL still fails. A successful runtime
+import clears the pending record; `-NoImport` retains it. This is an explicit source-versus-shipped
+record, not a claim that the stored DLL contains a pending patch (ADR 0123).
