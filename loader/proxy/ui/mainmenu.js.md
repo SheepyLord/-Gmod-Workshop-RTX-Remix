@@ -53,11 +53,15 @@ with the installed/latest versions and DLL replacement/restart instructions. Ope
 with only that URL; Later is this start; Ignore writes just that version to DATA. No HTTP check.
 
 `menu_choices.lua` reads bounded preferences and the menu Lua realm's process-token acknowledgement.
-Fixed button snippets write only `native-loader/loader-update-ignored.txt` and
-`native-loader/multiplayer-warning-dismissed.txt` under DATA. No cloud or loader settings writes.
+Fixed button snippets set only the stock menu cookies `nativeloader.loader-update-ignored` and
+`nativeloader.multiplayer-warning-dismissed`, persisted locally in mn.db. Stock menu file.Write
+fails because its File object lacks Write; cookie.Set is the menu's existing persistence API.
+No cloud or loader settings writes.
 The latter is saved only when Continue has its checkbox checked. Angular's location-change listener
 intercepts every `/servers` entry, including descendants, query strings and code/history navigation
 in main/pause menus. Continue permits the pending destination once; Back navigates home. Missing
 bridge, changed controller or failed dialog creation leaves the browser available. The bootstrap
 trigger remains independent. Text nodes, seven catalogs, viewport-scaled font/layout, keyboard
-focus and a labeled dialog keep these modals readable. Harness: `menu_diagnostics_harness.js`.
+focus and a labeled dialog keep these modals readable. The stock Awesomium engine lacks inset,
+clamp() and modern flex layout: explicit edges, prefixed centering and JS-calculated font sizes
+support both it and Chromium. Harness: `menu_diagnostics_harness.js`.

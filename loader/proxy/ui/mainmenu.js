@@ -64,6 +64,8 @@
   function dialog(title) {
     close();
     modal = node('div', document.body); modal.id = 'native-loader-modal';
+    // The stock Awesomium menu does not support CSS clamp(), inset or modern flex layout.
+    modal.style.fontSize = Math.max(16, Math.min(36, (Number(window.innerHeight) || 900) * 0.0165)) + 'px';
     var card = node('section', modal); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true');
     var heading = node('h2', card, title); heading.id = 'native-loader-modal-title';
     card.setAttribute('aria-labelledby', heading.id);
@@ -95,7 +97,7 @@
         if (check.checked) {
           if (!state) state = {};
           state.multiplayer_dismissed = true;
-          try { run('file.CreateDir("native-loader") file.Write("native-loader/multiplayer-warning-dismissed.txt", "1")'); } catch (_) { }
+          try { run('cookie.Set("nativeloader.multiplayer-warning-dismissed", "1")'); } catch (_) { }
         }
         var next = pending; pending = null; close(); navigate(next);
       }).focus();
@@ -115,7 +117,7 @@
       button(actions, l.update_open, function () { try { run('gui.OpenURL( %s )', release.url); } catch (_) { } close(); });
       button(actions, l.update_later, close).focus();
       button(actions, l.update_ignore.replace('{version}', release.version), function () {
-        try { run('file.CreateDir("native-loader") file.Write("native-loader/loader-update-ignored.txt", %s)', release.version); } catch (_) { }
+        try { run('cookie.Set("nativeloader.loader-update-ignored", %s)', release.version); } catch (_) { }
         close();
       });
       shown = true;
@@ -133,11 +135,11 @@
     if (!document.body) return;
     if (!document.getElementById('native-loader-modal-style')) {
       var style = node('style', document.head); style.id = 'native-loader-modal-style';
-      style.textContent = '#native-loader-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.76);font:clamp(16px,1.65vh,36px)/1.55 Arial,sans-serif;color:#edf4ff}' +
-        '#native-loader-modal section{box-sizing:border-box;width:44em;max-width:90vw;max-height:90vh;overflow:auto;background:#162333;border:2px solid #468ed0;border-radius:8px;padding:1.6em;box-shadow:0 8px 50px #000}' +
+      style.textContent = '#native-loader-modal{position:fixed;left:0;top:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,.76);font:16px/1.55 Arial,sans-serif;color:#edf4ff}' +
+        '#native-loader-modal section{position:absolute;left:50%;top:50%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);box-sizing:border-box;width:44em;max-width:90%;max-height:90%;overflow:auto;background:#162333;border:2px solid #468ed0;border-radius:8px;padding:1.6em;box-shadow:0 8px 50px #000}' +
         '#native-loader-modal h2{font-size:1.35em;margin:0 0 .8em}#native-loader-modal p{margin:.8em 0;white-space:pre-line}' +
         '#native-loader-modal button{font:inherit;padding:.5em .8em;margin:.8em .6em 0 0;background:#264867;color:white;border:1px solid #8ab1d7;border-radius:4px;cursor:pointer}' +
-        '#native-loader-modal label{display:flex;align-items:center;gap:.6em;margin-top:1em;cursor:pointer}#native-loader-modal input{width:1.1em;height:1.1em}';
+        '#native-loader-modal label{display:block;margin-top:1em;cursor:pointer}#native-loader-modal input{width:1.1em;height:1.1em;margin-right:.6em;vertical-align:middle}';
     }
     poll();
     if (window.setInterval) window.setInterval(poll, 500);

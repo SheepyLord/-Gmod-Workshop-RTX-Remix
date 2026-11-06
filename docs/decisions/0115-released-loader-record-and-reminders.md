@@ -22,15 +22,19 @@ cannot supply the record, even at the same virtual path. Failed/vanilla activati
 
 The menu shows a localized modal on home once per process, with current/latest versions, manual DLL
 replacement and restart instructions, the validated download link, Later, and a version-specific
-ignore button. A fixed Lua bridge reads small DATA preferences; the menu realm remembers the
+ignore button. A fixed Lua bridge reads the stock menu's local cookies; the menu realm remembers the
 process token across page reloads. A newer version asks again. No HTTP update check is added.
 
 Before 0.15.0 the companion shows the same notice after the first map, scaled by ScrH()/1080. It
 reads physical BASE_PATH files rather than mounted GAME aliases, verifies runtime ownership and
 the journaled record's size/hash, and matches native discovery's package identity/source. The
 small ASCII record parser also rejects duplicate/extra keys. A DATA process-token receipt prevents
-repetition across map changes; the ignored-version preference is shared with the menu. This fallback
+repetition across map changes; its ignored-version preference is a separate DATA file. This fallback
 does not run for 0.15.0 or later. Unavailable filesystem/UI APIs quietly skip the notice.
 
 No native permission, off switch, package schema, Steam setting or Remix user.conf changes.
 Offline C++, JavaScript and Lua tests cover validation, trust, precedence, choices and lifecycle.
+
+PoC implementation choice: the tested menu File object has no Write method, so file.Write truncates
+a file and errors. Menu choices therefore use stock cookie.Set/GetString in local mn.db, as GMod's
+own menu does. Client-realm DATA writes work normally. The reminder adds no cloud-config writes.

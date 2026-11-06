@@ -285,24 +285,24 @@ msgstr ""
 msgid "A loader update is available"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:366
+#: nativeloader/lua/autorun/client/nativeloader.lua:378
 #, c-format
 msgid "You are running loader %s. The latest release is %s."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:367
+#: nativeloader/lua/autorun/client/nativeloader.lua:379
 msgid "Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:385
+#: nativeloader/lua/autorun/client/nativeloader.lua:397
 msgid "Open the download page"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:386
+#: nativeloader/lua/autorun/client/nativeloader.lua:398
 msgid "Later"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:387
+#: nativeloader/lua/autorun/client/nativeloader.lua:399
 #, c-format
 msgid "Don't remind me about %s"
 msgstr ""

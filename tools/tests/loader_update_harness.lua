@@ -37,8 +37,15 @@ file = {
 }
 vgui = {Create = function(kind, parent)
     local panel = {kind = kind, parent = parent}
-    for _, name in ipairs({"Center", "MakePopup", "Dock", "DockMargin", "SetWrap", "SetAutoStretchVertical", "SetPaintBackground", "SetFont"}) do
+    for _, name in ipairs({"Center", "MakePopup", "Dock", "DockPadding", "DockMargin", "SetWrap", "SetAutoStretchVertical", "SetPaintBackground", "SetFont"}) do
         panel[name] = function() end
+    end
+    if kind == "DFrame" then
+        local function control()
+            return {SetFont = function() end, SetVisible = function() end, SetPos = function() end, SetSize = function() end}
+        end
+        panel.lblTitle, panel.btnClose, panel.btnMinim, panel.btnMaxim = control(), control(), control(), control()
+        panel.PerformLayout = function() end
     end
     panel.SetText = function(_, value) panel.text = value end
     panel.SetTitle = panel.SetText

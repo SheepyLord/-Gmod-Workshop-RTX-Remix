@@ -93,7 +93,8 @@ silent. No Steam request is made for this reminder.
 
 The three buttons open only the validated release URL, defer for this process, or ignore that version.
 DATA `native-loader/loader-update-seen.txt` stores the status process token (PID/UTC for older
-reports) to survive map changes; `loader-update-ignored.txt` stores the ignored version and is shared
-with the menu. Both are bounded to 128 bytes on read. No loader/cloud/Remix settings are changed.
-Title/body/buttons use the six catalogs, with fonts, frame and controls scaled by ScrH()/1080 and
+reports) to survive map changes; `loader-update-ignored.txt` stores the ignored version for this
+older-loader fallback. The new menu uses its own local cookie. Both DATA files are bounded to 128
+bytes on read. No loader/cloud/Remix settings are changed.
+Title/body/buttons use the six catalogs, with fonts, frame, title bar and controls scaled by ScrH()/1080 and
 bounded to the viewport. Errors are contained by pcall. Harness: `tools/tests/loader_update_harness.lua`.

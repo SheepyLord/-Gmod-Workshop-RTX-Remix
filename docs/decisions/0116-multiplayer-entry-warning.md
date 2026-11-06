@@ -14,8 +14,9 @@ the map's PBR resources, uncertain performance/stability, and use at the player'
 developer responsibility. Continue permits the pending route once; Back returns home. The checkbox
 is saved only on Continue, never on Back.
 
-The remembered choice is `native-loader/multiplayer-warning-dismissed.txt` under GMod DATA, read
-and written through the stock menu Lua bridge using fixed snippets. It survives restarts and is
+The remembered choice is the stock menu cookie `nativeloader.multiplayer-warning-dismissed`, read
+and written through the stock menu Lua bridge using fixed snippets. It survives restarts in local
+mn.db (the stock menu File object has no Write method, so file.Write is unavailable) and is
 separate from cloud config.cfg, loader config.json and Remix user.conf. A broken bridge, changed menu
 or failed modal creation permits navigation. The listener cancels only after a modal exists, so a
 failed warning never traps the player. It is installed only for an active RTX session; the independent

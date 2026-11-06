@@ -285,24 +285,24 @@ msgstr "RTX 패키지 %s이(가) 업데이트되었습니다. 사용하려면 Ga
 msgid "A loader update is available"
 msgstr "로더 업데이트가 있습니다"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:366
+#: nativeloader/lua/autorun/client/nativeloader.lua:378
 #, c-format
 msgid "You are running loader %s. The latest release is %s."
 msgstr "현재 로더는 %s이며, 최신 릴리스는 %s입니다."
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:367
+#: nativeloader/lua/autorun/client/nativeloader.lua:379
 msgid "Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."
 msgstr "릴리스 페이지에서 winmm.dll을 다운로드하여 게임 폴더의 bin\\win64\\winmm.dll을 교체한 후 Garry's Mod를 다시 시작하세요. 창작마당 패키지는 자동으로 업데이트되며, 이 파일만 수동으로 업데이트하면 됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:385
+#: nativeloader/lua/autorun/client/nativeloader.lua:397
 msgid "Open the download page"
 msgstr "다운로드 페이지 열기"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:386
+#: nativeloader/lua/autorun/client/nativeloader.lua:398
 msgid "Later"
 msgstr "나중에"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:387
+#: nativeloader/lua/autorun/client/nativeloader.lua:399
 #, c-format
 msgid "Don't remind me about %s"
 msgstr "%s 업데이트 알림 끄기"

@@ -285,24 +285,24 @@ msgstr "RTX 套件 %s 已更新：請重新啟動 Garry's Mod 以使用新版本
 msgid "A loader update is available"
 msgstr "載入器有新版本可用"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:366
+#: nativeloader/lua/autorun/client/nativeloader.lua:378
 #, c-format
 msgid "You are running loader %s. The latest release is %s."
 msgstr "你正在執行載入器 %s，最新發行版本為 %s。"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:367
+#: nativeloader/lua/autorun/client/nativeloader.lua:379
 msgid "Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."
 msgstr "從發行頁面下載 winmm.dll，替換遊戲資料夾中的 bin\\win64\\winmm.dll，然後重新啟動 Garry's Mod。工作坊套件會自動更新，只有這個檔案需要手動更新。"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:385
+#: nativeloader/lua/autorun/client/nativeloader.lua:397
 msgid "Open the download page"
 msgstr "開啟下載頁面"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:386
+#: nativeloader/lua/autorun/client/nativeloader.lua:398
 msgid "Later"
 msgstr "稍後提醒"
 
-#: nativeloader/lua/autorun/client/nativeloader.lua:387
+#: nativeloader/lua/autorun/client/nativeloader.lua:399
 #, c-format
 msgid "Don't remind me about %s"
 msgstr "不再提醒我更新至 %s"

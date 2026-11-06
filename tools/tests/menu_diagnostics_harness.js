@@ -293,10 +293,10 @@ for (const release of [{version: '9.0.0', url: 'https://evil.test/'}, {version: 
 }
 const laterUpdate = menuCase(); laterUpdate.receive(); laterUpdate.click('update_later'); laterUpdate.tick();
 assert(!laterUpdate.modal(), 'Later is for this start');
-assert(!laterUpdate.requests.some(call => call[0].includes('file.Write')), 'Later writes no preference');
+assert(!laterUpdate.requests.some(call => call[0].includes('cookie.Set')), 'Later writes no preference');
 const ignoredUpdate = menuCase(); ignoredUpdate.receive();
 all(ignoredUpdate.modal()).find(n => n.tag === 'button' && n.textContent.includes('0.16.0')).onclick();
-assert(ignoredUpdate.requests.some(call => call[0].includes('loader-update-ignored.txt') && call[1] === '0.16.0'));
+assert(ignoredUpdate.requests.some(call => call[0].includes('cookie.Set("nativeloader.loader-update-ignored"') && call[1] === '0.16.0'));
 for (const [remembered, hidden] of [['0.16.0', true], ['0.15.0', false]]) {
   const view = menuCase(); view.receive({ignored_version: remembered}); assert.equal(!view.modal(), hidden);
 }
@@ -325,14 +325,14 @@ for (const code of Object.keys(labels)) {
 const rememberServer = menuCase({release: null}); rememberServer.receive(); rememberServer.loc.url('/servers/');
 all(rememberServer.modal()).find(n => n.tag === 'input').checked = true;
 rememberServer.click('multiplayer_continue');
-assert(rememberServer.requests.some(call => call[0].includes('multiplayer-warning-dismissed.txt')));
+assert(rememberServer.requests.some(call => call[0].includes('cookie.Set("nativeloader.multiplayer-warning-dismissed"')));
 rememberServer.loc.url('/'); rememberServer.loc.url('/servers/'); assert(!rememberServer.modal());
 const restarted = menuCase({release: null}); restarted.receive({multiplayer_dismissed: true});
 restarted.loc.url('/servers/'); assert(!restarted.modal()); assert.equal(restarted.route(), '/servers/');
 const backNeverSaves = menuCase({release: null}); backNeverSaves.receive(); backNeverSaves.loc.url('/servers/');
 all(backNeverSaves.modal()).find(n => n.tag === 'input').checked = true;
 backNeverSaves.click('multiplayer_back');
-assert(!backNeverSaves.requests.some(call => call[0].includes('file.Write')));
+assert(!backNeverSaves.requests.some(call => call[0].includes('cookie.Set')));
 for (const options of [{bridge: false}, {brokenBridge: true}, {active: false}]) {
   const view = menuCase({release: null, ...options}); view.loc.url('/servers/');
   assert.equal(view.route(), '/servers/', 'fail open or RTX off: ' + JSON.stringify(options)); assert(!view.modal());

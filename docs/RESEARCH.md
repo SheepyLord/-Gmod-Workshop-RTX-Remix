@@ -2,6 +2,12 @@
 
 ## R20-A: menu routes and physical release records (2026-11-06)
 
+- PoC field QA found two stock-menu limits. Awesomium ignores inset, clamp() and modern flex
+  properties, so the modal uses explicit edges, -webkit-transform centering and a computed font size.
+  In the menu realm file.Write opens/truncates a file then errors at
+  `lua/includes/extensions/file.lua:24` because File:Write is nil. Stock
+  `lua/menu/mainmenu.lua:321` uses cookie.Set, which persists our choices in mn.db. Fixed bridge
+  snippets use that stock API; the companion's normal client realm keeps DATA preferences.
 - Stock PoC `html/js/menu/control.Menu.js:18` declares MenuController; `html/js/menu/common.js:71`
   sets Angular's hash prefix to empty. `/servers` is therefore the route behind `#/servers/`.
   Register an App.run location listener at script evaluation, before Angular's DOM-ready bootstrap;
