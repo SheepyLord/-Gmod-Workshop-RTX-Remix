@@ -19,7 +19,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   ([v0.15.0](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v0.15.0)) carries loader
   0.15.0, built by the loader workflow (run 42255754495); the package's record of the newest released
   loader (`companion/nativeloader/resource/loader-release.json`) now names it, so players on an older
-  loader are reminded to update.
+  loader are reminded to update. The package GitHub's workflow built for the release commit
+  `e94aba0` (run 42265333187) is on item 3829070317 as 0.0.0-dev.20261106182636+169e5e26. The field
+  check ([R20-F](docs/handover/R20-F-report.md)) passed every item in the user's game at 3840x2160,
+  with the in-game reminder on loader 0.14.0, then the field was updated to the release's loader 0.15.0.
 - **A lit toolgun display at night (R20-T)**, found by the field check of the published package
   ([R20-F](docs/handover/R20-F-report.md)): the companion's screen material now disables depth, so
   its redraw always enters the raster HUD, including when it draws before other HUD elements. It

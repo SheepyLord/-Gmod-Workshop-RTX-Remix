@@ -64,6 +64,22 @@ branch: 27 native tests, 710 Python tests.
 - **Modules built from this repository** (`repository_builds` in `tools/ci/pins.json`) have no record
   tying the stored input to its source, unlike the runtime's `base.json` `packaged`; nothing caught
   the stale bootstrap. A check like the runtime's would.
-- **Release**: tag v0.15.0 (the GitHub release carries the loader), then set the loader record to
-  0.15.0 and push `main`, then the package workflow's build to the Workshop (the user approved both
-  on 2026-11-06 for this release).
+## Release (2026-11-06)
+
+- `main` was pushed at `9abffb7` (the local build went to item 3829070317), tagged **v0.15.0**: the
+  loader workflow (run 42255754495) published the GitHub release "Remix loader v0.15.0" with the
+  loader bundle and its symbols.
+- The field check of that package ([R20-F](R20-F-report.md)) found the toolgun display nearly black
+  at night: the companion's HUD redraw material wrote depth, so as the first HUD draw Remix lit it as
+  scene geometry. The bug predates R20; [R20-T](R20-T-report.md) fixed it (`$ignorez`, with a test).
+- `e94aba0` carried that fix and the loader record at 0.15.0. The package workflow (run 42265333187,
+  started once for this release as the user approved) built it; its package is on item 3829070317 as
+  0.0.0-dev.20261106182636+169e5e26 (`publish_workshop.py --from-ci`).
+- The field check then passed every item in the user's game at 3840x2160 with the published package:
+  the in-game reminder on loader 0.14.0 (Later only), the toolgun at night, blood impacts on citizens
+  and ragdolls with stains, Physics Blood alongside them (420 droplets, 28 pools), a stock dupe with a
+  coloured icon (removed afterwards), the heaviest combined scene at 19.8 ms median and 38.2 ms p99.
+  The field was then updated to the release's loader 0.15.0 (only `winmm.dll`; the old one is backed up
+  under `out/worktrees/r20-field/out/r20f/before-loader/`): no update window, the multiplayer warning
+  from both menus (Back only, nothing remembered), status active with no errors. Steam's files, the
+  user's settings and the standalone add-ons were unchanged.

@@ -11,7 +11,9 @@ RTX tab; time passes by default with a 20-minute day; no `cam.End underflow` whe
 Integration QA in the refreshed PoC passes every item. Released as **v0.15.0** (the GitHub release
 carries loader 0.15.0; the package's loader record names it). The field check of the published
 package ([R20-F](handover/R20-F-report.md)) found the toolgun's display nearly black at night, from a
-HUD material that wrote depth (older than R20); [R20-T](handover/R20-T-report.md) fixed it.
+HUD material that wrote depth (older than R20); [R20-T](handover/R20-T-report.md) fixed it. The
+package GitHub's workflow built for the release commit (run 42265333187) is on item 3829070317 as
+0.0.0-dev.20261106182636+169e5e26; the field check then passed every item, and the field runs loader 0.15.0.
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader
