@@ -1,5 +1,11 @@
 # Roadmap
 
+R20-Q integration QA is **in progress** on `r20-qa`: the merged loader 0.15.0/package,
+live hint readback and the 4K RTX comparison ([brief](handover/R20-Q-integration-qa.md)).
+The requested PoC vanilla refresh replaced exactly 46 manifest-reported outdated depot files
+from the verified field build 26439081; 2,877 stock files now match the current manifests.
+The pre-existing `autoexec.cfg` user-config difference remains separately reported.
+
 R20-A implementation is **complete locally** on `r20-menu` (loader 0.15.0), with translated update
 reminders and multiplayer entry warnings. Menu QA passes in English/Chinese at 900 and 2160;
 4K RTX map stability and the PoC's depot-manifest differences remain integration follow-ups.
