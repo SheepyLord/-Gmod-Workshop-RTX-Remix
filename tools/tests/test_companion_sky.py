@@ -105,10 +105,14 @@ local convars, callbacks, commands, hooks, timers = {}, {}, {}, {}, {}
 function CreateClientConVar(name, default)
   -- PRESET: saved settings the session starts with, as GMod's client.vdf gives them.
   local c = { value = PRESET and PRESET[name] or default }
+  -- Most scenarios inspect a fixed sky/weather in isolation. Freeze the clock explicitly; the
+  -- defaults scenarios below exercise the real moving default and its migration instead.
+  if name == "nativeloader_sky_time_passes" and not RUNNING_DEFAULTS then c.value = "0" end
   function c:GetString() return self.value end
   function c:GetBool() return (tonumber(self.value) or 0) ~= 0 end
   function c:GetFloat() return tonumber(self.value) or 0 end
   function c:GetInt() return math.floor(tonumber(self.value) or 0) end
+  function c:SetString(value) self.value = value end
   convars[name] = c
   return c
 end
@@ -158,10 +162,13 @@ local function bspFile(data)
     Close = function() end,
   }
 end
+local data = {}
 file = {
   Open = function(path) if BSP and path == "maps/" .. MAP .. ".bsp" then return bspFile(BSP) end end,
-  Exists = function() return false end,
+  Exists = function(path) return data[path] ~= nil end,
   Read = function() return nil end,
+  CreateDir = function() end,
+  Write = function(path, value) data[path] = value end,
 }
 game = { GetMap = function() return MAP end }
 local vector = {}
@@ -180,8 +187,11 @@ spawnmenu = { AddToolMenuOption = function() end }
 function include(path) return dofile(LUA .. "/" .. path) end
 function AddCSLuaFile() end
 print = print
+SortedPairs = pairs
+MsgN = function() end
 
 local M = dofile(LUA .. "/nativeloader/sky_model.lua")
+dofile(LUA .. "/autorun/nativeloader_defaults.lua")
 dofile(LUA .. "/autorun/nativeloader_sky.lua")
 -- The RTX Remix tab's Remix settings, for the fog presets.
 if MENU then dofile(LUA .. "/autorun/client/nativeloader_menu.lua") end
@@ -210,6 +220,15 @@ report("start", "rtx.skyMode", "rtx.ignoreGameDirectionalLights", "rtx.atmospher
   "rtx.atmosphere.surfaceMoonBrightness")
 print("convars " .. convars.nativeloader_sky_hour.value .. " " .. convars.nativeloader_sky_direction.value
   .. " " .. convars.nativeloader_sky_follow_map.value)
+if SCRIPT == "defaults" then
+  print("defaults " .. convars.nativeloader_sky_time_passes.value .. " " .. convars.nativeloader_sky_day_minutes.value)
+  print("marker " .. tostring(data["nativeloader_companion/sky_defaults_client_v1.txt"]):gsub("\n", ""))
+  local before = NATIVELOADER_SKY.clock()
+  for _ = 1, 3000 do tick(0.02) end
+  print("elapsed " .. tostring((NATIVELOADER_SKY.clock() - before) % 24))
+  report("afterminute")
+  return
+end
 if SCRIPT == "ownership" then
   tick(1)
   report("owned")
@@ -406,6 +425,24 @@ class SkyTests(unittest.TestCase):
 
     def settings(self, text):
         return dict(part.split('=', 1) for part in text.split()[1:])
+
+    def test_new_and_migrated_defaults_move_the_clock_without_taking_over_a_maps_sky(self):
+        for preset, marker in [('', 'kept player settings'),
+                               ('PRESET = {nativeloader_sky_time_passes="0", nativeloader_sky_day_minutes="30"}\n',
+                                'migrated 0/30 to 1/20')]:
+            for map_name in ('gm_construct', 'modern_house'):
+                with self.subTest(migrated=bool(preset), map=map_name):
+                    owner = 'MHRTX_Config = {}\n' if map_name == 'modern_house' else ''
+                    out = self.run_lua(owner + preset + SESSION, MAP=map_name, BSP=bsp(CONSTRUCT),
+                                       SCRIPT='defaults', RUNNING_DEFAULTS=True)
+                    self.assertEqual(out['defaults'], '1 20')
+                    self.assertEqual(out['marker'], marker)
+                    if map_name == 'modern_house':
+                        self.assertEqual(out['start'].split()[0], '0')
+                        self.assertEqual(out['afterminute'].split()[0], '0')
+                        self.assertEqual(float(out['elapsed']), 0)
+                    else:
+                        self.assertAlmostEqual(float(out['elapsed']), 1.2, delta=0.001)
 
     def test_the_sun_moon_and_stars(self):
         out = self.run_lua(MODEL)

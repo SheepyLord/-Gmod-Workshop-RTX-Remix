@@ -8,269 +8,269 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Clear"
 msgstr "맑음"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Partly cloudy"
 msgstr "구름 조금"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Overcast"
 msgstr "흐림"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Hazy"
 msgstr "연무"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Foggy"
 msgstr "안개"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Drizzle"
 msgstr "이슬비"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Rain"
 msgstr "비"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Thunderstorm"
 msgstr "뇌우"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Snow"
 msgstr "눈"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Blizzard"
 msgstr "눈보라"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:671
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Sandstorm"
 msgstr "모래폭풍"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:671
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Smog"
 msgstr "스모그"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Spring"
 msgstr "봄"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Summer"
 msgstr "여름"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Autumn"
 msgstr "가을"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Winter"
 msgstr "겨울"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:674
+#: nativeloader/lua/autorun/nativeloader_sky.lua:677
 msgid "New moon"
 msgstr "신월"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:674
+#: nativeloader/lua/autorun/nativeloader_sky.lua:677
 msgid "Waxing crescent"
 msgstr "초승달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:675
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 msgid "First quarter"
 msgstr "상현달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:675
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 msgid "Waxing gibbous"
 msgstr "차오르는 볼록달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:675
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 msgid "Full moon"
 msgstr "보름달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:676
+#: nativeloader/lua/autorun/nativeloader_sky.lua:679
 msgid "Waning gibbous"
 msgstr "기우는 볼록달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:676
+#: nativeloader/lua/autorun/nativeloader_sky.lua:679
 msgid "Last quarter"
 msgstr "하현달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:677
+#: nativeloader/lua/autorun/nativeloader_sky.lua:680
 msgid "Waning crescent"
 msgstr "그믐달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:681
 msgid "No eclipse"
 msgstr "식 없음"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:681
 msgid "Lunar eclipse"
 msgstr "월식"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:681
 msgid "Solar eclipse"
 msgstr "일식"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:679
+#: nativeloader/lua/autorun/nativeloader_sky.lua:682
 msgid "Night sky image"
 msgstr "밤하늘 이미지"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:679
+#: nativeloader/lua/autorun/nativeloader_sky.lua:682
 msgid "Simulated stars"
 msgstr "절차적으로 생성한 별"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:681
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
 msgid "Sunrise"
 msgstr "일출"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:681
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
 msgid "Morning"
 msgstr "아침"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:681
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
 msgid "Noon"
 msgstr "정오"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:682
+#: nativeloader/lua/autorun/nativeloader_sky.lua:685
 msgid "Sunset"
 msgstr "일몰"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:682
+#: nativeloader/lua/autorun/nativeloader_sky.lua:685
 msgid "Night"
 msgstr "밤"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:692
+#: nativeloader/lua/autorun/nativeloader_sky.lua:695
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:260
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "이번 세션에서는 Remix API를 사용할 수 없어 이 설정들을 적용할 수 없습니다. 자세한 내용은 nativeloader_status를 실행하세요."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:696
+#: nativeloader/lua/autorun/nativeloader_sky.lua:699
 #, c-format
 msgid "On this map %s also sets the sky. It keeps its sky while Follow the map's sun is ticked and nothing here is changed; otherwise your settings here replace it."
 msgstr "이 맵의 하늘도 %s이(가) 설정합니다. '맵의 태양 따르기'가 선택되어 있고 여기서 설정을 변경하지 않은 동안에는 해당 하늘을 유지하며, 그렇지 않으면 이 메뉴의 설정으로 대체합니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:698
+#: nativeloader/lua/autorun/nativeloader_sky.lua:701
 msgid "Sky"
 msgstr "하늘"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:699
+#: nativeloader/lua/autorun/nativeloader_sky.lua:702
 msgid "Physical sky"
 msgstr "물리 기반 하늘"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:700
+#: nativeloader/lua/autorun/nativeloader_sky.lua:703
 msgid "The map's skybox"
 msgstr "맵의 스카이박스"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:701
+#: nativeloader/lua/autorun/nativeloader_sky.lua:704
 msgid "The physical sky has a sun, clouds, stars and a moon, and lights the map from them."
 msgstr "물리 기반 하늘에는 태양, 구름, 별, 달이 있고, 이것들이 맵을 비춥니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:702
+#: nativeloader/lua/autorun/nativeloader_sky.lua:705
 msgid "Follow the map's sun"
 msgstr "맵의 태양 따르기"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:703
+#: nativeloader/lua/autorun/nativeloader_sky.lua:706
 msgid "Puts the sun where the map's own sun is; on a map whose add-on sets its own sky, such as Modern House RTX, keeps that sky. Moving Time of day or Sun direction turns this off."
 msgstr "태양을 맵 자체의 태양 위치에 맞춥니다. Modern House RTX처럼 애드온이 자체 하늘을 설정하는 맵에서는 해당 하늘을 유지합니다. 시각이나 태양 방향을 변경하면 이 옵션이 꺼집니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:704
+#: nativeloader/lua/autorun/nativeloader_sky.lua:707
 msgid "Time of day"
 msgstr "시각"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:708
+#: nativeloader/lua/autorun/nativeloader_sky.lua:711
 #, c-format
 msgid "Now %s"
 msgstr "현재 %s"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:726
+#: nativeloader/lua/autorun/nativeloader_sky.lua:729
 msgid "Sun direction"
 msgstr "태양 방향"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:727
+#: nativeloader/lua/autorun/nativeloader_sky.lua:730
 msgid "Turns the sun's path around the sky."
 msgstr "태양의 이동 경로를 수평으로 회전합니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:728
+#: nativeloader/lua/autorun/nativeloader_sky.lua:731
 msgid "Time passes"
 msgstr "시간 흐름"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:729
+#: nativeloader/lua/autorun/nativeloader_sky.lua:732
 msgid "Day length (min)"
 msgstr "하루 길이(분)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:730
-msgid "How many real minutes a whole day takes while Time passes is ticked."
-msgstr "시간 흐름을 체크했을 때 게임 속 하루에 걸리는 실제 시간(분)입니다."
+#: nativeloader/lua/autorun/nativeloader_sky.lua:733
+msgid "Time passes is on by default. A whole day takes 20 real minutes; untick Time passes to stop the clock."
+msgstr "시간 흐름은 기본으로 켜져 있습니다. 하루는 실제 시간으로 20분입니다. 시간 흐름을 끄면 시계가 멈춥니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:731
+#: nativeloader/lua/autorun/nativeloader_sky.lua:734
 msgid "Sky update interval (s)"
 msgstr "하늘 갱신 간격(초)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:732
+#: nativeloader/lua/autorun/nativeloader_sky.lua:735
 msgid "How often the sun, moon, stars and weather move, in seconds: 0.02 is 50 times a second, 0 is every frame. A longer interval costs a little less frame time, but the sky moves in steps."
 msgstr "해, 달, 별, 날씨를 갱신하는 간격(초)입니다. 0.02는 초당 50번, 0은 매 프레임입니다. 간격을 늘리면 프레임 시간이 조금 줄지만 하늘이 끊기듯 움직입니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:733
+#: nativeloader/lua/autorun/nativeloader_sky.lua:736
 msgid "Season"
 msgstr "계절"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:734
+#: nativeloader/lua/autorun/nativeloader_sky.lua:737
 msgid "Moon"
 msgstr "달"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:735
+#: nativeloader/lua/autorun/nativeloader_sky.lua:738
 msgid "Eclipse"
 msgstr "일식·월식"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:736
+#: nativeloader/lua/autorun/nativeloader_sky.lua:739
 msgid "Eclipse progress"
 msgstr "식 진행"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:737
+#: nativeloader/lua/autorun/nativeloader_sky.lua:740
 msgid "From first contact (0) to the middle (100): a lunar eclipse is total from 70, a solar one from 90. An eclipse sets the moon's phase, and the time if the sun is on the wrong side of the horizon for it."
 msgstr "첫 접촉(0)부터 식의 최대(100)까지입니다. 월식은 70부터, 일식은 90부터 개기식입니다. 식을 고르면 달의 위상이 정해지고, 태양이 지평선 반대쪽에 있으면 시각도 바뀝니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:738
+#: nativeloader/lua/autorun/nativeloader_sky.lua:741
 msgid "Night sky"
 msgstr "밤하늘"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:739
+#: nativeloader/lua/autorun/nativeloader_sky.lua:742
 msgid "Night sky image: sharp stars, a galaxy and nebulae, turning with the time and the season."
 msgstr "밤하늘 이미지: 선명한 별, 은하, 성운이 시각과 계절에 따라 회전합니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:740
+#: nativeloader/lua/autorun/nativeloader_sky.lua:743
 msgid "Weather"
 msgstr "날씨"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:741
+#: nativeloader/lua/autorun/nativeloader_sky.lua:744
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:273
 msgid "(leave to Remix)"
 msgstr "(Remix에 맡김)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:743
+#: nativeloader/lua/autorun/nativeloader_sky.lua:746
 msgid "Clouds, haze, fog, rain and snow, from Remix's own weather presets."
 msgstr "Remix 자체의 날씨 프리셋으로 표현하는 구름, 연무, 안개, 비, 눈입니다."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:744
+#: nativeloader/lua/autorun/nativeloader_sky.lua:747
 msgid "Weather change (s)"
 msgstr "날씨 전환(초)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:745
+#: nativeloader/lua/autorun/nativeloader_sky.lua:748
 msgid "How long a change of weather takes."
 msgstr "날씨가 바뀌는 데 걸리는 시간."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:746
+#: nativeloader/lua/autorun/nativeloader_sky.lua:749
 msgid "Reset the sky and weather"
 msgstr "하늘과 날씨 초기화"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:752
-#: nativeloader/lua/autorun/nativeloader_sky.lua:752
+#: nativeloader/lua/autorun/nativeloader_sky.lua:755
+#: nativeloader/lua/autorun/nativeloader_sky.lua:755
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 #: nativeloader/lua/nativeloader/guide_pages.lua:108
 msgid "Sky and weather"
@@ -281,64 +281,64 @@ msgstr "하늘과 날씨"
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "RTX 패키지 %s이(가) 업데이트되었습니다. 사용하려면 Garry's Mod를 재시작하세요."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
 msgid "Choose eye-white materials"
 msgstr "눈 흰자 머티리얼 선택"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:408
 msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."
 msgstr "생성된 캐릭터를 여기서 선택하거나 캐릭터를 바라본 뒤 이 창을 여세요. 선택은 이 캐릭터에 저장되며 같은 캐릭터의 모든 개체에 즉시 적용됩니다. 다시 생성할 필요가 없습니다. '가져온 캐릭터의 흰자 밝기 안정화'와 '흰자 밝기'도 계속 적용됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Choose a spawned character"
 msgstr "생성된 캐릭터 선택"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:414
 msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
 msgstr "먼저 외부 모델에서 가져온 캐릭터를 생성하세요. 가져온 캐릭터의 머티리얼만 선택할 수 있습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:418
 msgid "Previous materials"
 msgstr "이전 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:412
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:419
 msgid "Next materials"
 msgstr "다음 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:431
 msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
 msgstr "체크한 머티리얼을 눈 흰자로 처리합니다. 자동 감지 사용을 누르면 해당 머티리얼의 수동 선택이 해제됩니다. 눈과 얼굴이 텍스처를 공유하면 미리보기에 얼굴도 보이지만 체크한 머티리얼만 바뀝니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:482
 msgid "Eye white"
 msgstr "눈 흰자"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:477
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:484
 msgid "Use automatic detection"
 msgstr "자동 감지 사용"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: eye white"
 msgstr "수동: 눈 흰자"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: ordinary material"
 msgstr "수동: 일반 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: eye white"
 msgstr "자동: 눈 흰자"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: ordinary material"
 msgstr "자동: 일반 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:498
 msgid "Texture not available"
 msgstr "텍스처를 사용할 수 없음"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:503
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
 msgstr "선택을 저장할 수 없습니다. 캐릭터가 제거되었거나, 선택을 저장한 파일이 변경되었거나 읽을 수 없는 상태일 수 있습니다. 어떤 파일도 덮어쓰지 않았습니다."
 
@@ -362,9 +362,9 @@ msgstr "RTX Remix 가이드"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:348
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:351
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:352
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:353
 #: nativeloader/lua/nativeloader/guide_pages.lua:124
 msgid "Rendering"
 msgstr "렌더링"
@@ -383,14 +383,14 @@ msgid "Water and glass"
 msgstr "물과 유리"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
 #: nativeloader/lua/nativeloader/guide_pages.lua:87
 msgid "Start here"
 msgstr "시작하기"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
 #: nativeloader/lua/nativeloader/guide_pages.lua:98
 msgid "Remix settings"
 msgstr "Remix 설정"
@@ -668,98 +668,102 @@ msgid "Set %s here"
 msgstr "여기서 %s 설정"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+msgid "Show upscaling and frame generation hint at startup"
+msgstr "시작 시 업스케일링 및 프레임 생성 힌트 표시"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:307
 msgid "A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."
 msgstr "숫자는 바로 위의 '여기서 ... 설정' 상자를 체크했을 때만 사용됩니다. 하늘 밝기와 색 순도는 0으로 설정할 수도 있습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:308
 msgid "Clear this panel's overrides"
 msgstr "이 패널의 덮어쓰기 값 지우기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:309
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
 msgid "Local player shadow"
 msgstr "내 플레이어 그림자"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:313
 msgid "Shows the shadow and reflection of your own body while you play in first person. Other players and ragdolls are not affected."
 msgstr "1인칭 시점에서 내 몸의 그림자와 반사를 표시합니다. 다른 플레이어와 래그돌에는 영향을 주지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:311
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:314
 msgid "Body height offset (units)"
 msgstr "몸 높이 오프셋(유닛)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
 msgid "Raises (positive) or lowers (negative) only that body. Your view and your collisions stay where they are."
 msgstr "양수는 그 몸만 위로 올리고 음수는 아래로 내립니다. 시점과 충돌 판정 위치는 바뀌지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Keep toolgun text sharp"
 msgstr "툴건 글자를 선명하게 표시"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Draws the toolgun's screen at full resolution after DLSS or another upscaler, so its text stays readable. Animated and custom screens keep working."
 msgstr "DLSS나 다른 업스케일러로 처리한 뒤 툴건 화면을 전체 해상도로 그려 글자를 읽기 쉽게 유지합니다. 애니메이션과 사용자 지정 화면도 계속 작동합니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
 msgid "Hide outline meshes"
 msgstr "외곽선 메시 숨기기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Hides the outline shells that many anime models have: path tracing draws them as a dark layer over the model. The model's other materials are not changed."
 msgstr "많은 애니메이션풍 모델에 있는 외곽선 셸을 숨깁니다. 패스 트레이싱에서는 이 셸이 모델을 덮는 어두운 층으로 그려집니다. 모델의 다른 머티리얼은 바뀌지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
 msgid "Imported game PBR"
 msgstr "가져온 캐릭터 PBR"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
 msgid "Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."
 msgstr "명조, 엔드필드, 실버 팰리스에서 가져온 캐릭터에 해당 게임의 맵을 사용합니다. 피부와 얼굴은 그대로 유지됩니다. 끄면 원래 머티리얼로 돌아갑니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
 msgid "Steady eye whites for imported characters"
 msgstr "가져온 캐릭터의 흰자 밝기 안정화"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."
 msgstr "가져온 캐릭터의 눈 흰자를 깨끗하고 밝게 유지합니다. 머티리얼 이름으로 흰자를 찾으며, 놓친 것이 있으면 아래에서 직접 선택할 수 있습니다. PBR 팩이 있는 캐릭터는 팩의 머티리얼을 유지합니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
 msgid "Eye-white brightness"
 msgstr "흰자 밝기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
 msgid "In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."
 msgstr "백분율이며 100은 조정된 기본값입니다. 변경하면 흰자 밝기 안정화와 장면의 조명에 맞춰 변하는 PBR 팩의 눈 발광에 즉시 적용됩니다. 0은 이 발광을 끕니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
 msgid "Hide painted shadows"
 msgstr "그려진 그림자 숨기기"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:334
 msgid "Leaves out the shadows that imported characters have painted over their eyes, under their fringe and on their faces: path tracing casts real shadows there. Their bodygroups and saves do not change."
 msgstr "가져온 캐릭터의 눈 위, 앞머리 아래, 얼굴에 그려진 그림자를 숨깁니다. 이 부분에는 패스 트레이싱이 실제 그림자를 드리웁니다. 바디그룹과 저장 데이터는 바뀌지 않습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
 msgid "Solid hair"
 msgstr "머리카락을 불투명하게 표시"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:336
 msgid "Draws an imported character's hair solid when its texture is mostly opaque but the alpha test would cut holes into it, as in hair from Endfield. Hair cut out of its texture strand by strand keeps its cutouts."
 msgstr "엔드필드의 머리카락처럼 텍스처 대부분이 불투명한데도 알파 테스트로 구멍이 생기는 경우, 가져온 캐릭터의 머리카락을 불투명하게 그립니다. 텍스처에서 한 가닥씩 잘라낸 머리카락은 잘라낸 모양을 그대로 유지합니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
 msgid "Common Remix settings"
 msgstr "주요 Remix 설정"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:348
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:351
 msgid "Player models"
 msgstr "플레이어 모델"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:352
 msgid "Toolgun screen"
 msgstr "툴건 화면"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:353
 msgid "Model outlines"
 msgstr "모델 외곽선"
 
@@ -776,6 +780,56 @@ msgstr "VMD 파일을 가져오고 모션 라이브러리와 재생을 관리합
 #: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
 msgid "Open in window"
 msgstr "창으로 열기"
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:58
+msgid ""
+"Upscaling and frame generation are off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Upscaler: DLSS and Frame generation: DLSS-G."
+msgstr ""
+"업스케일링과 프레임 생성이 꺼져 있습니다.\n"
+"RTX Remix > Remix 설정 또는 Alt+X:\n"
+"선택: 업스케일러: DLSS, 프레임 생성: DLSS-G."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:60
+msgid ""
+"Upscaling and frame generation are off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Upscaler: DLSS and Frame generation: FSR 3."
+msgstr ""
+"업스케일링과 프레임 생성이 꺼져 있습니다.\n"
+"RTX Remix > Remix 설정 또는 Alt+X:\n"
+"선택: 업스케일러: DLSS, 프레임 생성: FSR 3."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:62
+msgid ""
+"Upscaling is off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Upscaler: DLSS."
+msgstr ""
+"업스케일링이 꺼져 있습니다.\n"
+"RTX Remix > Remix 설정 또는 Alt+X:\n"
+"선택: 업스케일러: DLSS."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:65
+msgid ""
+"Frame generation is off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Frame generation: DLSS-G."
+msgstr ""
+"프레임 생성이 꺼져 있습니다.\n"
+"RTX Remix > Remix 설정 또는 Alt+X:\n"
+"선택: 프레임 생성: DLSS-G."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:67
+msgid ""
+"Frame generation is off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Frame generation: FSR 3."
+msgstr ""
+"프레임 생성이 꺼져 있습니다.\n"
+"RTX Remix > Remix 설정 또는 Alt+X:\n"
+"선택: 프레임 생성: FSR 3."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:44
 msgid "Welcome"
@@ -1034,8 +1088,8 @@ msgid "Sun direction: turns the sun's path around the map."
 msgstr "태양 방향: 맵을 기준으로 태양의 이동 경로를 회전합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:114
-msgid "Time passes, and how many minutes a whole day takes."
-msgstr "시간 흐름과 하루에 걸리는 시간(분)입니다."
+msgid "Time passes is on by default; a whole day takes 20 real minutes."
+msgstr "시간 흐름은 기본으로 켜져 있으며 하루는 실제 시간으로 20분입니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:115
 msgid "Season, moon phase and eclipse."
@@ -1054,8 +1108,8 @@ msgid "Reset the sky and weather."
 msgstr "하늘과 날씨 초기화."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
-msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the sun stands where the map's own sun is. Move Time of day or Sun direction to choose your own, or tick Time passes."
-msgstr "물리 기반 하늘은 실제 같은 태양, 구름, 달, 별로 맵을 비춥니다. 기본적으로 맵 자체의 태양 위치에 태양이 놓입니다. 직접 정하려면 시각이나 태양 방향을 바꾸거나 시간 흐름을 체크하세요."
+msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
+msgstr "물리 하늘은 실제 태양, 구름, 달과 별로 맵을 비춥니다. 기본적으로 맵의 원래 태양 위치에서 시작하여 실제 시간으로 20분마다 하루가 지납니다. 시간대나 태양 방향을 조정하여 원하는 상태를 선택할 수 있습니다. 시간 흐름을 끄면 시계가 멈추고 하루 길이(분)로 속도를 바꿀 수 있습니다. 맵의 태양 따르기를 켠 동안에는 하늘이나 날씨 설정을 바꾸기 전까지 맵의 하늘 애드온이 계속 제어합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."

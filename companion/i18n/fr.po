@@ -8,269 +8,269 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Clear"
 msgstr "Dégagé"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Partly cloudy"
 msgstr "Partiellement nuageux"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:668
+#: nativeloader/lua/autorun/nativeloader_sky.lua:671
 msgid "Overcast"
 msgstr "Couvert"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Hazy"
 msgstr "Brumeux"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Foggy"
 msgstr "Brouillard"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Drizzle"
 msgstr "Bruine"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:669
+#: nativeloader/lua/autorun/nativeloader_sky.lua:672
 msgid "Rain"
 msgstr "Pluie"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Thunderstorm"
 msgstr "Orage"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Snow"
 msgstr "Neige"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:670
+#: nativeloader/lua/autorun/nativeloader_sky.lua:673
 msgid "Blizzard"
 msgstr "Blizzard"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:671
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Sandstorm"
 msgstr "Tempête de sable"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:671
+#: nativeloader/lua/autorun/nativeloader_sky.lua:674
 msgid "Smog"
 msgstr "Smog"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Spring"
 msgstr "Printemps"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Summer"
 msgstr "Été"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Autumn"
 msgstr "Automne"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:673
+#: nativeloader/lua/autorun/nativeloader_sky.lua:676
 msgid "Winter"
 msgstr "Hiver"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:674
+#: nativeloader/lua/autorun/nativeloader_sky.lua:677
 msgid "New moon"
 msgstr "Nouvelle lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:674
+#: nativeloader/lua/autorun/nativeloader_sky.lua:677
 msgid "Waxing crescent"
 msgstr "Premier croissant"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:675
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 msgid "First quarter"
 msgstr "Premier quartier"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:675
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 msgid "Waxing gibbous"
 msgstr "Gibbeuse croissante"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:675
+#: nativeloader/lua/autorun/nativeloader_sky.lua:678
 msgid "Full moon"
 msgstr "Pleine lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:676
+#: nativeloader/lua/autorun/nativeloader_sky.lua:679
 msgid "Waning gibbous"
 msgstr "Gibbeuse décroissante"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:676
+#: nativeloader/lua/autorun/nativeloader_sky.lua:679
 msgid "Last quarter"
 msgstr "Dernier quartier"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:677
+#: nativeloader/lua/autorun/nativeloader_sky.lua:680
 msgid "Waning crescent"
 msgstr "Dernier croissant"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:681
 msgid "No eclipse"
 msgstr "Pas d'éclipse"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:681
 msgid "Lunar eclipse"
 msgstr "Éclipse de Lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:678
+#: nativeloader/lua/autorun/nativeloader_sky.lua:681
 msgid "Solar eclipse"
 msgstr "Éclipse de Soleil"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:679
+#: nativeloader/lua/autorun/nativeloader_sky.lua:682
 msgid "Night sky image"
 msgstr "Image du ciel nocturne"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:679
+#: nativeloader/lua/autorun/nativeloader_sky.lua:682
 msgid "Simulated stars"
 msgstr "Étoiles simulées"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:681
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
 msgid "Sunrise"
 msgstr "Lever du soleil"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:681
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
 msgid "Morning"
 msgstr "Matin"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:681
+#: nativeloader/lua/autorun/nativeloader_sky.lua:684
 msgid "Noon"
 msgstr "Midi"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:682
+#: nativeloader/lua/autorun/nativeloader_sky.lua:685
 msgid "Sunset"
 msgstr "Coucher du soleil"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:682
+#: nativeloader/lua/autorun/nativeloader_sky.lua:685
 msgid "Night"
 msgstr "Nuit"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:692
+#: nativeloader/lua/autorun/nativeloader_sky.lua:695
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:260
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "L'API Remix n'est pas disponible dans cette session : ces paramètres ne peuvent donc pas être appliqués. Exécutez nativeloader_status pour plus de détails."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:696
+#: nativeloader/lua/autorun/nativeloader_sky.lua:699
 #, c-format
 msgid "On this map %s also sets the sky. It keeps its sky while Follow the map's sun is ticked and nothing here is changed; otherwise your settings here replace it."
 msgstr "Sur cette carte, le ciel est aussi réglé par %s. Ce ciel est conservé tant que l'option « Suivre le soleil de la carte » est cochée et qu'aucun réglage n'est modifié ici ; sinon, vos réglages ici le remplacent."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:698
+#: nativeloader/lua/autorun/nativeloader_sky.lua:701
 msgid "Sky"
 msgstr "Ciel"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:699
+#: nativeloader/lua/autorun/nativeloader_sky.lua:702
 msgid "Physical sky"
 msgstr "Ciel physique"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:700
+#: nativeloader/lua/autorun/nativeloader_sky.lua:703
 msgid "The map's skybox"
 msgstr "Skybox de la carte"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:701
+#: nativeloader/lua/autorun/nativeloader_sky.lua:704
 msgid "The physical sky has a sun, clouds, stars and a moon, and lights the map from them."
 msgstr "Le ciel physique a un soleil, des nuages, des étoiles et une lune, qui éclairent la carte."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:702
+#: nativeloader/lua/autorun/nativeloader_sky.lua:705
 msgid "Follow the map's sun"
 msgstr "Suivre le soleil de la carte"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:703
+#: nativeloader/lua/autorun/nativeloader_sky.lua:706
 msgid "Puts the sun where the map's own sun is; on a map whose add-on sets its own sky, such as Modern House RTX, keeps that sky. Moving Time of day or Sun direction turns this off."
 msgstr "Place le soleil à la position du soleil de la carte ; si un addon de la carte, comme Modern House RTX, règle son propre ciel, ce ciel est conservé. Modifier « Heure » ou « Azimut solaire » désactive cette option."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:704
+#: nativeloader/lua/autorun/nativeloader_sky.lua:707
 msgid "Time of day"
 msgstr "Heure"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:708
+#: nativeloader/lua/autorun/nativeloader_sky.lua:711
 #, c-format
 msgid "Now %s"
 msgstr "Il est %s"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:726
+#: nativeloader/lua/autorun/nativeloader_sky.lua:729
 msgid "Sun direction"
 msgstr "Azimut solaire"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:727
+#: nativeloader/lua/autorun/nativeloader_sky.lua:730
 msgid "Turns the sun's path around the sky."
 msgstr "Fait tourner la course du soleil dans le ciel."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:728
+#: nativeloader/lua/autorun/nativeloader_sky.lua:731
 msgid "Time passes"
 msgstr "Faire avancer le temps"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:729
+#: nativeloader/lua/autorun/nativeloader_sky.lua:732
 msgid "Day length (min)"
 msgstr "Durée jour (min)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:730
-msgid "How many real minutes a whole day takes while Time passes is ticked."
-msgstr "Durée réelle, en minutes, d'une journée complète lorsque « Faire avancer le temps » est coché."
+#: nativeloader/lua/autorun/nativeloader_sky.lua:733
+msgid "Time passes is on by default. A whole day takes 20 real minutes; untick Time passes to stop the clock."
+msgstr "L’écoulement du temps est activé par défaut. Une journée dure 20 minutes réelles ; décochez cette option pour arrêter l’horloge."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:731
+#: nativeloader/lua/autorun/nativeloader_sky.lua:734
 msgid "Sky update interval (s)"
 msgstr "Intervalle ciel (s)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:732
+#: nativeloader/lua/autorun/nativeloader_sky.lua:735
 msgid "How often the sun, moon, stars and weather move, in seconds: 0.02 is 50 times a second, 0 is every frame. A longer interval costs a little less frame time, but the sky moves in steps."
 msgstr "Intervalle de mise à jour du soleil, de la lune, des étoiles et de la météo, en secondes : 0.02 correspond à 50 fois par seconde, 0 à chaque image. Un intervalle plus long réduit légèrement le temps de calcul par image, mais le ciel évolue par à-coups."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:733
+#: nativeloader/lua/autorun/nativeloader_sky.lua:736
 msgid "Season"
 msgstr "Saison"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:734
+#: nativeloader/lua/autorun/nativeloader_sky.lua:737
 msgid "Moon"
 msgstr "Lune"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:735
+#: nativeloader/lua/autorun/nativeloader_sky.lua:738
 msgid "Eclipse"
 msgstr "Éclipse"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:736
+#: nativeloader/lua/autorun/nativeloader_sky.lua:739
 msgid "Eclipse progress"
 msgstr "Progression de l'éclipse"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:737
+#: nativeloader/lua/autorun/nativeloader_sky.lua:740
 msgid "From first contact (0) to the middle (100): a lunar eclipse is total from 70, a solar one from 90. An eclipse sets the moon's phase, and the time if the sun is on the wrong side of the horizon for it."
 msgstr "Du premier contact (0) au maximum (100) : une éclipse de Lune est totale à partir de 70, une éclipse de Soleil à partir de 90. Une éclipse fixe la phase de la Lune, et l'heure si le soleil n'est pas du bon côté de l'horizon."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:738
+#: nativeloader/lua/autorun/nativeloader_sky.lua:741
 msgid "Night sky"
 msgstr "Ciel nocturne"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:739
+#: nativeloader/lua/autorun/nativeloader_sky.lua:742
 msgid "Night sky image: sharp stars, a galaxy and nebulae, turning with the time and the season."
 msgstr "Image du ciel nocturne : étoiles nettes, une galaxie et des nébuleuses, qui tournent avec l'heure et la saison."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:740
+#: nativeloader/lua/autorun/nativeloader_sky.lua:743
 msgid "Weather"
 msgstr "Météo"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:741
+#: nativeloader/lua/autorun/nativeloader_sky.lua:744
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:273
 msgid "(leave to Remix)"
 msgstr "(laisser à Remix)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:743
+#: nativeloader/lua/autorun/nativeloader_sky.lua:746
 msgid "Clouds, haze, fog, rain and snow, from Remix's own weather presets."
 msgstr "Nuages, brume sèche, brouillard, pluie et neige, issus des préréglages météo de Remix."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:744
+#: nativeloader/lua/autorun/nativeloader_sky.lua:747
 msgid "Weather change (s)"
 msgstr "Transition (s)"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:745
+#: nativeloader/lua/autorun/nativeloader_sky.lua:748
 msgid "How long a change of weather takes."
 msgstr "Durée d'un changement de temps."
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:746
+#: nativeloader/lua/autorun/nativeloader_sky.lua:749
 msgid "Reset the sky and weather"
 msgstr "Réinitialiser le ciel et la météo"
 
-#: nativeloader/lua/autorun/nativeloader_sky.lua:752
-#: nativeloader/lua/autorun/nativeloader_sky.lua:752
+#: nativeloader/lua/autorun/nativeloader_sky.lua:755
+#: nativeloader/lua/autorun/nativeloader_sky.lua:755
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
 #: nativeloader/lua/nativeloader/guide_pages.lua:108
 msgid "Sky and weather"
@@ -281,64 +281,64 @@ msgstr "Ciel et météo"
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "Le paquet RTX %s a été mis à jour : redémarrez Garry's Mod pour l'utiliser"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
 msgid "Choose eye-white materials"
 msgstr "Choisir les matériaux du blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:408
 msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."
 msgstr "Choisissez ici un personnage présent, ou regardez-en un avant d'ouvrir cette fenêtre. Vos choix sont enregistrés pour ce personnage et s'appliquent immédiatement à toutes ses copies, sans le faire réapparaître. « Stabiliser le blanc des yeux des personnages importés » et « Luminosité du blanc des yeux » restent actifs."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Choose a spawned character"
 msgstr "Choisir un personnage présent"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:414
 msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
 msgstr "Faites d'abord apparaître un personnage importé depuis « Modèles externes ». Seuls les matériaux des personnages importés peuvent être sélectionnés."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:418
 msgid "Previous materials"
 msgstr "Matériaux précédents"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:412
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:419
 msgid "Next materials"
 msgstr "Matériaux suivants"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:431
 msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
 msgstr "Les matériaux cochés sont traités comme le blanc des yeux. « Utiliser la détection automatique » efface votre choix pour ce matériau. Lorsque les yeux partagent une texture avec le visage, l'image montre aussi le visage ; seul le matériau coché change."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:482
 msgid "Eye white"
 msgstr "Blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:477
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:484
 msgid "Use automatic detection"
 msgstr "Utiliser la détection automatique"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: eye white"
 msgstr "Choix : blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: ordinary material"
 msgstr "Choix : matériau ordinaire"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: eye white"
 msgstr "Automatique : blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: ordinary material"
 msgstr "Automatique : matériau ordinaire"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:498
 msgid "Texture not available"
 msgstr "Texture indisponible"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:503
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
 msgstr "Impossible d'enregistrer votre choix : le personnage a peut-être été supprimé, ou le fichier des choix enregistrés a été modifié ou est illisible. Aucun fichier n'a été écrasé."
 
@@ -362,9 +362,9 @@ msgstr "Guide RTX Remix"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:348
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:351
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:352
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:353
 #: nativeloader/lua/nativeloader/guide_pages.lua:124
 msgid "Rendering"
 msgstr "Rendu"
@@ -383,14 +383,14 @@ msgid "Water and glass"
 msgstr "Eau et verre"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:346
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
 #: nativeloader/lua/nativeloader/guide_pages.lua:87
 msgid "Start here"
 msgstr "Pour commencer"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
 #: nativeloader/lua/nativeloader/guide_pages.lua:98
 msgid "Remix settings"
 msgstr "Paramètres Remix"
@@ -668,98 +668,102 @@ msgid "Set %s here"
 msgstr "Régler « %s » ici"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+msgid "Show upscaling and frame generation hint at startup"
+msgstr "Afficher le conseil de mise à l’échelle et de génération d’images au démarrage"
+
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:307
 msgid "A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."
 msgstr "Une valeur numérique n'est utilisée que si la case au-dessus, Régler « ... » ici, est cochée. Zéro est une valeur valide pour la luminosité du ciel et la pureté des couleurs."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:305
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:308
 msgid "Clear this panel's overrides"
 msgstr "Effacer les valeurs imposées par ce panneau"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:309
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
 msgid "Local player shadow"
 msgstr "Ombre du joueur local"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:313
 msgid "Shows the shadow and reflection of your own body while you play in first person. Other players and ragdolls are not affected."
 msgstr "Affiche l'ombre et le reflet de votre corps lorsque vous jouez à la première personne. Les autres joueurs et les ragdolls ne sont pas affectés."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:311
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:314
 msgid "Body height offset (units)"
 msgstr "Décalage vertical du corps (unités)"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
 msgid "Raises (positive) or lowers (negative) only that body. Your view and your collisions stay where they are."
 msgstr "Relève (valeur positive) ou abaisse (valeur négative) uniquement ce corps. Votre vue et vos collisions restent en place."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:316
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Keep toolgun text sharp"
 msgstr "Garder le texte du toolgun net"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:317
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Draws the toolgun's screen at full resolution after DLSS or another upscaler, so its text stays readable. Animated and custom screens keep working."
 msgstr "Affiche l'écran du toolgun à pleine résolution après DLSS ou une autre méthode de mise à l'échelle, pour que son texte reste lisible. Les écrans animés et personnalisés continuent de fonctionner."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
 msgid "Hide outline meshes"
 msgstr "Masquer les maillages de contour"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:322
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Hides the outline shells that many anime models have: path tracing draws them as a dark layer over the model. The model's other materials are not changed."
 msgstr "Masque les coques de contour de nombreux modèles de style anime : le path tracing les affiche comme une couche sombre sur le modèle. Les autres matériaux du modèle ne changent pas."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:323
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
 msgid "Imported game PBR"
 msgstr "PBR des personnages importés"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
 msgid "Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."
 msgstr "Utilise les cartes du jeu pour les personnages importés de Wuthering Waves, Endfield et Silver Palace. La peau et les visages restent inchangés. Désactiver cette option rétablit les matériaux d'origine."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
 msgid "Steady eye whites for imported characters"
 msgstr "Stabiliser le blanc des yeux des personnages importés"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."
 msgstr "Garde le blanc des yeux des personnages importés propre et lumineux. Les matériaux sont reconnus par leur nom ; si certains ne sont pas détectés, sélectionnez-les vous-même ci-dessous. Les personnages dotés d'un pack PBR conservent ses matériaux."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
 msgid "Eye-white brightness"
 msgstr "Luminosité du blanc des yeux"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
 msgid "In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."
 msgstr "En pourcentage ; 100 est la valeur réglée par défaut. Une modification s'applique immédiatement à la stabilisation du blanc des yeux et à l'émission des yeux des packs PBR qui suit l'éclairage de la scène ; 0 supprime cette émission."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
 msgid "Hide painted shadows"
 msgstr "Masquer les ombres peintes"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:334
 msgid "Leaves out the shadows that imported characters have painted over their eyes, under their fringe and on their faces: path tracing casts real shadows there. Their bodygroups and saves do not change."
 msgstr "Masque les ombres peintes au niveau des yeux, sous la frange et sur le visage des personnages importés : le path tracing y projette de vraies ombres. Les groupes du modèle et les sauvegardes restent inchangés."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
 msgid "Solid hair"
 msgstr "Cheveux opaques"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:336
 msgid "Draws an imported character's hair solid when its texture is mostly opaque but the alpha test would cut holes into it, as in hair from Endfield. Hair cut out of its texture strand by strand keeps its cutouts."
 msgstr "Affiche les cheveux d'un personnage importé sans transparence lorsque leur texture est en grande partie opaque mais que le test alpha y créerait des trous, comme pour les cheveux d'Endfield. Les cheveux découpés mèche par mèche dans leur texture conservent leurs découpes."
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:347
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
 msgid "Common Remix settings"
 msgstr "Réglages Remix usuels"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:348
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:351
 msgid "Player models"
 msgstr "Modèles de joueurs"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:352
 msgid "Toolgun screen"
 msgstr "Écran du toolgun"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:353
 msgid "Model outlines"
 msgstr "Contours des modèles"
 
@@ -776,6 +780,56 @@ msgstr "Importez des fichiers VMD et gérez votre bibliothèque de mouvements et
 #: nativeloader/lua/autorun/client/nativeloader_motion_tab.lua:74
 msgid "Open in window"
 msgstr "Ouvrir dans une fenêtre"
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:58
+msgid ""
+"Upscaling and frame generation are off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Upscaler: DLSS and Frame generation: DLSS-G."
+msgstr ""
+"Mise à l’échelle et génération d’images désactivées.\n"
+"RTX Remix > Paramètres Remix, ou Alt+X :\n"
+"Choisissez Mise à l'échelle: DLSS ; Génération d'images: DLSS-G."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:60
+msgid ""
+"Upscaling and frame generation are off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Upscaler: DLSS and Frame generation: FSR 3."
+msgstr ""
+"Mise à l’échelle et génération d’images désactivées.\n"
+"RTX Remix > Paramètres Remix, ou Alt+X :\n"
+"Choisissez Mise à l'échelle: DLSS ; Génération d'images: FSR 3."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:62
+msgid ""
+"Upscaling is off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Upscaler: DLSS."
+msgstr ""
+"Mise à l’échelle désactivée.\n"
+"RTX Remix > Paramètres Remix, ou Alt+X :\n"
+"Choisissez Mise à l'échelle: DLSS."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:65
+msgid ""
+"Frame generation is off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Frame generation: DLSS-G."
+msgstr ""
+"Génération d’images désactivée.\n"
+"RTX Remix > Paramètres Remix, ou Alt+X :\n"
+"Choisissez Génération d'images: DLSS-G."
+
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:67
+msgid ""
+"Frame generation is off.\n"
+"RTX Remix > Remix settings, or Alt+X:\n"
+"Choose Frame generation: FSR 3."
+msgstr ""
+"Génération d’images désactivée.\n"
+"RTX Remix > Paramètres Remix, ou Alt+X :\n"
+"Choisissez Génération d'images: FSR 3."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:44
 msgid "Welcome"
@@ -1034,8 +1088,8 @@ msgid "Sun direction: turns the sun's path around the map."
 msgstr "Azimut solaire : fait tourner la course du soleil autour de la carte."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:114
-msgid "Time passes, and how many minutes a whole day takes."
-msgstr "Faire avancer le temps, et la durée d'une journée complète en minutes."
+msgid "Time passes is on by default; a whole day takes 20 real minutes."
+msgstr "Le temps s’écoule par défaut ; une journée dure 20 minutes réelles."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:115
 msgid "Season, moon phase and eclipse."
@@ -1054,8 +1108,8 @@ msgid "Reset the sky and weather."
 msgstr "Réinitialiser le ciel et la météo."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
-msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the sun stands where the map's own sun is. Move Time of day or Sun direction to choose your own, or tick Time passes."
-msgstr "Le ciel physique éclaire la carte avec un vrai soleil, des nuages, la lune et les étoiles. Par défaut, le soleil est placé à la position du soleil de la carte. Modifiez « Heure » ou « Azimut solaire » pour choisir sa position, ou cochez « Faire avancer le temps »."
+msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
+msgstr "Le ciel physique éclaire la carte avec le soleil, les nuages, la lune et les étoiles. Par défaut, la journée commence à la position du soleil de la carte, puis le temps s’écoule : une journée dure 20 minutes réelles. Modifiez l’heure ou la direction du soleil pour les choisir. Décochez l’écoulement du temps pour arrêter l’horloge ; la durée du jour en minutes règle sa vitesse. Tant que le suivi du soleil de la carte est coché, son extension de ciel garde le contrôle jusqu’à ce que vous changiez un réglage du ciel ou de la météo."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."

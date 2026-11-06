@@ -1,5 +1,9 @@
 # guide_pages.lua
 
+R20-B updates the sky caption and paragraph: time passes by default, a whole day takes 20 real
+minutes, Time passes stops the clock, and Day length (min) changes its speed. The text also keeps
+the map sky add-on ownership exception explicit. No page ids, picture assets or links change.
+
 The pages of the in-game RTX Remix guide, as data. [`../autorun/client/nativeloader_guide.lua`](../autorun/client/nativeloader_guide.lua.md)
 includes it and draws them; it returns `{ pages = { ... } }`. No hooks, no files, no console commands.
 The server sends it to clients with the translations ([`../autorun/nativeloader_i18n.lua`](../autorun/nativeloader_i18n.lua.md)).

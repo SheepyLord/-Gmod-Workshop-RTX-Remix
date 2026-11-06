@@ -1,5 +1,8 @@
 # test_companion.py
 
+R20-B: the shared `lua_value` harness serializer also escapes newline, carriage return and tab.
+The guide tests import it to serialize all catalog ids, including the new multi-line hint messages.
+
 Runs the Lua companion, [`companion/nativeloader/lua/autorun/client/nativeloader.lua`](../../companion/nativeloader/lua/autorun/client/nativeloader.lua.md),
 under LuaJIT with the GMod functions it calls mocked (`MsgN`, `file.Exists/Read`,
 `util.JSONToTable`, `steamworks.FileInfo`, `notification.AddLegacy`, `timer`, `concommand`), from a

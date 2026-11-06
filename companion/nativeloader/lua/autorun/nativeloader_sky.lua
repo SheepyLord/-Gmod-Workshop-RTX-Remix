@@ -21,7 +21,7 @@ local L, N = i18n.L, i18n.N
 
 local DEFAULTS = {
     nativeloader_sky = "1", nativeloader_sky_follow_map = "1", nativeloader_sky_hour = "14.5",
-    nativeloader_sky_direction = "0", nativeloader_sky_time_passes = "0", nativeloader_sky_day_minutes = "30",
+    nativeloader_sky_direction = "0", nativeloader_sky_time_passes = "1", nativeloader_sky_day_minutes = "20",
     nativeloader_sky_season = "summer", nativeloader_sky_moon = "full",
     nativeloader_sky_eclipse = "", nativeloader_sky_eclipse_amount = "100", nativeloader_sky_stars = "map",
     nativeloader_weather = "partlyCloudy", nativeloader_weather_seconds = "30", nativeloader_sky_interval = "0.02",
@@ -31,8 +31,8 @@ local HELP = {
     nativeloader_sky_follow_map = "1: the time of day and the sun's direction come from the map's own sun",
     nativeloader_sky_hour = "Time of day in hours, 0-24 (with nativeloader_sky_follow_map 0)",
     nativeloader_sky_direction = "Turns the sun's path around the sky, in degrees (with nativeloader_sky_follow_map 0)",
-    nativeloader_sky_time_passes = "1: the time of day runs on",
-    nativeloader_sky_day_minutes = "Real minutes for a whole day while the time runs on",
+    nativeloader_sky_time_passes = "1: the time of day runs on (default on)",
+    nativeloader_sky_day_minutes = "Real minutes for a whole day while the time runs on (default 20)",
     nativeloader_sky_season = "spring, summer, autumn or winter: how high the sun climbs and how long the day is",
     nativeloader_sky_moon = "Moon phase: new, waxingCrescent, firstQuarter, waxingGibbous, full, waningGibbous, "
         .. "lastQuarter or waningCrescent",
@@ -47,6 +47,9 @@ local HELP = {
 }
 local cv = {}
 for name, value in pairs(DEFAULTS) do cv[name] = CreateClientConVar(name, value, true, false, HELP[name]) end
+-- nativeloader_defaults.lua registers this before the sky autorun. Migrate before any sky change
+-- callbacks exist, so the map's initial sun and R16's map-add-on ownership are preserved.
+hook.Run("NativeLoaderSkyDefaults")
 
 -- How often the sky moves on (R3-015): every frame, as games move their sky, would be 0; 0.02 keeps a
 -- running clock smooth at a fraction of the calls.
@@ -727,7 +730,7 @@ local function buildPanel(panel)
     panel:ControlHelp(L("Turns the sun's path around the sky."))
     panel:CheckBox(L("Time passes"), "nativeloader_sky_time_passes")
     panel:NumSlider(L("Day length (min)"), "nativeloader_sky_day_minutes", 2, 240, 0)
-    panel:ControlHelp(L("How many real minutes a whole day takes while Time passes is ticked."))
+    panel:ControlHelp(L("Time passes is on by default. A whole day takes 20 real minutes; untick Time passes to stop the clock."))
     panel:NumSlider(L("Sky update interval (s)"), "nativeloader_sky_interval", 0, 0.25, 3)
     panel:ControlHelp(L("How often the sun, moon, stars and weather move, in seconds: 0.02 is 50 times a second, 0 is every frame. A longer interval costs a little less frame time, but the sky moves in steps."))
     combo(panel, N("Season"), "nativeloader_sky_season", SEASONS)

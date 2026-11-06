@@ -1,5 +1,11 @@
 # Components
 
+R20-B adds the client [startup hint consumer](../companion/nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua.md),
+its [Lua lifecycle/decision harness](../tools/tests/companion_qol_harness.lua.md) and
+[Python test runner](../tools/tests/test_companion_qol.py.md) in `tools/tests`. The consumer requires
+an optional native live snapshot; the current packaged API cannot supply it. The existing defaults
+autorun owns the sky's one-time old-default migration, before the sky creates its callbacks.
+
 R14-H splits the companion's guide into its window ([`nativeloader_guide.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_guide.lua.md))
 and its pages ([`guide_pages.lua`](../companion/nativeloader/lua/nativeloader/guide_pages.lua.md)). The
 guide's pictures are made by [`tools/guide_annotate.py`](../tools/guide_annotate.py.md) from the spec

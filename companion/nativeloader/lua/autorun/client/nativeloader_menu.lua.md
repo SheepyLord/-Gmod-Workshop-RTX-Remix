@@ -1,5 +1,11 @@
 # nativeloader_menu.lua
 
+R20-B adds **Show upscaling and frame generation hint at startup** immediately after the Frame
+generation choice. The archived setting `nativeloader_upscaling_hint` (default on) belongs to
+[`nativeloader_upscaling_hint.lua`](nativeloader_upscaling_hint.lua.md). Opening the panel does not
+change it or any Remix option. The current native build lacks a live settings readout; the hint's
+documented consumer stays silent until that optional interface exists. `cl_showhints 0` also opts out.
+
 R15 adds two checkboxes at the end of Model outlines, after **Choose eye-white materials** (so the
 guide's picture of the panel's top stays right): **Hide painted shadows**
 (`nativeloader_hide_painted_shadows`, default on) and **Solid hair** (`nativeloader_solid_hair`, default

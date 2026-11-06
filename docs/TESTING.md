@@ -1,5 +1,24 @@
 # Testing
 
+## R20-B: startup hints and the running sky defaults
+
+`python -I -m unittest discover -s tools/tests -p test_companion_qol.py -v` runs the real hint and
+defaults autoruns under LuaJIT: every upscaler/frame-generation combination, RTX 20/30/40/50 and
+unsupported/mixed/unknown adapters, per-backend capability flags, unreadable/malformed state,
+`cl_showhints 0`, the opt-out, bounded retries, delayed first drawing, two maps and another game
+start. It traps use of the file-only getter and settings writes. The migration checks old/fresh/
+changed pairs, missing ConVars and marker persistence after a skipped or successful migration.
+`test_companion_sky.py` exercises the actual defaults/sky startup together: 20 real minutes per
+day, migration before startup and Modern House ownership preserved. Existing fixed-sky tests
+explicitly stop time rather than depending on the old default.
+
+PoC acceptance under the shared lock: capture fresh and migrated Sky and weather panels and the
+hint checkbox. Verify native API absence gives no hint; injected off/on snapshots may exercise
+notification layout and consumer lifetime but must be labeled as simulated. **Full live off/on
+acceptance is open** until the runtime/native module supplies the effective post-preset snapshot
+in [ADR 0117](decisions/0117-startup-upscaling-hint-and-sky-defaults.md). Never use the old file-only
+getter as live evidence or save Remix settings. Evidence belongs in this worktree's `out/r20b`.
+
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.
