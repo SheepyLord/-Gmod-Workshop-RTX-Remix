@@ -46,6 +46,24 @@
   published-release record accepts no build metadata and its exact URL is derived only for validation.
 ## R20-E: effective upscaling state, 2026-11-06
 
+- R20-Q exposed a gap in E's isolated proof: the merged advancing sky cleared readiness on every
+  dirty option. Q measured 14 ready / 65 pending reads normally, 140 / 0 with unrelated writes
+  deferred, 10 / 110 after restoration; `sunElevation` caused 536 transitions. A 1/1 request timed
+  out after 45 seconds. Source: branch `r20-qa`, `out/r20q/native-readiness.json`.
+- Follow-up: `RtxInitializer` registers actual `RtxOptionImpl` addresses from the upscaling preset/FG
+  code. `markDirty` passes its address; the store ignores nonmembers. This keeps generic option
+  writes independent of rendering subsystems. The new runtime regression uses real
+  `readOption`/callback/resolution machinery with controlled sky-like writers; live proof uses
+  the merged companion's actual advancing sky.
+- Corrected publisher: runtime `d9aba9be`, `rtx_initializer.cpp:78` registers 19 typed option-object
+  addresses; `rtx_fork_game_state.h:76` checks identity before invalidation. The update/store mutex
+  order is unchanged. Full runtime units pass, including 20,100 unrelated `readOption` writes.
+- The merged-sky follow-up samples 71.31 s on RTX 5090: 3,512/3,512 steady reads ready (100%);
+  including real selector transitions, 3,514 ready and 1 pending (99.97%). Normal sky makes 27,757
+  observed writes, 3,517 to sun elevation; zero unrelated invalidations. 0/0 and 1/1 resolve and
+  original 1/0 is restored. Evidence: `out/r20e-followup/acceptance.json`. Exact restoration verifies
+  4,200 original files/registry; current-stock verifier checks 2,877 files / 7,282,813,551 bytes.
+
 - PoC: RTX 5090 reports DLSS/DLSS-G/FSR 3 FG support all true. Startup is unready at 04:01:49.660
   and ready after presets at 04:01:52.054. Six in-memory edits read unready first, then effective
   **0/0, 3/0, 1/0, 1/1, 3/2, 1/0** (upscaler/FG). The new module with the old runtime returns nil.

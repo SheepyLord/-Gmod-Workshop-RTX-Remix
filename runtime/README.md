@@ -4,7 +4,7 @@ R20-E adds `0040-Publish-live-upscaling-state-for-startup-advice.patch`
 ([ADR 0123](../docs/decisions/0123-live-upscaling-readback.md)). The selected device publishes one
 versioned atomic snapshot at `rtx.runtime.upscalingState`, through the existing
 `remixapi_GetGameValue`; plugins cannot write the reserved `rtx.runtime.` namespace. Readiness waits
-for startup graphics/DLSS presets and pending callbacks, is invalidated by option edits and refreshed
+for startup graphics/DLSS presets and pending callbacks, is invalidated by dependent option edits and refreshed
 at each present. The fixes' `RemixConfig.GetUpscalingState()` reads it for R20-B's startup hint.
 Unit test: `test_upscaling_state` (also compiled from the patch by the aggregate Release gate).
 
@@ -40,6 +40,21 @@ Final DLL: 417,502,720 bytes, SHA-256
 base.json records all 35 patches. Dedicated test_gmod_effects covers category lifetime/snapshots
 and the filter equation; the existing runtime suite was rebuilt in its separate unit configuration.
 Evidence is in the R20-D worktree's out/r20d/runtime-filter-* and runtime-import-* receipts.
+
+The R20-Q follow-up narrows dirty notifications to **19 option objects** registered by
+`RtxInitializer`: selectors, upscaler/graphics presets and their upscaling/FG inputs and outputs.
+Sky/weather/effect/category writes leave readiness intact. Device ownership and publication locks
+are unchanged; genuine dependent edits and failed convergence remain unready. `test_upscaling_options`
+exercises actual option writes/callbacks: 20,100 unrelated writes with intervening reads, selector/preset
+transitions and failed convergence. Run it beside `test_upscaling_state` in `_CompUnitTest_x64`.
+The re-exported **single 0040** still applies to `51cf1b8b`; its new hash is in
+`base.json.pending_patches`. The test DLL remains unimported.
+
+Follow-up source commit: `d9aba9be` on `51cf1b8b`; local `-NoImport` DLL SHA-256
+`7fb71c9e745949df43750ff6d3f57cc379086aede87521778becd29510ce9ab6`. The dedicated runtime units
+pass. With Q's merged companion and advancing sky, all 3,512 steady timer reads are ready, with
+3,517 sun writes and zero unrelated invalidations; including selector transitions, readiness is
+99.97%. See the [follow-up report](../docs/handover/R20-E-report.md) and `out/r20e-followup` receipts.
 
 R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
 ([report](../docs/handover/R19-R-report.md)), the runtime's findings of the pre-release review

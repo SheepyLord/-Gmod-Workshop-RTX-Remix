@@ -20,6 +20,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   The server browser first explains server rules/kick or ban risks, PBR map resources, uncertain
   performance/stability and the player's responsibility; Continue/Back and permanent dismissal work
   in the main and pause menus. Release record remains 0.14.0 until 0.15.0 is published.
+- **Steady upscaling readback while the sky advances (R20-E follow-up).** Only upscaling/preset/FG
+  dependencies invalidate readiness. Continuous sky/weather/effect edits no longer starve the
+  startup hint; genuine pending settings and failed convergence remain unready. Regressions cover
+  continuous writes between reads ([ADR 0123 amendment](docs/decisions/0123-live-upscaling-readback.md)).
+
 - **Live upscaling readback for the startup hint (R20-E).** The fixes' native module adds
   `RemixConfig.GetUpscalingState()`, with atomic effective settings and selected-device capability
   flags from runtime patch 0040 after presets/callbacks resolve. Old runtimes return `nil` safely.

@@ -1,5 +1,12 @@
 # test_upscaling_readback.py
 
+The R20-Q follow-up extends the SDK-free publisher test with 5,000 unrelated dirty notifications
+and intervening reads, plus immediate failure invalidation. The separate runtime target
+`test_upscaling_options` runs 20,100 writes through actual `RtxOption::readOption`, including writes
+after resolution/before present, dependent selectors/preset callbacks, and a failed resolver. It
+runs in the runtime's dedicated unit build and needs the pinned SDKs; this aggregate runner stays
+SDK-free.
+
 R20-E regressions for the live upscaling readback (ADR 0123). Run from the repository root:
 
 ```powershell
