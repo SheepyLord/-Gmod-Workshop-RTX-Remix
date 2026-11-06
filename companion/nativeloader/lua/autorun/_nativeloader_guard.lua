@@ -442,6 +442,7 @@ lua/autorun/client/nativeloader_mmd_alpha.lua
 lua/autorun/client/nativeloader_model_layers.lua
 lua/autorun/client/nativeloader_motion_tab.lua
 lua/autorun/client/nativeloader_toolgun.lua
+lua/autorun/client/nativeloader_upscaling_hint.lua
 lua/autorun/client/nativeloader_vram.lua
 lua/autorun/client/removehalo.lua
 lua/autorun/client/rtx_agent.lua

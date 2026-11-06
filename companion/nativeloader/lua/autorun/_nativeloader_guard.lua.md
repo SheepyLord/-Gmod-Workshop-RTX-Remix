@@ -1,5 +1,9 @@
 # _nativeloader_guard.lua
 
+R20-B registers the new shipped `lua/autorun/client/nativeloader_upscaling_hint.lua` in the exact
+bundled-source inventory. This single inventory line is required by the repository's completeness
+check whenever a companion file is added; no guard function, wildcard or render policy changes.
+
 R10-E adds the three shipped eye-white controller/matcher/VTF virtual paths to the existing exact
 bundled-source set, permitting its tiny offscreen proxy-hash warmup through the same policy as other
 companion rendering code. It adds no wildcard or permission for other add-ons.
