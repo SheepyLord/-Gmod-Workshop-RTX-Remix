@@ -96,7 +96,15 @@ timer = {Simple=function(_,fn) end}
 spawnmenu = {AddToolMenuOption=function(...) calls.panels=calls.panels or {} table.insert(calls.panels,{...}) end,
     AddToolTab=function() end,AddToolCategory=function() end}
 
-if scenario=='dts_bootstrap' then
+if scenario=='server_delivery' then
+    SERVER,CLIENT=true,false
+    local sent={}
+    file.Exists=function() return true end
+    AddCSLuaFile=function(path) sent[path or '<self>']=true end
+    dofile(source('autorun/!nativeloader_blood.lua'))
+    assert(sent['dynamic_toolgun_screen/nl_package.lua'] and sent['autorun/client/nativeloader_bundled_panels.lua'])
+    assert(sent['nlblood/shapes.lua'] and sent['nativeloader/blood_impacts.lua'])
+elseif scenario=='dts_bootstrap' then
     local count=0
     include=function(path) assert(path=='dynamic_toolgun_screen/nl_original_init.lua') count=count+1 DTScreen={Loaded=true} end
     dofile(source('nativeloader/dts_bootstrap.lua')) dofile(source('nativeloader/dts_bootstrap.lua'))

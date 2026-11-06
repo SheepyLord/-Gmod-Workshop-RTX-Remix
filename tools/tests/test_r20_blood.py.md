@@ -1,5 +1,8 @@
 # test_r20_blood.py
 
+The controller matrix executes fourteen Lua scenarios, including explicit server delivery of the
+screen marker/panel adapter and independent-part panel relocation.
+
 Also validates the final imported index and USD: exactly the owned VTF/DDS names and 76 material
 hashes (72 patterns, four analytic sprites), lazy loading, non-emissive world stains, and the audit
 excluding the old blood8-derived droplet. PNG/CRC round-trip and output-path refusal cover the

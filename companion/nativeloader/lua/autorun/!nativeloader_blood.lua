@@ -5,6 +5,10 @@ local screen = file.Exists("dynamic_toolgun_screen/nl_package.lua", "LUA")
 if not blood and not screen then return end
 if SERVER then
     AddCSLuaFile()
+    if screen then
+        AddCSLuaFile("dynamic_toolgun_screen/nl_package.lua")
+        AddCSLuaFile("autorun/client/nativeloader_bundled_panels.lua")
+    end
     if blood then
         for _, path in ipairs({ "nlblood/shapes.lua", "nlblood/schemes.lua",
             "nativeloader/blood_budget.lua", "nativeloader/blood_core.lua", "nativeloader/blood_impacts.lua" }) do

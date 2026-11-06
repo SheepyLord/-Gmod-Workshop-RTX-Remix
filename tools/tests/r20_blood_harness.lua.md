@@ -1,5 +1,8 @@
 # r20_blood_harness.lua
 
+The server-delivery scenario checks that both the private screen marker and panel adapter are sent
+before a multiplayer client tests their presence. This prevents a second Utilities shortcut.
+
 An independent reference flight check requires at least half of the configured droplets to clear
 a 12-unit body radius and fall 48 units within their lifetime. Engine motion is measured separately
 in the PoC; the reference model is a conservative transport check, not an engine-equivalence claim.

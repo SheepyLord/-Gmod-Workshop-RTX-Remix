@@ -123,7 +123,7 @@ class BloodInputsTests(unittest.TestCase):
 @unittest.skipUnless(Path(LUA).is_file(), 'LuaJIT is not installed')
 class BloodLuaTests(unittest.TestCase):
     def test_controllers(self):
-        for scenario in ('budget', 'dts_bootstrap', 'coexist', 'preloaded', 'absent', 'menu', 'menu_fallback', 'impacts', 'saturation',
+        for scenario in ('budget', 'server_delivery', 'dts_bootstrap', 'coexist', 'preloaded', 'absent', 'menu', 'menu_fallback', 'impacts', 'saturation',
                          'blood_menu', 'ragdolls', 'previous_impact', 'world_landing'):
             with self.subTest(scenario=scenario):
                 run = subprocess.run([LUA, str(REPO / 'tools/tests/r20_blood_harness.lua'), str(REPO), scenario],

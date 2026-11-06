@@ -2,6 +2,14 @@
 
 ## R20-C: owned blood assets and the stock dispatch (2026-11-06)
 
+- Multiplayer Lua visibility differs from SP: a package's private marker on disk was not visible
+  to the initial client check until the server sent it with AddCSLuaFile. The first legacy MP run
+  had one extra Utilities shortcut; the corrected vanilla MP run has blood=1, screen=1, shortcut=0.
+  Both full and independent parts explicitly deliver the marker/adapter.
+- Depot verification must use the PoC's own version. Its garrysmod.ver is 261026/2156; the field's
+  is 261104/1744. Cached PoC manifests 4001/7488132547021413298 and 4002/7341198560151933050 match
+  all 2,877 depot files (7,279,873,012 bytes); the newer field manifests gave version differences.
+
 - Both raw analytic VTF hashes were confirmed in the native draw cache: drop XXH64
   `be79e0c9c18bc626`, mist `cac5d215d939df47`; their computed XXH3 counterparts are retained too.
   Authored opacity material entries, BC7 albedos and a .05 scene-adaptive intrinsic fill restored
