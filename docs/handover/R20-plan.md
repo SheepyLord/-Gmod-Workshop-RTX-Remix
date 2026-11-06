@@ -93,6 +93,7 @@ until the runtime is rebuilt.
 | R20-B | 45, 49 | `out/worktrees/r20-qol` / `r20-qol` | [R20-B](R20-B-companion-qol.md) | 0117 |
 | R20-C | 48 | `out/worktrees/r20-blood` / `r20-blood` | [R20-C](R20-C-blood-and-toolgun.md) | 0118, 0119 |
 | R20-D | 44, 51 | `out/worktrees/r20-render` / `r20-render` | [R20-D](R20-D-render-compat.md) | 0120-0122 |
+| R20-E | 45 (native half, added after R20-B found Lua cannot read the live settings) | `out/worktrees/r20-native` / `r20-native` | [R20-E](R20-E-upscaling-readback.md) | 0123 |
 
 All four run at once from `r20-int`. Claude reviews each branch, merges them on `r20-int`, tests the
 whole in the PoC and the field, then: push `main` (the hooks publish the local build to the Workshop),
