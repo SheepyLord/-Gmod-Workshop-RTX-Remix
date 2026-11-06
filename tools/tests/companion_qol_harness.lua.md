@@ -5,6 +5,8 @@ LuaJIT harness for R20-B's real startup hint/defaults autoruns. Invoked by
 Mocks persisted client ConVars/DATA, loader JSON, native snapshots, hook registration/removal,
 notifications, sound and ordered timers. A new map reloads the autorun with fresh Lua locals while
 preserving DATA. The disk-only getter and every Remix setter raise if called.
+Their counters are also checked outside the consumer's protected calls, so swallowing a forbidden
+API error cannot conceal a file read or settings write from the test.
 
 Scenarios cover all 18 upscaler/frame-generation combinations; NVIDIA/non-NVIDIA/mixed/unknown
 adapters and explicit backend support; opt-outs and invalid status; unavailable/malformed/throwing

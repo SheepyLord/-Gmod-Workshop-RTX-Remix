@@ -5,6 +5,7 @@ CLIENT, SERVER = true, false
 local lua = root .. "/companion/nativeloader/lua/"
 local archive, callbacks, hooks, jobs, data = {}, {}, {}, {}, {}
 local now, serial, reads, hints, sounds = 0, 0, 0, {}, {}
+local fileReads, settingsWrites = 0, 0
 local fault, writeFailed
 local marker = "nativeloader_companion/upscaling_hint_start.txt"
 local skyMarker = "nativeloader_companion/sky_defaults_client_v1.txt"
@@ -77,8 +78,8 @@ util = { JSONToTable = function()
     return status
 end }
 RemixConfig = {
-    GetConfigVariable = function() error("File-only getter must never be used") end,
-    SetConfigVariable = function() error("The hint must not change settings") end,
+    GetConfigVariable = function() fileReads = fileReads + 1 error("File-only getter must never be used") end,
+    SetConfigVariable = function() settingsWrites = settingsWrites + 1 error("The hint must not change settings") end,
     GetUpscalingState = function() reads = reads + 1 if fault == "native" then error("not ready") end return state end,
 }
 NOTIFY_HINT = 3
@@ -190,4 +191,6 @@ elseif scenario == "migration-missing" then
     hook.Run("NativeLoaderSkyDefaults")
     assert(archive.nativeloader_sky_time_passes == "1" and archive.nativeloader_sky_day_minutes == "20")
 else error("Unknown scenario " .. scenario) end
+-- Assert outside the consumer's protected calls: swallowing a forbidden API error cannot pass.
+assert(fileReads == 0 and settingsWrites == 0, "Forbidden file-only read or runtime settings write")
 print("PASS " .. scenario .. " " .. (arg1 or "") .. " " .. (arg2 or ""))
