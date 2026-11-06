@@ -37,6 +37,10 @@ log precedes device-dependent graphics presets. Production hints therefore remai
 that native contract is implemented outside R20-B's assigned Lua/docs/test paths. An injected
 snapshot in QA demonstrates the consumer, not a live runtime readout.
 
+Readiness also requires internally consistent effective state: the runtime UI adopts legacy
+`rtx.dlfg.enable` / `rtx.fsrfg.enable` into its selector. A provider must resolve that state or return
+not ready, rather than report frame generation off from a zero selector while a backend is enabled.
+
 ## Lifetime and side effects
 
 The marker `garrysmod/data/nativeloader_companion/upscaling_hint_start.txt` contains the loader's

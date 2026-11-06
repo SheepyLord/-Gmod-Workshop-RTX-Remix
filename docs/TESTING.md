@@ -20,6 +20,13 @@ acceptance is open** until the runtime/native module supplies the effective post
 in [ADR 0117](decisions/0117-startup-upscaling-hint-and-sky-defaults.md). Never use the old file-only
 getter as live evidence or save Remix settings. Evidence belongs in this worktree's `out/r20b`.
 
+R20-B acceptance: four normal RTX processes, seven map loads, fifteen 1600x900 captures; fresh and
+migrated profiles show `1`/`20`. Simulated off gives one hint after the guide closes and no repeat at
+the next map; simulated on gives none on either map. `out/r20b/acceptance.json` labels the simulated
+states explicitly. The final clean visibility run and SHA-256 restoration of 1,471 retained files are
+in `out/r20b/poc`; the preceding profile/on cases are in `poc-before-ui-fix`. All 27 native and 688
+Python tests pass (two optional-environment skips). Details: [R20-B report](handover/R20-B-report.md).
+
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.

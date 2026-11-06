@@ -5,6 +5,11 @@ one-time preservation-aware migration are implemented, with the translated start
 and checkbox. The hint's required native live snapshot does not exist in the packaged API; its
 integration remains open under [ADR 0117](decisions/0117-startup-upscaling-hint-and-sky-defaults.md).
 
+R20-B's [handover](handover/R20-B-report.md) records item 49 done and the hint consumer validated:
+fresh/migrated 20-minute sky panels, the checkbox, simulated off/on states and once-per-process
+behavior across maps, plus waiting for the first-run guide to close. Release checks pass. Item 45's
+native live readback and actual off/on integration acceptance remain open; production hints stay silent.
+
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader
 0.14.0 ([plan](handover/R19-plan.md), [review](handover/R19-review.md), [report](handover/R19-report.md)):

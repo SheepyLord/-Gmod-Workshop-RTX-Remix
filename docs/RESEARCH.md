@@ -9,6 +9,10 @@
   `RemixConfig.GetUIState` says a menu is open. It does not spend native-readiness attempts or read
   DATA/snapshots while obscured. Closing the window reads current settings, avoiding stale advice
   if the player enabled both features in that menu. Four LuaJIT scenarios cover the wait and edit.
+- The runtime's `rtx_fork_upscaler_ui.cpp:167-174` adopts legacy DLFG/FSR enable flags when the
+  selector is None. The future native snapshot must resolve this consistency too, or report not
+  ready; a zero selector alone cannot prove that a legacy backend is off. This is part of the
+  documented snapshot provider's responsibility, not a file-based inference in Lua.
 
 - The packaged fixes' `packages/fixes/licenses/oversized-skinning/memory-limits/source/remixapi/remixapi.cpp:1111`
   reads `rtx.conf` directly and returns empty when a key is absent. The binding exposes it as
