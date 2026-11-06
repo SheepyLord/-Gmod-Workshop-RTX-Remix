@@ -15,6 +15,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   it) and a warning before the server browser; Dynamic Toolgun Screen and Blood Overhaul RTX in the
   package with realistic blood impacts and their settings in the RTX tab; time passes by default with a
   20-minute day; no `cam.End underflow` when saving a dupe. The entries below give the details.
+- **Released as v0.15.0** (2026-11-06): the GitHub release
+  ([v0.15.0](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v0.15.0)) carries loader
+  0.15.0, built by the loader workflow (run 42255754495); the package's record of the newest released
+  loader (`companion/nativeloader/resource/loader-release.json`) now names it, so players on an older
+  loader are reminded to update.
 
 - **Refresh the packaged native client bootstrap (R20-Q).** The old R4 DLL rejected current
   performance-tier settings in the menu realm. The current-source build accepts the loader's

@@ -8,7 +8,8 @@ Physics Blood display correctly under RTX (session-only effect categories, runti
 0.15.0, in game before it) and the warning before the server browser; Dynamic Toolgun Screen and the
 owned parts of Blood Overhaul RTX in the package with realistic blood impacts and their settings in the
 RTX tab; time passes by default with a 20-minute day; no `cam.End underflow` when saving a dupe.
-Integration QA in the refreshed PoC passes every item; release as v0.15.0 follows.
+Integration QA in the refreshed PoC passes every item. Released as **v0.15.0** (the GitHub release
+carries loader 0.15.0; the package's loader record names it).
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader
