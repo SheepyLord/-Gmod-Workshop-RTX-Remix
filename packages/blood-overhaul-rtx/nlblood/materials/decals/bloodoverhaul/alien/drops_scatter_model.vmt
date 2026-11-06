@@ -1,0 +1,8 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/drops_scatter_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.052734"
+    "$color2" "[0.780 0.700 0.240]"
+}

@@ -1,0 +1,8 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/pooled_smear"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.048828"
+    "$color2" "[1.000 1.000 1.000]"
+}

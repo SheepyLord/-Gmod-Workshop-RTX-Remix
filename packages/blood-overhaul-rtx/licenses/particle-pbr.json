@@ -1,0 +1,20 @@
+{
+  "drop": {
+    "hashes": {
+      "xxh64": "be79e0c9c18bc626",
+      "xxh3": "34a076e1df1531dc"
+    },
+    "dds_bytes": 22020,
+    "adaptive_emission": 0.05,
+    "source": "analytic 128x128 sprite from prepare_blood.py; unchanged VTF"
+  },
+  "mist": {
+    "hashes": {
+      "xxh64": "cac5d215d939df47",
+      "xxh3": "4a17298ff372bf04"
+    },
+    "dds_bytes": 5636,
+    "adaptive_emission": 0.05,
+    "source": "analytic 64x64 sprite from prepare_blood.py; unchanged VTF"
+  }
+}

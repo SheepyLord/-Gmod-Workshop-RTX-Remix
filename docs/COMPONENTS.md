@@ -11,6 +11,16 @@ its [Lua lifecycle/decision harness](../tools/tests/companion_qol_harness.lua.md
 [Python test runner](../tools/tests/test_companion_qol.py.md) in `tools/tests`. The consumer requires
 an optional native live snapshot; the current packaged API cannot supply it. The existing defaults
 autorun owns the sky's one-time old-default migration, before the sky creates its callbacks.
+R20-C's `tools/prepare_blood_particles.py` authors opacity DDSs/materials for the original procedural
+droplet and mist. Its PNG codec, safe output paths and final indexed coverage are checked by
+`tools/tests/test_r20_blood.py`; normal package builds use the stored assets and need no encoder.
+
+R20-C adds `toolgun-screen` and `blood-overhaul-rtx` package inputs (see their part READMEs), and
+`tools/prepare_blood.py` for provenance filtering and original procedural particle textures. The
+companion's `!nativeloader_blood.lua` bootstrap guards duplicate standalone initialization;
+`blood_core.lua`, `blood_budget.lua` and `blood_impacts.lua` own the bounded client effects;
+`nativeloader_blood_menu.lua` supplies the translated RTX panel. `tools/tests/r20_blood_harness.lua`
+executes these controllers. The screen's original thirteen-language modules remain unchanged.
 
 R14-H splits the companion's guide into its window ([`nativeloader_guide.lua`](../companion/nativeloader/lua/autorun/client/nativeloader_guide.lua.md))
 and its pages ([`guide_pages.lua`](../companion/nativeloader/lua/nativeloader/guide_pages.lua.md)). The

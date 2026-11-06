@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/arterial_trail_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.052734"
+    "$color" "[0.430 0.550 0.120]"
+    "$modelmaterial" "decals/bloodoverhaul/green/arterial_trail_model"
+}

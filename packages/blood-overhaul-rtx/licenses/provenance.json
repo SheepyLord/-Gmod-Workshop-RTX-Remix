@@ -1,0 +1,1545 @@
+{
+  "schema": 1,
+  "project": "H:\\BACKUP_20260815\\Modding\\ipg\\PBR_map\\blood_overhaul_rtx",
+  "patterns": [
+    "arterial_trail",
+    "castoff_sweep",
+    "dark_core_halo",
+    "directional_spray",
+    "double_impact",
+    "drip_runs",
+    "drops_scatter",
+    "heavy_splash",
+    "impact_dense",
+    "long_swipe",
+    "mist_cloud",
+    "pooled_smear",
+    "ring_spatter",
+    "shotgun_clusters",
+    "sparse_mist",
+    "spray_fan",
+    "streak_web",
+    "torn_blotches"
+  ],
+  "selected": {
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/arterial_trail.vtf": {
+      "sha256": "63cb5dd76847d98ba5c0ffe6965f7a595a0cc749a4fd5c6490d02e9f3ec7e464",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/arterial_trail.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/arterial_trail_n.vtf": {
+      "sha256": "d890b3f9049fa0820744f601f9f04d3b379ef83f555472740faf3547ccfe2134",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/arterial_trail_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/arterial_trail.a.rtex.dds": {
+      "sha256": "f762cfadf3254e5bbc286a851487adbbb6744baf0936b8bea682c634590637e9",
+      "to": "nl_blood_overhaul_rtx/textures/arterial_trail.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/arterial_trail_n.a.rtex.dds": {
+      "sha256": "b8737518903a5f58664a1f8c814cf90f8a7547bbfb658f055576d6c357415f79",
+      "to": "nl_blood_overhaul_rtx/textures/arterial_trail_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/arterial_trail.n.rtex.dds": {
+      "sha256": "3b167656beaf24d8e810a85b62cc87f1383616a03b8f6c83e6495f087a9a5a36",
+      "to": "nl_blood_overhaul_rtx/textures/arterial_trail.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/arterial_trail.r.rtex.dds": {
+      "sha256": "3d50d9a606c157d559dbb1deecaf585a360c3c5f29a599799965145d637101ee",
+      "to": "nl_blood_overhaul_rtx/textures/arterial_trail.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/castoff_sweep.vtf": {
+      "sha256": "254af0fa1899e63883d68b37b7578ddd32553d2043126e81e992cebcec127d0a",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/castoff_sweep.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/castoff_sweep_n.vtf": {
+      "sha256": "654180c5bc5d65c63351ec961e93fa151d37b92bd6545ed070383e890d545238",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/castoff_sweep_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/castoff_sweep.a.rtex.dds": {
+      "sha256": "b0074a04a5b217c0fc8f9677e7611134794de7f04dd95a4a97ef9884ddc4286d",
+      "to": "nl_blood_overhaul_rtx/textures/castoff_sweep.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/castoff_sweep_n.a.rtex.dds": {
+      "sha256": "00152db862cd594047c63830ae6e52bc5dab4019a62f7c2ac0b4f9450b2f42f2",
+      "to": "nl_blood_overhaul_rtx/textures/castoff_sweep_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/castoff_sweep.n.rtex.dds": {
+      "sha256": "260eae820acc8e6a81463310ae550088baeee6eb4561f119008885ee23841d7d",
+      "to": "nl_blood_overhaul_rtx/textures/castoff_sweep.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/castoff_sweep.r.rtex.dds": {
+      "sha256": "5bae275116c5101d57ab3e98cacfd29320dafd53980fcb4287822ba16862f740",
+      "to": "nl_blood_overhaul_rtx/textures/castoff_sweep.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/dark_core_halo.vtf": {
+      "sha256": "88b69313bc27bd5c195f39964675d4693c6121d00b555133b29e9fabbe2144f2",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/dark_core_halo.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/dark_core_halo_n.vtf": {
+      "sha256": "f3497fd6a8c346d8c4c430fe21172206e2aecf33aaae61b6f5d753c6c66f08fb",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/dark_core_halo_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/dark_core_halo.a.rtex.dds": {
+      "sha256": "143cf9ca8858545760f5beab9ff9c4d60068ff40fbf1a068cb394c4ed3ef8252",
+      "to": "nl_blood_overhaul_rtx/textures/dark_core_halo.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/dark_core_halo_n.a.rtex.dds": {
+      "sha256": "f8d4b5760c048f7c9318ff788f9e5a8143d54bd41b4df96f803736ee73cadc0e",
+      "to": "nl_blood_overhaul_rtx/textures/dark_core_halo_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/dark_core_halo.n.rtex.dds": {
+      "sha256": "e7ffaedcc7e021f21f6c31f0e95b064d3bebcae9bd8e61dc382d7e4560b5fc52",
+      "to": "nl_blood_overhaul_rtx/textures/dark_core_halo.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/dark_core_halo.r.rtex.dds": {
+      "sha256": "a444c67348fe0ed983f3ee7303d39a42416e1d14ab1903eb1496fc83cd397964",
+      "to": "nl_blood_overhaul_rtx/textures/dark_core_halo.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/directional_spray.vtf": {
+      "sha256": "aa5ed55614c3b41f43f1dfe3fe07ce1a8e5bc063a221d29c63bea6beccb582f6",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/directional_spray.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/directional_spray_n.vtf": {
+      "sha256": "0bf75fcdefdb45aa73327ed2f9dd9d9f6a2916893e49147edf3c50193b400713",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/directional_spray_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/directional_spray.a.rtex.dds": {
+      "sha256": "e8dc114cc22c789bbba1524f46610096fc23ed797cc8fd6962ffc281b18c9a3f",
+      "to": "nl_blood_overhaul_rtx/textures/directional_spray.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/directional_spray_n.a.rtex.dds": {
+      "sha256": "fe54afdae5e703a8f7c888bb74f72269dcf04899fe31a4c8c689960a04bffccd",
+      "to": "nl_blood_overhaul_rtx/textures/directional_spray_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/directional_spray.n.rtex.dds": {
+      "sha256": "95b94fdc04d2bba3d9de3a3cdb7244016e7b29205e319d2b84403a09e6afc1ca",
+      "to": "nl_blood_overhaul_rtx/textures/directional_spray.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/directional_spray.r.rtex.dds": {
+      "sha256": "f4b85b5d0010735644132e81614f12677a0a38264c887eefdd92109395056795",
+      "to": "nl_blood_overhaul_rtx/textures/directional_spray.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/double_impact.vtf": {
+      "sha256": "df9258a4da2747c47eefaca7c532b1ed4344872570ea0473d83498fa4092b27e",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/double_impact.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/double_impact_n.vtf": {
+      "sha256": "b2f3584263ec8d892003fb1bc3222c259a5fd8523523c506a4cd5f0c8f05262e",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/double_impact_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/double_impact.a.rtex.dds": {
+      "sha256": "5533f67cb06085666aacec77b817d0f5fab04e7c18002857c2a4d12a2564bebf",
+      "to": "nl_blood_overhaul_rtx/textures/double_impact.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/double_impact_n.a.rtex.dds": {
+      "sha256": "38eb5fd92637b91c276a34ad144ad7b0076abf6bdf3f3b876c1d6826166dadda",
+      "to": "nl_blood_overhaul_rtx/textures/double_impact_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/double_impact.n.rtex.dds": {
+      "sha256": "329897b4e58d93833baf36cc0eacc4b5cd3940115372ad03c7cbbb87556d3abe",
+      "to": "nl_blood_overhaul_rtx/textures/double_impact.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/double_impact.r.rtex.dds": {
+      "sha256": "77884b53d21a38c44d0d8c4250a1deddcaf226d1ef23f056d16de9302ffbe306",
+      "to": "nl_blood_overhaul_rtx/textures/double_impact.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/drip_runs.vtf": {
+      "sha256": "79bfb0a31542e65b0aeed6b1defba19b3b1929f97e582d7f0a65792d3a2ceb1b",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/drip_runs.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/drip_runs_n.vtf": {
+      "sha256": "cfe9dd6ca15803e2bbc3ec61fefd27121f3f352e3346f4456a5e9ce10be50189",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/drip_runs_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drip_runs.a.rtex.dds": {
+      "sha256": "e67810723651ba646e920b234e3d70143c8cac338c97cc0917358167ab3a19d0",
+      "to": "nl_blood_overhaul_rtx/textures/drip_runs.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drip_runs_n.a.rtex.dds": {
+      "sha256": "1d75df45117f5e3a7c08497dc7c1ae196ea58cdbfabad78b257f353b18a18eb9",
+      "to": "nl_blood_overhaul_rtx/textures/drip_runs_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drip_runs.n.rtex.dds": {
+      "sha256": "dc5d0b0b4c0c95b0acfef8a5268ee25b60a7853818288f5fcb7b42f56c876f70",
+      "to": "nl_blood_overhaul_rtx/textures/drip_runs.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drip_runs.r.rtex.dds": {
+      "sha256": "efca7cb918f8261e894331111276a0ab277d490de5747783ba67ecc508a47a87",
+      "to": "nl_blood_overhaul_rtx/textures/drip_runs.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/drops_scatter.vtf": {
+      "sha256": "c7b15336aeceef50127ecd4606af2c630da3fdbdc8dec893a8fa4ea2bfd59c2b",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/drops_scatter.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/drops_scatter_n.vtf": {
+      "sha256": "d9d6f37195e2730e99d0b392a272bb04dfe7a2ce0e52a493b88ebb64230bdbe4",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/drops_scatter_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drops_scatter.a.rtex.dds": {
+      "sha256": "be8736e21e18d419de287651d554b6efd6d062a182224d57b2a50411b6cf0dd3",
+      "to": "nl_blood_overhaul_rtx/textures/drops_scatter.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drops_scatter_n.a.rtex.dds": {
+      "sha256": "c70712ae5dce5f816e6aa0da4b05656d97b0ebbc0f798d61814ee5ef27cf679e",
+      "to": "nl_blood_overhaul_rtx/textures/drops_scatter_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drops_scatter.n.rtex.dds": {
+      "sha256": "60142e8f3c0aa6b71e728ee1f9112c4292cad318125bd7cfe33911b827d12565",
+      "to": "nl_blood_overhaul_rtx/textures/drops_scatter.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/drops_scatter.r.rtex.dds": {
+      "sha256": "e58519dcc213a97900b9d140276314cdb1f60314c3d5b834f1b1ace765be33fc",
+      "to": "nl_blood_overhaul_rtx/textures/drops_scatter.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/heavy_splash.vtf": {
+      "sha256": "9137ffa76e1fd660c03f85ae57bbc1bc6a36a7ab7b6af4ff27f7a50426439f72",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/heavy_splash.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/heavy_splash_n.vtf": {
+      "sha256": "b775286aee3dc89791394d30ab012d6d3ceddd9ce2c15424ebde4ef6f23a618a",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/heavy_splash_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/heavy_splash.a.rtex.dds": {
+      "sha256": "64cd83c795390efd72f362626a8886125ce05f5593a3cfe5babf17eaf0c3de9d",
+      "to": "nl_blood_overhaul_rtx/textures/heavy_splash.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/heavy_splash_n.a.rtex.dds": {
+      "sha256": "df1442a354f202e2e4ab366ce945cddda9a7146e5daeeda65bda36f1f62e9dd2",
+      "to": "nl_blood_overhaul_rtx/textures/heavy_splash_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/heavy_splash.n.rtex.dds": {
+      "sha256": "d6389bc9b46528595c5817edf9c0dd50b38864937cb0cb0324cd8762b3fa279d",
+      "to": "nl_blood_overhaul_rtx/textures/heavy_splash.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/heavy_splash.r.rtex.dds": {
+      "sha256": "f86adb7edd73c8eb3519fce52f219d57302781cc5a77e6fed724097ae9fec068",
+      "to": "nl_blood_overhaul_rtx/textures/heavy_splash.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/impact_dense.vtf": {
+      "sha256": "6460b9f6c4aca84e430a18acaab4881f4a9a02039f6fa77740108350ee4c59af",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/impact_dense.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/impact_dense_n.vtf": {
+      "sha256": "b31f3b3587579a7d7795048d1fea76415795a7b1c6191ca91b4791caee67b115",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/impact_dense_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/impact_dense.a.rtex.dds": {
+      "sha256": "04de41d297389d5ec2ffe019cab417c4f5502589b7958ef46a9530f134594d67",
+      "to": "nl_blood_overhaul_rtx/textures/impact_dense.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/impact_dense_n.a.rtex.dds": {
+      "sha256": "a3e368e7df2f6b0e0967250450498c051dbdfe57d7f02e3f7b0705dd3628186e",
+      "to": "nl_blood_overhaul_rtx/textures/impact_dense_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/impact_dense.n.rtex.dds": {
+      "sha256": "d2fc73be5933636afb1e633ac22ba939a8f19ff0948f11fd0bf9e7df1d8891b8",
+      "to": "nl_blood_overhaul_rtx/textures/impact_dense.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/impact_dense.r.rtex.dds": {
+      "sha256": "7f6bc788c92585c7a4908e4ec87b9bda17665c5dc8d8f12ae298591762c9cccd",
+      "to": "nl_blood_overhaul_rtx/textures/impact_dense.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/long_swipe.vtf": {
+      "sha256": "4702cea9600a13700e5adf02da435dfa31505255f60e3746a6a922da8420609c",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/long_swipe.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/long_swipe_n.vtf": {
+      "sha256": "f78752148fc9816b67af0788b20b9d12a10f9e8d484f55c29316be3f95c576b0",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/long_swipe_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/long_swipe.a.rtex.dds": {
+      "sha256": "555f51d8bb0a385d789f6319250ad1c6f760ba556a2acfb34d8c9c8f41c173de",
+      "to": "nl_blood_overhaul_rtx/textures/long_swipe.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/long_swipe_n.a.rtex.dds": {
+      "sha256": "c5c8c448f9752df3c3494bc0cac03a12c7c75b93f9d761608ff3b4431b321e3a",
+      "to": "nl_blood_overhaul_rtx/textures/long_swipe_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/long_swipe.n.rtex.dds": {
+      "sha256": "e434d18525f40fce9c95e1f08d5b430fd3abbdc6da492cfb104f1fc8779df5d2",
+      "to": "nl_blood_overhaul_rtx/textures/long_swipe.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/long_swipe.r.rtex.dds": {
+      "sha256": "7d8711547fda865642458f49af345bff681fb92cc5a5035413ff9266d38dca7b",
+      "to": "nl_blood_overhaul_rtx/textures/long_swipe.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/mist_cloud.vtf": {
+      "sha256": "d60c296781ac300a52f1b0e8e94927481955b0708a9f724c9c22cdd4f1993327",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/mist_cloud.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/mist_cloud_n.vtf": {
+      "sha256": "50be065774afc862988900ea9fd9cfedb05e1eb38081b389c78cd625ce166f06",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/mist_cloud_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/mist_cloud.a.rtex.dds": {
+      "sha256": "1049c02aba8bec4688edb8748a8654f554612e57ca9fa363d2b20109f46ba90b",
+      "to": "nl_blood_overhaul_rtx/textures/mist_cloud.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/mist_cloud_n.a.rtex.dds": {
+      "sha256": "01d749bcd2858040b6e3d84f0ff64c7fdd6cb17863b401e95077cb3d80135635",
+      "to": "nl_blood_overhaul_rtx/textures/mist_cloud_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/mist_cloud.n.rtex.dds": {
+      "sha256": "72354f8428d32af9669e71436852d7dbb3ae16c3cf6de53965249b1320747453",
+      "to": "nl_blood_overhaul_rtx/textures/mist_cloud.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/mist_cloud.r.rtex.dds": {
+      "sha256": "70b9ffbea6d6c4351e2d1d2cc1024138f84bcdc1fd573cddae6a1b66b5ac71bb",
+      "to": "nl_blood_overhaul_rtx/textures/mist_cloud.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/pooled_smear.vtf": {
+      "sha256": "5c2ad4597aa5947f1e8e0c546ed753ca51948dec74e5a88e4ee5d53f77687026",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/pooled_smear.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/pooled_smear_n.vtf": {
+      "sha256": "a546fbff5711a164710b7bd324bc938437b8f3eab291314f8cdb404c5ef4b8e5",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/pooled_smear_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/pooled_smear.a.rtex.dds": {
+      "sha256": "cf82a9185f442fb5285de10c7144432d1399253b482f78c6a223d26f35889e4e",
+      "to": "nl_blood_overhaul_rtx/textures/pooled_smear.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/pooled_smear_n.a.rtex.dds": {
+      "sha256": "ad6b3974b1d505d131661dfc70c81670856db6513c0151c3689855258c3ccef9",
+      "to": "nl_blood_overhaul_rtx/textures/pooled_smear_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/pooled_smear.n.rtex.dds": {
+      "sha256": "2a253324985d68120f08540fadc14309e6adf04d26f552ba08cfc2160c37069e",
+      "to": "nl_blood_overhaul_rtx/textures/pooled_smear.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/pooled_smear.r.rtex.dds": {
+      "sha256": "506371be3306d2442abbb7a99cb2ed29d7f258184b63b030447582eb3438d7b7",
+      "to": "nl_blood_overhaul_rtx/textures/pooled_smear.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/ring_spatter.vtf": {
+      "sha256": "a917b5945099e04996da7f40d718d380b807988cf45bf9b717d5e81479bed305",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/ring_spatter.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/ring_spatter_n.vtf": {
+      "sha256": "bf770ab4b4bce7f0ae6e09e9790a748da427d9b04daf84cb3ac863ede82b7df9",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/ring_spatter_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/ring_spatter.a.rtex.dds": {
+      "sha256": "778665df9f13bc8c6f281d8986f777aa39f269e7ff8b1796f0a8ae1329194d62",
+      "to": "nl_blood_overhaul_rtx/textures/ring_spatter.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/ring_spatter_n.a.rtex.dds": {
+      "sha256": "1949f4feee39381351143604913a25021f3c182dd0d9b7fa19cd45dd0ec0ca65",
+      "to": "nl_blood_overhaul_rtx/textures/ring_spatter_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/ring_spatter.n.rtex.dds": {
+      "sha256": "e4a8fda3ad9a21c6f37f277e74a38275d93804499ca71f167ee2839abc169fea",
+      "to": "nl_blood_overhaul_rtx/textures/ring_spatter.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/ring_spatter.r.rtex.dds": {
+      "sha256": "2c08e63a5b9c25e707f97e0ad5bde893db8d541342936fd50fae7bd88887f5d1",
+      "to": "nl_blood_overhaul_rtx/textures/ring_spatter.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/shotgun_clusters.vtf": {
+      "sha256": "9e9c114973ce7ee72f4a1fd044ce52349a6b0889f8fc107a193f3891b0a96c52",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/shotgun_clusters.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/shotgun_clusters_n.vtf": {
+      "sha256": "c36538f225493c1eea5fceb5ede6983719b3bd4159acfeab846cc6c1e689421d",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/shotgun_clusters_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/shotgun_clusters.a.rtex.dds": {
+      "sha256": "55f3fb714f8a1f7337b0ce767b84c7033f7c9b997183edd205ac7ab90cc149e0",
+      "to": "nl_blood_overhaul_rtx/textures/shotgun_clusters.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/shotgun_clusters_n.a.rtex.dds": {
+      "sha256": "55998c32fdc3c022df55fc178a3eff14b063c17d2ee5a1437db8e1781b1c174c",
+      "to": "nl_blood_overhaul_rtx/textures/shotgun_clusters_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/shotgun_clusters.n.rtex.dds": {
+      "sha256": "27613e2ab1ffcaa1f8e6886dc6ec6b85db40d201fd7bd567e164320a99515e3b",
+      "to": "nl_blood_overhaul_rtx/textures/shotgun_clusters.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/shotgun_clusters.r.rtex.dds": {
+      "sha256": "b4694e43a476c40c83c40aa5fbf67e93d3653f61dc7e98486e0a5133138a184c",
+      "to": "nl_blood_overhaul_rtx/textures/shotgun_clusters.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/sparse_mist.vtf": {
+      "sha256": "b3f20a539ee13bada26c7c584c3b33b9206e1bd91e207ba9368a4f477dde0eb2",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/sparse_mist.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/sparse_mist_n.vtf": {
+      "sha256": "0fda78afcf303724d4c4a22774d3a024af454122121e094ba9d7f31f7b799db3",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/sparse_mist_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/sparse_mist.a.rtex.dds": {
+      "sha256": "ae0d4f2bea83341916378301858d2d64af2ab103190e00df8df777ce63b7ed0f",
+      "to": "nl_blood_overhaul_rtx/textures/sparse_mist.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/sparse_mist_n.a.rtex.dds": {
+      "sha256": "0b1c63b4f998d45d36f056cadcf82faf44cf16395a9d38442cf2ad794c291941",
+      "to": "nl_blood_overhaul_rtx/textures/sparse_mist_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/sparse_mist.n.rtex.dds": {
+      "sha256": "9e5662877d66a21b1fcc2b4cdda7573f6d9ef0e842752aa58b13fe63c61dbd1a",
+      "to": "nl_blood_overhaul_rtx/textures/sparse_mist.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/sparse_mist.r.rtex.dds": {
+      "sha256": "18551faa3e1e7a644fa4dd38a7b24e50a56de9de087adfb249d1693406d2c1e2",
+      "to": "nl_blood_overhaul_rtx/textures/sparse_mist.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/spray_fan.vtf": {
+      "sha256": "ea0701a857b154a93c6d968d4b2a5c861f846507ba1d1cab90b98fbb299e4702",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/spray_fan.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/spray_fan_n.vtf": {
+      "sha256": "f2a29e192bb20eb0f8157ec1ec14ab21810834e8892cf58d8f84e9db95fd8d03",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/spray_fan_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/spray_fan.a.rtex.dds": {
+      "sha256": "c181de2005e15e31cefa52daafd317ea3104f9114aa2a851440e58676f07c63b",
+      "to": "nl_blood_overhaul_rtx/textures/spray_fan.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/spray_fan_n.a.rtex.dds": {
+      "sha256": "d5f39b6f42ae3f7eb6c1e2c97089d2370316319e6cbcac70353300bc00713b16",
+      "to": "nl_blood_overhaul_rtx/textures/spray_fan_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/spray_fan.n.rtex.dds": {
+      "sha256": "1444fe112042223e6ae21f25c8e54857b6728a9deec397366299082867c7e1d9",
+      "to": "nl_blood_overhaul_rtx/textures/spray_fan.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/spray_fan.r.rtex.dds": {
+      "sha256": "f60daa25f2d0949911b5220570583c2c703057991936e9f64af33a298cb51f07",
+      "to": "nl_blood_overhaul_rtx/textures/spray_fan.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/streak_web.vtf": {
+      "sha256": "f31ada65669a28a7f4ba8b7fad63e0628ab710a554d78aef5674f8880b3c34c4",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/streak_web.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/streak_web_n.vtf": {
+      "sha256": "b14c6efaa0fc9149fef11ebb83281e7ffe54fc3502cb2945fcdc70f4f16f5c0a",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/streak_web_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/streak_web.a.rtex.dds": {
+      "sha256": "bd3fd683b835c6f3d559972dcbe6d6b4d400b336b9904b4aafd86cba8304ceff",
+      "to": "nl_blood_overhaul_rtx/textures/streak_web.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/streak_web_n.a.rtex.dds": {
+      "sha256": "b3862e1cc018611afff62c0f824a7fd3c936534eec7cf889bb223dbe63f7f6a5",
+      "to": "nl_blood_overhaul_rtx/textures/streak_web_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/streak_web.n.rtex.dds": {
+      "sha256": "78e86d949d917b20d9942051947ed53fd5930bc76b117013136a0fa090a069f9",
+      "to": "nl_blood_overhaul_rtx/textures/streak_web.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/streak_web.r.rtex.dds": {
+      "sha256": "d4713e6fce0a39dd1c57b65d1dedd989041b6486a0ba9b73843c7b46be33fbe1",
+      "to": "nl_blood_overhaul_rtx/textures/streak_web.r.rtex.dds"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/torn_blotches.vtf": {
+      "sha256": "ad224dca7433a1ed6736619ad581351c7eaca0de69c146308387f767f280059b",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/torn_blotches.vtf"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/torn_blotches_n.vtf": {
+      "sha256": "a589e28b22ba8fbd94d2c6c6f9e88238a77fd4e4ac9366636d0b886e38b2260e",
+      "to": "nlblood/materials/decals/bloodoverhaul/tex/torn_blotches_n.vtf"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/torn_blotches.a.rtex.dds": {
+      "sha256": "8587f780e09aa67031dd149a473c4dcfe4e368b096e6519c37bb7d10aae32ae7",
+      "to": "nl_blood_overhaul_rtx/textures/torn_blotches.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/torn_blotches_n.a.rtex.dds": {
+      "sha256": "6ab15889ed5e7a75fbd6e32ce24511add29d89be8df5c58e66c8366b202d16c5",
+      "to": "nl_blood_overhaul_rtx/textures/torn_blotches_n.a.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/torn_blotches.n.rtex.dds": {
+      "sha256": "54c18bc4b9e78b96be6de24ce9aaf3d80ed93df28fd4e9a65051206aa42aac26",
+      "to": "nl_blood_overhaul_rtx/textures/torn_blotches.n.rtex.dds"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/torn_blotches.r.rtex.dds": {
+      "sha256": "f8a7496f70cd21825e65c7c7846c25cefab91d627b9571a9afd40f6af1207132",
+      "to": "nl_blood_overhaul_rtx/textures/torn_blotches.r.rtex.dds"
+    },
+    "addon_src/lua/bloodoverhaul/cl_schemes.lua": {
+      "sha256": "2f2af8d74930cea206d1e99eb5fedf7eb9540527b65043d2f8f9a7c5fe2edbca",
+      "to": "nlblood/lua/nlblood/schemes.lua"
+    }
+  },
+  "excluded": {
+    "dist/addon_companion/addon.json": {
+      "sha256": "160ab30e667cf56d7d4c39ac017d72ac368d50e64f69f96cfac1db7e058a2422",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/lua/autorun/bloodoverhaul_init.lua": {
+      "sha256": "51091f534ee5f268eb90c7b555e087fec9609603815ad82468752bdb4d047805",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/lua/bloodoverhaul/cl_core.lua": {
+      "sha256": "b74ab22d22f24de13d7ca776ca878d1b4c48d5a4143dd463b6a021004e8959d8",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/lua/bloodoverhaul/cl_menu.lua": {
+      "sha256": "d7456a4ef9c5c9ffd56077f897913c4b560d60c9f08b72a8ae6a81e67feff39c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/lua/bloodoverhaul/cl_schemes.lua": {
+      "sha256": "2f2af8d74930cea206d1e99eb5fedf7eb9540527b65043d2f8f9a7c5fe2edbca",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/lua/bloodoverhaul/sh_shapes.lua": {
+      "sha256": "d02939cd9b172201c5669a506f5a4a9d54d23e1ff9ad0648d80dd2b94008ee4f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot1.vmt": {
+      "sha256": "b75201c8747aac232f4834c3de145447cf2afbce9e62917360f7d8224d460ae9",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot1_subrect.vmt": {
+      "sha256": "a90dc81a4da0d0b03e43f10d14913d02a22466e44612302a646ad2bc5da3e9b4",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot2.vmt": {
+      "sha256": "6e8391f9ae7b1b98d9358cea5132232d3c1dc89261048acaedc8a80768fd197f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot2_subrect.vmt": {
+      "sha256": "40b9013bb94cf9d8e15d686b3bf53ade81e45e8ee705ac9fcca42e8a2ee414bb",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot3.vmt": {
+      "sha256": "c0b96b94c296ad07c598595bb823d7cd0f3e4100618f7be75a53648c8a8d6749",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot3_subrect.vmt": {
+      "sha256": "b6ef3aba9e31ec80461317dfee868c2479d73d8d22ab7be8a9694876eec839b3",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot4.vmt": {
+      "sha256": "4fb76468c148a280fa55fdff73c3bc85eccb8caed753a87298cce4f8131bc65c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot4_subrect.vmt": {
+      "sha256": "f3bcddb75b8bdb2565b276a2b046c690dc9e12b2b2769325037c94d8bbebe2a1",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot5.vmt": {
+      "sha256": "bde6e0bac2c4171c4bbc4f37f00ed6171c4a59dbfcca09efb9c6f8dcd587bab6",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/antlion/shot5_subrect.vmt": {
+      "sha256": "025197edda853da0eb26b353671d0034bdf036f2019744a05e9405053a01bdb6",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood1_subrect.vmt": {
+      "sha256": "3260a5897de93dd0aa68b4244ebe6bb392f363a16132de57ee63958fdbeced47",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood2_subrect.vmt": {
+      "sha256": "91f44e815501e2dfaaa090d10449731cb1fe7e9538272fa1568fb2b7204167f8",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood3_subrect.vmt": {
+      "sha256": "d96cd2a10940a76b005271f6d1475c4d4f44b8fe28e3bbcfa561be2de2a423dc",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood4_subrect.vmt": {
+      "sha256": "acb8b6cbd7626f234303218927dab770b68d106f8d610596a74dc102d0cc1266",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood5_subrect.vmt": {
+      "sha256": "b652ba3bc3147991bfe20b9ae22317d3bf14875b51c9247ea3ba7fdc719f6cdb",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood6_subrect.vmt": {
+      "sha256": "792f1d779d16e06809847008e3eebecd437b421aab11f442ab6e846c59e20ffe",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood7_subrect.vmt": {
+      "sha256": "72dc95cbe094379f081caf3187d9b9345b72e0877af302518a2ac4664f943e4f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/blood8_subrect.vmt": {
+      "sha256": "b4a8da09d67593a5edce27024565eb0925300e1046706921acaa88fa4d080dfb",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/arterial_trail.vmt": {
+      "sha256": "24561b3980b0173693d49dfeb7a91a1a920cc00f9434f13bdc1247d14bbf75de",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/arterial_trail_model.vmt": {
+      "sha256": "3b59d5af349cd699ca72eac285d28b20a0fdb70c7d1d2eab0361108fc09ab130",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood1.vmt": {
+      "sha256": "84a534464e037e76f09f593310763d427e4f83ffe8dba62257d82c84fcfcb163",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood1_model.vmt": {
+      "sha256": "f558da5a822d4dd1497a64b702b6b9292f53b9161e40e17fc6d4ca2b6b63812c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood2.vmt": {
+      "sha256": "d7c3d7e314335ecac3595fef9104e4d8d97b500d41102050db03aca9fc7f40e3",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood2_model.vmt": {
+      "sha256": "bd1f8eceae3cd13f974566c1d8245cb8aeb882088825a3ca8f5cd867034c51b0",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood3.vmt": {
+      "sha256": "839411706b3e42a3d32aba9ec7be80f14a0f02e859c3a0de6dd18127da0c319b",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood3_model.vmt": {
+      "sha256": "e1c96eb8afac84f4305f8777b19b41a27e04b162adfc9a42a2eee14457007fe6",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood4.vmt": {
+      "sha256": "98c744ae867a6c8aca962b3cd1a616c665233746f2ed97cf6934b0f93b12e533",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood4_model.vmt": {
+      "sha256": "88ecb095f4cd513d86809b462102470732e898958469cfc07715f003196977f2",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood5.vmt": {
+      "sha256": "33b806fdf154aea765650b5cd2430014ff626fe0eb20fce36834bb1dd5db3a04",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood5_model.vmt": {
+      "sha256": "12b3f2c06b6fa8fee0a72d3a5b688f7fe0b0119de0671df2cee621ab5b936a75",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood6.vmt": {
+      "sha256": "7e894506a588658e1d617dc77e4404feff7b5d334c73ff43bee8c3f0b75c71cc",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood6_model.vmt": {
+      "sha256": "d99bd3bb70d2d60837367c41c682b84d0df7346e7f9f8e8864f21f0bdd05e2ae",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood7.vmt": {
+      "sha256": "dd321d58eabe3d29c74f932024e8d7a9a2918bd6cdf618d6fdff370683615225",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood7_model.vmt": {
+      "sha256": "39acc89d921171594da6f9b43534d0cce9418cc3ddcf73ca24c405a500fa950b",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood8.vmt": {
+      "sha256": "e4057f20b0e464e75fdc723a3982f2c6f91e6b3095d8191f36461b330d896023",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/bo_blood8_model.vmt": {
+      "sha256": "2258789556b7b6d107a9307d9bc2f850c017509e28d2b93b36b621277ee7dad1",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/castoff_sweep.vmt": {
+      "sha256": "1ba5309dae699659a898b0c7d57a376f06c1385d30a2d4d39a2c0a0d1a0902ae",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/castoff_sweep_model.vmt": {
+      "sha256": "3d4185160c53c3699f04ba7daa18b8aad0b40c5cb978e4c1d6141f23c4f3a0f4",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/dark_core_halo.vmt": {
+      "sha256": "bf54ee5374c7cb64d2f62f55a7ec57875a1fa5bb55b3146e089db148c881f094",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/dark_core_halo_model.vmt": {
+      "sha256": "80424adc022727d7bca098e9aca6564a6ad4e28eb471650f0ec5db3bede5abbb",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/directional_spray.vmt": {
+      "sha256": "ec7e3697d9db2c318d95868e4d9f63f395ecc4884a63d0d42d6c4be0cda4fffc",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/directional_spray_model.vmt": {
+      "sha256": "fd7ac6afb0a12609441f17d3304a1e8276a3b1b14acde1c073e1c12fff3d0087",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/double_impact.vmt": {
+      "sha256": "f1f53f528c8101c4983e22a86d1df3298990a251740465136681e4bef13994c1",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/double_impact_model.vmt": {
+      "sha256": "76c580c10285a59bea3289efd56e7d3898d24236ca4e15a872d4dc7ab94a3a9e",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/drip_runs.vmt": {
+      "sha256": "44c0e59e080ee060b08106f1805aa9f4343ed063cafc594e76f8af7048429b57",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/drip_runs_model.vmt": {
+      "sha256": "8d0575e63937daf57f98af0ad55f5a1e3055bbe7386e6d569402e22debcd8670",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/drops_scatter.vmt": {
+      "sha256": "a14de8ac4afecff371dbfbe80b477493dacd43c88790d2e3747446de080a49d5",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/drops_scatter_model.vmt": {
+      "sha256": "578f99c3242b77af0ea0048ea60460d333caf82b357a39e57b83ce959436f666",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/heavy_splash.vmt": {
+      "sha256": "d482a3c4812639a057b3a39fa23e4ccea8768335374dd1fa9d847ddc485b94d4",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/heavy_splash_model.vmt": {
+      "sha256": "24739a95555a7eb83955597c9d5d977f9223fc1c345471ef344778ab88a51057",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/impact_dense.vmt": {
+      "sha256": "9282f494e4ea7e0656a9b04c90663b6701e03acdc5ca85e8ecdd77a5764b46a3",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/impact_dense_model.vmt": {
+      "sha256": "bcc7947af0efb492acba7dea2c2ce0e4c229fc4b045110215768ca52445bd710",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/long_swipe.vmt": {
+      "sha256": "ad1b49a8367feac1ba3875f4ef53199a34535ee20e6e9c1e8f4ba326d98cf4cb",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/long_swipe_model.vmt": {
+      "sha256": "2ed7a523f1303e4b503c9f63ec8a3dfe5a320feeba325857958352604937e948",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/mist_cloud.vmt": {
+      "sha256": "7c2e037a8e569bd484d2610573e6aa94aa838dc94f1a43b80a5e3b4fc4e50e5b",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/mist_cloud_model.vmt": {
+      "sha256": "74dc75b8cbdf331d081c5d9a19cb12d3407f187d859728181ac8941d01b08b34",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/pooled_smear.vmt": {
+      "sha256": "d14213aebb0733b6a250bbbc1f2fc6c62cd395bb760a152a0943cdedb739b7d6",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/pooled_smear_model.vmt": {
+      "sha256": "f4db2e7420965139c640894a7d48c39ce612090b239c8d72e96f729e5a63baa4",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/ring_spatter.vmt": {
+      "sha256": "46c4d9258693d4b247018345856ff3ce1a531d7893bf21fd292a4656828f177c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/ring_spatter_model.vmt": {
+      "sha256": "c8dc1b2c79439a182412d5631ad37fc485c8c06d07838964ec47c9fc83c8676d",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/shotgun_clusters.vmt": {
+      "sha256": "6bf097ae80d6cc3eb7545c4c78625267c0464005230541a0ad7b2e66fefda63f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/shotgun_clusters_model.vmt": {
+      "sha256": "e8524bb61c0a6728e9a690f8853d802cbe2f978ab9ed13938d56f4a0a977ab7d",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/sparse_mist.vmt": {
+      "sha256": "a16712fa38595dcbe2f70112b6b6a49d3e721fd94cc45d3a706932c3b1e7b18c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/sparse_mist_model.vmt": {
+      "sha256": "b58dc9de05a9322d269312527c7b5ad6e89bb06985e1196d28f6bce8abd9ad18",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/spray_fan.vmt": {
+      "sha256": "01e0ce77657d8358d2d0381a29bb6b29e4537e1aa7557882ad1f90b3260420e2",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/spray_fan_model.vmt": {
+      "sha256": "692152adb46dd71ca8836a80070611885a9efabbc5b5c69c7bd98358a915504f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/streak_web.vmt": {
+      "sha256": "35ba40685d015bbd0a4ce33abe1d09cc15c198d123b9c5e2a954a15b7eb9b0ea",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/streak_web_model.vmt": {
+      "sha256": "82dca744e9ba6e8fedd8b11b8169b07e685947bd888b85bd8f5feb0f31c4bf88",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/torn_blotches.vmt": {
+      "sha256": "c65b8f7bb076f664ed8c57ada7d571ee7bafcfca7da3c247a281a42578651465",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/alien/torn_blotches_model.vmt": {
+      "sha256": "ad2ffe293ba612b4b70f051292c1973fe10e8c1a10b0a6aa68fbfb2b89327e0c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/arterial_trail.vmt": {
+      "sha256": "4ff8a7455c8b474675eb099013099696fd4b17f3aa8965d1cb96bbb78374da72",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/arterial_trail_model.vmt": {
+      "sha256": "933f4de88a7fb5b5acbf043870cdd0c8e24b488a09825b857c021490ebb62ade",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood1.vmt": {
+      "sha256": "27401542c26ed336853a9d3489dfbd7f986ac322b3217689d5091cf04d91dc89",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood1_model.vmt": {
+      "sha256": "a3716ce797fa4a2f2ba5fdb07e269a8871a9f6c8483f56e555faf704f996c19b",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood2.vmt": {
+      "sha256": "dff2d20e79b22aaf0cc234bc8dd0899d002ca3328ccc3524f0fec7cbe7031378",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood2_model.vmt": {
+      "sha256": "7793f6a78d1276151e2f377df684507786c43a657b66e4b390c6746b68f1f8f6",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood3.vmt": {
+      "sha256": "3a719f9d254948cea2643269487ec5d0f49d598074eaec89acddfeb2866a7b65",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood3_model.vmt": {
+      "sha256": "ffef99f00786ba2c22e78a426eb0c61fdc8942e994c8b01be31117e80f20bce2",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood4.vmt": {
+      "sha256": "39325cb98533553ffe10e2b2abaaa00ea3a8f74085948b4717a6bec68de1dae4",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood4_model.vmt": {
+      "sha256": "f687ac2ceb91b24d5fb70a2fced880628d66dc497d3fd035af11e73cb31967c5",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood5.vmt": {
+      "sha256": "a07c9143008e6bbf8c124c857a727cebf85411c5a956c39ba59f938adb4c2d27",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood5_model.vmt": {
+      "sha256": "c65091658c2cb35204794343e0355914f49aa45cfc1857e5839a30298203866f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood6.vmt": {
+      "sha256": "bdb5ba6bc3df7e7f205880ae875e9edceca7f143faca296c44972bf63bd8ef2e",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood6_model.vmt": {
+      "sha256": "44b12d3c9c25173c810cd8b4f1b785dfeabf1176268229ad048628267287fef0",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood7.vmt": {
+      "sha256": "1d4a422cd5c45306c632a807181959d16ddad5e9836654ac6f3075c798476451",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood7_model.vmt": {
+      "sha256": "e4a74fc7517c54937513c7c0774d23da8207c5568bfcc7891f33758d7d6d039a",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood8.vmt": {
+      "sha256": "80cea6e0c7e6ef30dd3d8890b9b3dfb4ebeceb54714d5decc4387efafec900aa",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/bo_blood8_model.vmt": {
+      "sha256": "cd5cd289c03f18a89dffd46c07fcea62a9f1c61a1815ac7f23581b50f9b9da7d",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/castoff_sweep.vmt": {
+      "sha256": "56b4ba803930cf2c5ee20b8d04c9c56fc31007592c1ea4311f1cda106b1edc21",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/castoff_sweep_model.vmt": {
+      "sha256": "b4e64d7bc5bc4f3eb7329795f25904b65ef773810daed1e8ad4181b2d6392607",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/dark_core_halo.vmt": {
+      "sha256": "598e1b1ae4b9705774f9e69f8e1b9ee31f2a9f0d05d4553faaf644dcaf28c0f8",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/dark_core_halo_model.vmt": {
+      "sha256": "377a3906fed8117fd1fe86cb56a4f1a58e2f3a228120b48d8fe5a6858863c593",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/directional_spray.vmt": {
+      "sha256": "26862bf74d20247e466f361188c428b2e99ab6cfee38cc226ccab05eaecede23",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/directional_spray_model.vmt": {
+      "sha256": "e92cf73c3e97a1a428f71e9a10c0d61753e413411d0c077cd910e1947f2bf408",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/double_impact.vmt": {
+      "sha256": "039bc4ec839c9fb46fb4489ea60ede040bfcc5a4e561421a7589a78cbeb9ffb1",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/double_impact_model.vmt": {
+      "sha256": "a69a819f018ef16c0b6f12b65c874570ce349b27a2130756f4acf409f7224188",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/drip_runs.vmt": {
+      "sha256": "fedab98f0855fbc0f9a849a4f07a2d419674827963213a01d50a66484187fedb",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/drip_runs_model.vmt": {
+      "sha256": "b3995a829961fa03e9538a249f03c3af8e13e9d9f1e17e3a09fd5a107eb4fede",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/drops_scatter.vmt": {
+      "sha256": "cfcb8908916a447e24389192bbadc1f259d0bc5540188367c18a98c850727743",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/drops_scatter_model.vmt": {
+      "sha256": "eb824c32beb7ce2bbbda47e54339e7d9ae5b8511f5dc572a9c3dc295b3061f42",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/heavy_splash.vmt": {
+      "sha256": "568d368d4ade7db46ff9a16bfae5c179705ec79b0a81591a19bd92ea841657c9",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/heavy_splash_model.vmt": {
+      "sha256": "4847f308df40511a864b6348398eadbfc5d49eece640e795eeef2beb1d1ec630",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/impact_dense.vmt": {
+      "sha256": "0f16d9119bc0d7b5aa3c403cef5245f15f4e30afb956d569338e7e08e0a02035",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/impact_dense_model.vmt": {
+      "sha256": "d689398b9b698450873b3bd061fea9f805b153938bc98ff2d3dab8212a59837a",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/long_swipe.vmt": {
+      "sha256": "acf593e8402e5b7c99f58664c2ff96964845fc4eeccac02b808f0a7bec381940",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/long_swipe_model.vmt": {
+      "sha256": "7ce69ae1f15394143c0d87c5a6156973d2dc2aae54441d65ddc9a4f9490af773",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/mist_cloud.vmt": {
+      "sha256": "205ae4211ada43aa22ceed4b04a7ae5cb0359c2b0eebdefa765b0f564b5ca45b",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/mist_cloud_model.vmt": {
+      "sha256": "f1226d76005142a6f72a827fbb653900cfa80bdd8ddc20e0c6c8e5ce1518cb92",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/pooled_smear.vmt": {
+      "sha256": "2a5ce7e95e2ac132266e06bd1cdc2fab3a5c94f00c2ac69b44b19759ccc76e3c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/pooled_smear_model.vmt": {
+      "sha256": "bf4331eb4d3f1a4cd34588e8a6a3ebb9aa76e795e03fef7c57f0682a0045ff56",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/ring_spatter.vmt": {
+      "sha256": "7da664786eb5a149a252f4a3ed3fcc62f9130f15b212bad565a6edd2aaba00d9",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/ring_spatter_model.vmt": {
+      "sha256": "b5517ae6e47622cb81091f7a6a2f6696b37653f1196f2083d91d5f2b10819158",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/shotgun_clusters.vmt": {
+      "sha256": "23428b47b4786eb5914cd46c210b8829b0e0556b5af17a41f499de3f061d0b18",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/shotgun_clusters_model.vmt": {
+      "sha256": "206e7663017b8c68a49c24711859ec96e40bf60e51497f1ff4d28d2170cf4d28",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/sparse_mist.vmt": {
+      "sha256": "6689345003d0a69ab1ee490df2babfdb87013985b7e1277a80aa0317a1a8591f",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/sparse_mist_model.vmt": {
+      "sha256": "87aea3108ad7053efe2c293a55131e286322708c53bf8a1226763872bf11cfe7",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/spray_fan.vmt": {
+      "sha256": "54a70649d1e570576e9998caa5b4f394ea0bb710cb6b7e5a68a16a3917164b78",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/spray_fan_model.vmt": {
+      "sha256": "cd995d0c9a544c028659fb355aa7142f9a2f1867d553b23997a9c9262d514069",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/streak_web.vmt": {
+      "sha256": "3e203ddb2f6f9a652ca5e69edb041ea8490bac34a00d06a4d79fdea3cc16d2fa",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/streak_web_model.vmt": {
+      "sha256": "3c2b21f6bc1a1708572811ec4f506179904ab64b1855a458939444c3827cdd31",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/torn_blotches.vmt": {
+      "sha256": "ec27a498272616105ad1b657ec000251032e3088ad527f1c90ed058c8b8b3696",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/red/torn_blotches_model.vmt": {
+      "sha256": "a5656cc7cb63be49b27c731453fd6a683fa3847fc0caf3210c5b78f46aba25cc",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/alienflesh1_n.vtf": {
+      "sha256": "41fad35d4e1c3755b60589aecfeab2d501de0727b87e42ffaab2ce1b93682d47",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/alienflesh2_n.vtf": {
+      "sha256": "ed9c7e21924c2bbc4d9b0fb9b0981b9a27081ca77c1115b54de3816ee4f4b194",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/alienflesh3_n.vtf": {
+      "sha256": "29752369f8ffb84228c5d7de8e805effd6fc205d974c7fc14a9289572177bd07",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/alienflesh4_n.vtf": {
+      "sha256": "1a6c9fa6554fae145907bbc7709493cf21a1e645e5950b1c0bd5423085c6793c",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/alienflesh5_n.vtf": {
+      "sha256": "c08d77588765c583f9aad3947726a73cb2a3da08fabe662f3c9887ce2e5e1b40",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood1.vtf": {
+      "sha256": "710360bb36b3886566056b3615968c64a3d1440b79ea3becf4a7f8aa03dc89a3",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood1_n.vtf": {
+      "sha256": "6eaf9cf913fb4759bf5f61944ba1189e555e246f591aeea89cd11771dcae22d8",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood2.vtf": {
+      "sha256": "0c26205e21b58ef7b96e3a3e56548c89c920b2fd613c76e765b6408252d0ee14",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood2_n.vtf": {
+      "sha256": "df3ce52256eee5751420d226162aad36b288267b54862ba4825935ba2cdec514",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood3.vtf": {
+      "sha256": "fdfa0cbb270716c4629bd7f2fd020f078212796666f364c34a898abfe789f791",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood3_n.vtf": {
+      "sha256": "5e2a960ac3f56be0b23480b1c61b646cf02a9259c900ffa8aa6876ec248f02c5",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood4.vtf": {
+      "sha256": "5808db9d4b6f6d4fc208de88af039c0deb4119c58abea9972dff9e619dd5bbb7",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood4_n.vtf": {
+      "sha256": "7fcf07549d534d875a6d047faa4b048620da395a9adebcac0f1ed9606442c2a5",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood5.vtf": {
+      "sha256": "6010bd8843a52f879323599f97f1c295e2b5ef43ea3504f902fa5bf7b81a6837",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood5_n.vtf": {
+      "sha256": "68c6c9b1f6f7ef3204e47b8441b1d2b1da436abce744bed964e915e58e85fe73",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood6.vtf": {
+      "sha256": "48c7bd58956e5d8fcf594cde3f11546c61593f930412fc5bcd8543239b769d60",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood6_n.vtf": {
+      "sha256": "4918f048a27061f0bd60fd7ebaf405174e2d91d8e8edab1ff7d0cd693eda235d",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood7.vtf": {
+      "sha256": "a945e5f00f5722d094791ed60fd7e61776045c6d45e9ea86afc886ca015ed40c",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood7_n.vtf": {
+      "sha256": "132f39e1064c1809aa15ee81eed0f8e5991d986cb70747fdae3cedcd0d21fd18",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood8.vtf": {
+      "sha256": "d3cbba3700932f535904a2af292a8e3a1e0e629a0ceb027ee18755a7061649e1",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/bo_blood8_n.vtf": {
+      "sha256": "47d010bf8f02915f40684b727a48bff5ff3a1e9003f1e521930e6945fe3b066c",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/flesh1_n.vtf": {
+      "sha256": "bea586ad37f3b50049252b593640c752759d1bf31385574961a85aa3a42e91f5",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/flesh2_n.vtf": {
+      "sha256": "441fbf5fc50db36321330c19c16eeb19df1203e7d8be716227df175b8645dd69",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/flesh3_n.vtf": {
+      "sha256": "cda5668c4856b1332e49600bf184c1666c6fbaea7c3afd48684f7f632913c471",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/flesh4_n.vtf": {
+      "sha256": "36031fa281234534b650acb77739f7a2640fcb6e1662c0a812e4401ba98947fb",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/bloodoverhaul/tex/flesh5_n.vtf": {
+      "sha256": "b8a7905194c1fdb8ade8abb3dfb6aa89487809353f4f2fe30a490992dbe588a4",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/decals/yblood1_subrect.vmt": {
+      "sha256": "735541c5f44779fa60acaebc633071935bd743189a0da737dfc5b9c5fdd85fa3",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/yblood2_subrect.vmt": {
+      "sha256": "442447f40b3e3c30ec74967e95fce442d0af1edb85f99497808c06cec37af9e5",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/yblood3_subrect.vmt": {
+      "sha256": "44a92e101dff14f9c7e3c36bc49bcce4b88f932a0699995eafa6eca5ff9c729a",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/yblood4_subrect.vmt": {
+      "sha256": "2910e3269b280f453b1a0a948b50b302e5396f87669e305653af2521531cfd7e",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/yblood5_subrect.vmt": {
+      "sha256": "2a269ee4a917de4323378a3dfcd60087402d74a0354be53b9c428155e8660342",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/decals/yblood6_subrect.vmt": {
+      "sha256": "766f17d207b813a5b71c470613ab0d455bbe8153377b0d068272dc584801ef0c",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/particle/bo_droplets/alien.vmt": {
+      "sha256": "c5857a1828f48c97a4aacb9336b27d25c046f398abaa57b4498be23d4c8ea199",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/addon_companion/materials/particle/bo_droplets/drop.vtf": {
+      "sha256": "a7d5d951aa34e88d9f2ab0bbbfb2b1f69b5f839f3ae72959e3ea660ccf70bd54",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/addon_companion/materials/particle/bo_droplets/red.vmt": {
+      "sha256": "717acecf1a2a89ab048436dd7bc425c4b77aad8a28b387e7fa256a54e59c8f72",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/mod.usda": {
+      "sha256": "810cff0e0383f30facd57bfdeb160d2571d15fe82b003bfdc54f6c18635347f4",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/replacements.usda": {
+      "sha256": "05adb957e285ac8bfd4093ea79d84fa1a2106dcb111a408e15f901a43c72f3d0",
+      "reason": "replaced with owned-only generated materials, private Lua or a filtered USD layer"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh1.a.rtex.dds": {
+      "sha256": "ceec68c091c559783130e8ca84acb5c7fc8b6a71d6895114c0b476ae62a448b5",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh1.n.rtex.dds": {
+      "sha256": "0559ff15ea8f7ea52c67633d3a64fd5354c8f24ba55cdf8b49efec79f65fd447",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh1.r.rtex.dds": {
+      "sha256": "9ce2ebe30fe868bffbd3890e3f19a650930fdcad6bbe1b450d4427adcbdca549",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh1_n.a.rtex.dds": {
+      "sha256": "43c028206c5529b237e17ea27986903b4921e35d3d0a6e526afd537b2e202cf4",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh2.a.rtex.dds": {
+      "sha256": "060874fe1796c0ee19e25971e169ab021101012d7d0c36b39ba3dfb37369eda6",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh2.n.rtex.dds": {
+      "sha256": "b28703daf94ad905f9ebaac058a46f1a9803b0877e6022edd4f11aec77268ffb",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh2.r.rtex.dds": {
+      "sha256": "8da786a8645b8980187f953ec4ed4ab02debe69da04604c8800bff100e54fb6b",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh2_n.a.rtex.dds": {
+      "sha256": "973b21bb3676c57dfa3f20daf805fe9e148a6e89ad0bd2d74f78abead594ccb1",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh3.a.rtex.dds": {
+      "sha256": "cb6bdf2120737b66423fa490e22d58f0d673ba2090fe25537e7bb872b3604fbd",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh3.n.rtex.dds": {
+      "sha256": "f203f334561e917120c25d9938ad77d7a12d89984cecd7ff0e583a4387830dd0",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh3.r.rtex.dds": {
+      "sha256": "776e121f592dfbc1edfcbb7ee15f0f63b4d5d8ee9ffcc40f0f64f7d2dce6b3cd",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh3_n.a.rtex.dds": {
+      "sha256": "60d993f4d453fe367ccf1932fdbc0386fb23a7f6acc93c0b2dd0d83ae9a5594f",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh4.a.rtex.dds": {
+      "sha256": "121eed828187158a0b4256ff0a8174b9059e26dd43ba373959b7d8f03aa5ee4d",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh4.n.rtex.dds": {
+      "sha256": "67cdcc375a2d6a7642aa48fa7951b0043298c1033a47b296602d127b97e46689",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh4.r.rtex.dds": {
+      "sha256": "0a2be4b8a63c2cf42e326f56841da5476e4c30b34023ec9179e46bad5892a265",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh4_n.a.rtex.dds": {
+      "sha256": "5763b7b567560ecc30bdbabdc7ff096662b921f8b6924fba9a65ecf5b71e4d8c",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh5.a.rtex.dds": {
+      "sha256": "da76b12059720c01db7801b0d3865d3bccedbf048167d4398f31e73e7e62bf14",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh5.n.rtex.dds": {
+      "sha256": "2c0c44f7763e66dc1429676157fe3fa2382660c4ca319ae8d35d6c71474be6a5",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh5.r.rtex.dds": {
+      "sha256": "a0c639b1e1ec8bb0739a00e1caf336afd6bd5817b0b457afdf4d920bacc7794e",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/alienflesh5_n.a.rtex.dds": {
+      "sha256": "10edb1bb9bec5f9a94c1aa803dbb6b49d88aaa2ffc828f2a147eb20c04d0c584",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_001.a.rtex.dds": {
+      "sha256": "1d7c8ee97a1701552831807d7e071443108dc24bad20760cd71d8b686b20f41b",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_001.n.rtex.dds": {
+      "sha256": "48061f75e38089c13eb309fc2ea9b032f34e2710b36cf13b286565408eda3361",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_001.r.rtex.dds": {
+      "sha256": "bec5c02c68c4940fd50952ca948b7059622e5315878578e3676d853589296bb8",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_002.a.rtex.dds": {
+      "sha256": "21175b5a3ea409f788df37911dac073b0b65e6b1e3fc96a642ab4649e077a6e7",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_002.n.rtex.dds": {
+      "sha256": "075cbd2685d36910c50ee373f8c2f4914c157e692d399e8f83508a895e127d94",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_002.r.rtex.dds": {
+      "sha256": "67ef4fdcc0adbcc52055e017d0fe43affae7c719a5709ed8e6958d7f042ad113",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_003.a.rtex.dds": {
+      "sha256": "6aef9c50f79113c02871779f19c0f7aeef8eb2ec064248480272ce28e9e52db0",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_003.n.rtex.dds": {
+      "sha256": "1bfc4ca1b22b201fccba879446eb88f78f44acf43e4aee18baa590ebe78424bb",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_003.r.rtex.dds": {
+      "sha256": "2a6bc0bd6df9a8644ef465c38a7a90aa25ba6dd46f92d47a139ac248b7e396d0",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_003b.a.rtex.dds": {
+      "sha256": "a6d2590449957322eb01d4016035eb23cf8cc0c926c8cbd0195982920a298e91",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_003b.n.rtex.dds": {
+      "sha256": "95318f740eaec4d0def47534e0afabe902d30b2b482cf4cf1408f7ccf72cf8b6",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_003b.r.rtex.dds": {
+      "sha256": "85aa0a7e76bdfd40104862db1df14b406f36a794063c1b811bf9b2afb3a1ae73",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_101.a.rtex.dds": {
+      "sha256": "fd8cc1b5074cc76251d7e4acafe99bfe6366ead1a48dd651402cdd8fee6559e6",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_101.n.rtex.dds": {
+      "sha256": "042416385ba86289713072f88080ddef1f776107c1ba6b859693ee7986961cd1",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bloodstain_101.r.rtex.dds": {
+      "sha256": "516b6ce504986a1ec72843dc6a9d12be88a5995194f743037881fbeb4be92d0a",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood1.a.rtex.dds": {
+      "sha256": "80c7370f09af504e7d80c5ef51c03cc3f5878e657ed92ef6fc00a1ef68094f86",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood1.n.rtex.dds": {
+      "sha256": "5da203647629e41d244909472763159c818d0f55c4b2fdc7914428f1b6be0aac",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood1.r.rtex.dds": {
+      "sha256": "f240f2f6d322366aee075eb5a2ac469f19727527a0074bb720c7a0aacaff241b",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood1_n.a.rtex.dds": {
+      "sha256": "55ccc9a7df02b77a0a9705bb9ee1b911520d62393e4232f95d0c469729036752",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood2.a.rtex.dds": {
+      "sha256": "9c409f86940f9ed55f8a4f76a2a019fbcd34f03c6cc6e1d74a3dbb66b9405c66",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood2.n.rtex.dds": {
+      "sha256": "45d822cd4b8d535cf9d618e2eca1923fd8cea16aac8fd38319cda396fe61b69b",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood2.r.rtex.dds": {
+      "sha256": "4f3656d36f24a49563b8281d3c638dcb077028465cb958508cc6e68ec6172401",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood2_n.a.rtex.dds": {
+      "sha256": "85f8cf685f54c7d69591839ed95464eda23d76ce79297c1246258b1e1b5126de",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood3.a.rtex.dds": {
+      "sha256": "6268a63d53f47114a3e09dafbeaec15a5357b3ee50e5932b84f1eb3f5af7ea99",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood3.n.rtex.dds": {
+      "sha256": "2e45ff8b427a6a1176cf5beff9257f5cc631de97e78ff18d670bb8ae4e940688",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood3.r.rtex.dds": {
+      "sha256": "fd50ace0c024c50bbd4b909b76a5bc20007456008758669b7dd3043334962389",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood3_n.a.rtex.dds": {
+      "sha256": "07f795b9ef1394fe57e8e6de47e596d500837b87c1c02ab1dd775a7fd09c4337",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood4.a.rtex.dds": {
+      "sha256": "9092100a98cfe7677634d152e520662b45abc2f425e9d6c6b97decf99d08a775",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood4.n.rtex.dds": {
+      "sha256": "8863d31214fe558814337c0889ae5462ff4b4820ad51acdfc9d2c59a85011f5e",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood4.r.rtex.dds": {
+      "sha256": "541191561ef91f8dee7a7ef055aa36e43c456cc8dd0edf46f8b2629c52376050",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood4_n.a.rtex.dds": {
+      "sha256": "3cdcf72e8e9105b06e8bef1f652a69bfd4b4cc66eeac0bcb415407ad5422743b",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood5.a.rtex.dds": {
+      "sha256": "8817e80676ab412e2a07fcc714002f6a622f207751815021f6e798ccc07f3c41",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood5.n.rtex.dds": {
+      "sha256": "ea263b4d10a3befd6d08a2d3699d46cbeae95baf74b568a4510423bc63ab0f4d",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood5.r.rtex.dds": {
+      "sha256": "cd6dd7afdce0301d5628561860759baebc183b4ba993de772ec0cc5c7f9ed47d",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood5_n.a.rtex.dds": {
+      "sha256": "97d34459297827787e3cad9a94211499eb1fc147927419da827a0b446447fbe8",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood6.a.rtex.dds": {
+      "sha256": "a7c12840ab6436545e4c25a8ab65cb2d1189144e38f9c276e752361f3793f112",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood6.n.rtex.dds": {
+      "sha256": "2c20ed1e20b2e24a06b421cea970277b86a550f535650e4c29d976d0286a4983",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood6.r.rtex.dds": {
+      "sha256": "0eb0577cc457b07cd67b3d4f441b9fc61bd401114f46130b90746733d6d2bb64",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood6_n.a.rtex.dds": {
+      "sha256": "2baafe5509340ff2b35cf2d9ad5a2f39e801462eadcbf349f7f539f820e46827",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood7.a.rtex.dds": {
+      "sha256": "f4ebf2c47fc067296939117235aedb73642944896d6877b3ec9ce383564e85e9",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood7.n.rtex.dds": {
+      "sha256": "ea3104548fb3697a1bcffa3738903174b01363188900fb68595ad2e1a21f95be",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood7.r.rtex.dds": {
+      "sha256": "34d4409fe609e01cfb4208e90cac3aa72d1748ca67682d47e9acae62d97aada1",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood7_n.a.rtex.dds": {
+      "sha256": "47ddb22a4a2eea9b49a68760656bbf5836cd48bb9967df97daf61ad6fd2a09cb",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood8.a.rtex.dds": {
+      "sha256": "c13d8bfad891622b519e9bed0ec783752016f3b6c9b958d1e4466479eed31520",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood8.n.rtex.dds": {
+      "sha256": "74065971cb3958ca0ff92be67d37687a530476535d02cb5da85c7a62acfa3f3b",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood8.r.rtex.dds": {
+      "sha256": "256c5c69c8b9d4d0f44f4fdfe83b8534978b9e84e2fbf5c34e9653b72791d07f",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_blood8_n.a.rtex.dds": {
+      "sha256": "9d01ae3658f8d5f89d6d576605ba30f7f240d721c69e9a6365f7bec12045a192",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood1.a.rtex.dds": {
+      "sha256": "ae9d9c90724b30b35405fac597e67256cb75474358e7b781295493e49a65691a",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood1.n.rtex.dds": {
+      "sha256": "8b71c53aa4acfb4ba6c0e5f6ce98c37fa34c868b9fec4cb10f5f3a59fdd032c7",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood1.r.rtex.dds": {
+      "sha256": "f29058cd56f9ae3e6451a5c049dc09d7f3b0aecad004db89ddbba3a74ff4793d",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood2.a.rtex.dds": {
+      "sha256": "c2e5e6f8e0ca45ca9c52a0cf84908d28a885150f612f882433d4375e378daa9c",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood2.n.rtex.dds": {
+      "sha256": "d7caed2e43c10dae0a672c0e6ee54f61a0f0c1457e7b2e02c08fd5673d4b7857",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood2.r.rtex.dds": {
+      "sha256": "d4803f2a1363f72eceaf9b6c0b961c10560890e1dd5b4b10bc769e27052a4ba9",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood3.a.rtex.dds": {
+      "sha256": "66d6074f54bddec4eaaf25d2ad90c5459055fb551cae427710e2ce0f5af91dbc",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood3.n.rtex.dds": {
+      "sha256": "7fe116063170c151e67b5e74a8ab957ced2ca245fa0238900a9e7e4297dad6f7",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood3.r.rtex.dds": {
+      "sha256": "80123e5a8074c7d1aa27c94647b46eca2537f2949b77846b2f22d01e59128aa9",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood4.a.rtex.dds": {
+      "sha256": "5734ef041264481f6c02eaf92be82dfd1ef6aad52439615a4564ab3ad5556c41",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood4.n.rtex.dds": {
+      "sha256": "a5dd1370d415e3815481d3a82f24202676d5eba05ca52fc58a8d203d6932b5ef",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood4.r.rtex.dds": {
+      "sha256": "251070afabf7dfd4b205f6a446863a150ef838cb5979b5d1fc73b5ff7318fdb9",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood5.a.rtex.dds": {
+      "sha256": "b288c7ceaa9e21ccc6a24dde08ea4d78f594861050cbe5df33bb3cbf6aac78f9",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood5.n.rtex.dds": {
+      "sha256": "01d37dfc47e92f9c796c6404359d384b8f0e6eda74f4a99ed62c5e2558716dd3",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood5.r.rtex.dds": {
+      "sha256": "6f182fbfcba24727d0df53ecdcb8b61870664f1945c23ce33a4f4673200e7ac3",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood6.a.rtex.dds": {
+      "sha256": "ff3a896d62dc8e312728bf69c282827cd4298463da4396c76a66038a5592a837",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood6.n.rtex.dds": {
+      "sha256": "f120a7753f109d74522f7aba5da31cd1d9996515ab0c52062ae6b7b52bfba2eb",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/bo_yblood6.r.rtex.dds": {
+      "sha256": "735c2faaa4e2daf32af310b7403c2eb6fcd00bc3b47f4dc52e4123f666331e26",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh1.a.rtex.dds": {
+      "sha256": "feeb4b164c34ba6f0ad2363b64e71c3668e61fb04fd53d3e25c7f197536f2173",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh1.n.rtex.dds": {
+      "sha256": "7acbe100d2f44c6a2b57fcbcc09573274fa05dbdabbb28dde81d535790f9cfb7",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh1.r.rtex.dds": {
+      "sha256": "4f9b1cbd0646667ee1085f1906f0d113be522092450214f4bc48ac6ef9421faa",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh1_n.a.rtex.dds": {
+      "sha256": "5567c9b60f7e5f4729b04dee6ca44f390ccd6211db4b889e141ec59b1471b890",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh2.a.rtex.dds": {
+      "sha256": "3a5301f7673c2b388bbede417e870004bd0c9506fa93018a7d9aeeb992bcd29a",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh2.n.rtex.dds": {
+      "sha256": "a3b75789f2dd555dfea8657beb7e668608c545e44b3f51412eb4626b46c532bd",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh2.r.rtex.dds": {
+      "sha256": "fb809792442fa4b922fa526ddecb96fcbc34ea738e9c71b1c27aafa2437bcfb7",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh2_n.a.rtex.dds": {
+      "sha256": "697841e489ec953ea6917a2398466d008306097760ee2d9c1072b85fe31386f0",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh3.a.rtex.dds": {
+      "sha256": "ef6e30cc5750d55e01612c24a166097f8024139f795b10a54cd2690da2d9c49f",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh3.n.rtex.dds": {
+      "sha256": "14dfe2bb545e0f3f069262ed4ecae80f9af93f81f58c391ad91c10567fa6514a",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh3.r.rtex.dds": {
+      "sha256": "6bd92f7f3e68546cfda017f42fdcca89d26e1cf906d50e73f2001c5cbb836b56",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh3_n.a.rtex.dds": {
+      "sha256": "df82aa35d9a3ed9b31624faef47bad32fffd2871b066170264fea6746d1b86bc",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh4.a.rtex.dds": {
+      "sha256": "9a40ca285a564528228e1ad0fa840aed7586c058a1c5c7deee32b758b955ebe6",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh4.n.rtex.dds": {
+      "sha256": "5d5758bbe596c79f1c308a0f704ed2dcb872422f85601810774d63e987dde428",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh4.r.rtex.dds": {
+      "sha256": "8ca840a2dcb5fda5866feb57aadf0361d2eb304d6b1c57fd6fe6bbb18b2ceec6",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh4_n.a.rtex.dds": {
+      "sha256": "9c72bcc519b4133325a8b003d8c7f9628c5cab81d3f902bf80de81bf5c3f7267",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh5.a.rtex.dds": {
+      "sha256": "3130f7d14f63d199ad2d98b8891bed314b9327565204a1a9573824b062118614",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh5.n.rtex.dds": {
+      "sha256": "ed07ac8600777e642d68dc30b16ef53b9c54e62a27eacd262b418b5a0a1ca2f1",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh5.r.rtex.dds": {
+      "sha256": "2d7ce858767750a3f6be1f17bce7d795592b8e1bc295a04ee76b30c58ff9390d",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    },
+    "dist/remix_mod/blood_overhaul_rtx/textures/flesh5_n.a.rtex.dds": {
+      "sha256": "bb198d7abc3cee1e55fefbbcf2d2d3892b5d3927ea75acc26eca4fa8a9228f83",
+      "reason": "Crunchy original or derivative, including the old blood8 droplet"
+    }
+  },
+  "note": "New generated shapes used Crunchy textures as style references; no reference pixels/files are distributed. Original/derived bo_*, flesh, alienflesh, stains and old droplet excluded. No dependency on Crunchy."
+}

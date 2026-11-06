@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/long_swipe_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.052734"
+    "$color" "[0.670 0.820 0.140]"
+    "$modelmaterial" "decals/bloodoverhaul/worker/long_swipe_model"
+}

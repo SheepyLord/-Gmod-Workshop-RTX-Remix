@@ -43,6 +43,8 @@ tools\workflow.ps1 -Package                    # the same after the Release chec
 | `procedural-bodygroup-destruction` | `!gmod_bullet_break_simulator\` | `SheepyLord/-gmod_bullet_break_simulator` | - |
 | `character-motion-importer` | `mmd_vmd_npc\` | `SheepyLord/Gmod-Mmd-Motion-Importer` | MIT (`LICENSE`) |
 | `glass` | `bin\gmcl_nlglass_win64.dll`, the broken-glass Jolt module; the add-on itself is read from `glass/addon` ([README](glass/README.md)) | `out\build\win64-release\glass\native` (this repository) | MIT; Jolt Physics MIT (`third_party/jolt`) |
+| `toolgun-screen` | Dynamic Toolgun Screen 1.3.1, thirteen languages; the companion moves its one settings/tool panel beside Toolgun screen | the user's field add-on, read only ([provenance](toolgun-screen/README.md)) | MIT code; screen artwork credit Valve/Facepunch |
+| `blood-overhaul-rtx` | Eighteen owned AI-generated patterns, their PBR mod, twelve colour schemes, new bounded client impacts; no Crunchy originals/derivatives | the user's Blood Overhaul RTX project, filtered by `prepare_blood.py` ([selection/exclusions](blood-overhaul-rtx/README.md)) | MIT owned code/assets; Crunchy base/style credit and AI disclosure |
 
 Only the files a part's package holds are stored, plus the few its packager reads without shipping
 them (`autoexec.cfg`; the file `--addon-file` replaces): the add-ons' repositories hold gigabytes of

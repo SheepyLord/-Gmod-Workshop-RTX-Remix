@@ -1,5 +1,10 @@
 # test_render_guard_addons.py
 
+R20-C preserves the exact legacy exemption inventory but explicitly keeps the new screen/blood
+parts and eight new companion modules out of it. They use ordinary particle/decal/material paths for
+R20-D's general compatibility work. The inventory test rejects either stale legacy exemptions or
+an accidental new exemption for these files; packaging a part does not grant rendering-policy trust.
+
 Runs twenty-four R8-C LuaJIT scenarios through the production guard using
 [render_guard_harness.lua](render_guard_harness.lua.md) and the authored
 [add-on call replays](render_guard_addon_replays.lua.md). Run from the repo root:

@@ -48,6 +48,17 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **Dupe camera tracking:** the RTX guard observes `cam.End` as well as `End2D` and `End3D`,
   so the stock dupe icon's repeated cameras no longer exhaust its tracked stack. Composite 3D2D
   cameras reject incomplete closers ([ADR 0120](docs/decisions/0120-camera-closers-share-the-guards-stack.md)).
+- Authored opacity materials keep the new blood droplets and mist coloured under path tracing,
+  with a small scene-adaptive fill; physical world stains retain their wet, non-emissive PBR.
+
+- Bundle Dynamic Toolgun Screen (all thirteen languages) and the owned Blood Overhaul RTX patterns,
+  colour schemes and wet PBR maps; settings live in the RTX tab and coexist with standalone copies.
+  Crunchy's original/derived textures are excluded; the new patterns disclose AI generation.
+- Add directional blood impacts with brief mist, ballistic droplets and small collision stains,
+  stock blood colours/custom schemes, amount controls and hard particle/stain budgets. Off restores
+  the engine's original impact. No new networking, shared particle overrides or native trust changes.
+
+### R20
 
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main

@@ -1,0 +1,195 @@
+{
+ "schema": 1,
+ "part": "toolgun-screen",
+ "origins": {
+  "dynamic_toolgun_screen": {
+   "source": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod\\garrysmod\\addons\\dynamic_toolgun_screen",
+   "git": null,
+   "imported": "2026-11-06T10:25:56+00:00"
+  }
+ },
+ "files": {
+  "dynamic_toolgun_screen/addon.json": {
+   "size": 1358,
+   "sha256": "602431690372ab9bb4d69fad329bf711aa8044463cb815271f1ba2110488ae6c",
+   "mtime_ns": 1793307647623500100,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/autorun/dynamic_toolgun_screen.lua": {
+   "size": 1666,
+   "sha256": "c02cbb28347fc0499326805ab90265b0e7ce02ae217819549f1562fc04e09c53",
+   "mtime_ns": 1792886593227370000,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_compat.lua": {
+   "size": 6501,
+   "sha256": "d8a16e331e4606bfbf5815ba2d341910583f89217dd1555cc7a1ffbdc5837544",
+   "mtime_ns": 1792886543094902700,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_core.lua": {
+   "size": 13901,
+   "sha256": "44ad1103bcf467e3b0eebbd3ac560a3cd3696e6f7f1828b1b68826feff16243c",
+   "mtime_ns": 1793308555713423200,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_draw.lua": {
+   "size": 22685,
+   "sha256": "35f311e7305658f2e361978eaeeb7c89bb51b5306e4a4ef3e469fe604eaff60d",
+   "mtime_ns": 1793308549615154100,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_features.lua": {
+   "size": 17813,
+   "sha256": "257c3d37d7db2a1e1c1af1b1f53cdc68c001f79fd40bc2d6f775ee0c51b6a4a2",
+   "mtime_ns": 1793308534673762300,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_i18n.lua": {
+   "size": 10461,
+   "sha256": "7d6af480d6c734097bed618f82ca6717f31e9e08aff06c5b744c0d679b70d7f9",
+   "mtime_ns": 1792886517587825800,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_inspect.lua": {
+   "size": 8012,
+   "sha256": "73cb1132e862a8c0bc85767e4707f5307bf75c201a4abd261dc4bbebeb7c5c6d",
+   "mtime_ns": 1792894084222779700,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_menu.lua": {
+   "size": 21818,
+   "sha256": "a5b4130ba864ceac3f7652b23f0eaec5cedc48da1f3664a9779a4d7c225c0a6e",
+   "mtime_ns": 1792893644580832300,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_render.lua": {
+   "size": 17249,
+   "sha256": "4b5ddc8d8a946c24c31477d82d846a81b5a418091aa72e0a5c4aa393bfb281c0",
+   "mtime_ns": 1792886347737193600,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_themes.lua": {
+   "size": 9789,
+   "sha256": "d2ab33377dbcbc4ddfb676375b4754f9612290d41d94273407a056bc37693b13",
+   "mtime_ns": 1792886368177681200,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/cl_tokens.lua": {
+   "size": 32409,
+   "sha256": "42046f83e473aef70d6ff04f2cc4fd54b081ab983f639f04cd382ab1f83e1646",
+   "mtime_ns": 1793308542966536000,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/de.lua": {
+   "size": 40843,
+   "sha256": "0b04997615cf8b1ece01d7d2066f717507cfd552db7e715a3812154067756993",
+   "mtime_ns": 1793308618814658100,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/en.lua": {
+   "size": 26427,
+   "sha256": "5f2d2cb9ca218d168390f0811cfc597535c980c732fed14d23fcc81f9583dc3d",
+   "mtime_ns": 1793308562761417400,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/es-es.lua": {
+   "size": 41300,
+   "sha256": "7763dadf525c6c8756b8dc3e8b2911a48ad1d460b7c257f0734ee52082884d11",
+   "mtime_ns": 1793308618872245900,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/fr.lua": {
+   "size": 41087,
+   "sha256": "e4813d5e0102f61cade292aa39ef30b303e6d10ff4dd7cfcd9196f3bf6941e79",
+   "mtime_ns": 1793308618923848600,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/ja.lua": {
+   "size": 42960,
+   "sha256": "467d6314b42dbcfafbd8a1de93987a28c11ec27379cf601e2d1074f2bcc3b854",
+   "mtime_ns": 1793308618973912700,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/ko.lua": {
+   "size": 40853,
+   "sha256": "ea5d19b6667d6ca30b1b59275706f2428482ad28764565d50cec9fb33e6443ee",
+   "mtime_ns": 1793308619026483600,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/pl.lua": {
+   "size": 40585,
+   "sha256": "d45ababea3d14cb511d51f25beae57515e6c890db274a43de8657b6dfc6f43b3",
+   "mtime_ns": 1793308619076556900,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/pt-br.lua": {
+   "size": 40918,
+   "sha256": "17274ee256f2ea2daa54c5e9ec616935932e859c3ed500172cc888d8f1bc247b",
+   "mtime_ns": 1793308619126525700,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/ru.lua": {
+   "size": 47709,
+   "sha256": "684756bad33532ac3e2c8802840c6d6f479375aca929dfa307305c6e06321ee2",
+   "mtime_ns": 1793308619178100000,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/tr.lua": {
+   "size": 40258,
+   "sha256": "29ed8530fdfefed52980be05e03437c39096282e7346a94fe86a8956db8db3bc",
+   "mtime_ns": 1793308619228170800,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/uk.lua": {
+   "size": 47939,
+   "sha256": "b73337acdfebf5275fc299e3502849600f6557d1b360f900171876420f0cd208",
+   "mtime_ns": 1793308619278235500,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/zh-cn.lua": {
+   "size": 39326,
+   "sha256": "aba38f3de1e2fcb6a2211c890f7c8afb4da9e9cd4c4b414cbd14cf693ff1f60c",
+   "mtime_ns": 1793308619329163700,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/lang/zh-tw.lua": {
+   "size": 39489,
+   "sha256": "095ea171385b24ef75b8c25d251a611eb2acfb273423eabac7e3ec5f2d68df35",
+   "mtime_ns": 1793308619379714300,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/layouts/cl_minimal.lua": {
+   "size": 2005,
+   "sha256": "a18d70416f705701284f1bbf338df35e987b5258e6843c31dee160b65551b9fd",
+   "mtime_ns": 1792779579029181600,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/layouts/cl_pocketpc.lua": {
+   "size": 6205,
+   "sha256": "8d00b8435c93a85fc14a7916cc03326560d9c10a27cb69ec032c3dede1d18fd8",
+   "mtime_ns": 1793308539269243400,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/dynamic_toolgun_screen/layouts/cl_terminal.lua": {
+   "size": 4521,
+   "sha256": "c0a15e562508bc124b9b6b5bb82253fc06fe793220070e3bc5b5094aacb26e1a",
+   "mtime_ns": 1792779572938232900,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/lua/weapons/gmod_tool/stools/dynamic_toolgun_screen.lua": {
+   "size": 1932,
+   "sha256": "2f8bd8f56b7a41203cb914fe7a8ae8f49bd789791930fcfadd577c5618e90a7c",
+   "mtime_ns": 1792779637168611300,
+   "stored": "plain"
+  },
+  "dynamic_toolgun_screen/materials/dynamic_toolgun_screen/screen_original.png": {
+   "size": 24276,
+   "sha256": "d57354c393864cc58d01e70a84dfe20353bf20f728a45862824ed617b5268547",
+   "mtime_ns": 1792813220069116500,
+   "stored": "xz",
+   "stored_size": 24316,
+   "stored_sha256": "fa5af399338efcde0377de121fa8813233774008ba43e3579a41edc5d44f4ef3"
+  }
+ }
+}

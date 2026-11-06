@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/directional_spray_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.050781"
+    "$color" "[0.780 0.700 0.240]"
+    "$modelmaterial" "decals/bloodoverhaul/alien/directional_spray_model"
+}

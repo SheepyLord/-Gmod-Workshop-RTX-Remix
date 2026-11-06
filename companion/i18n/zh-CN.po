@@ -150,7 +150,7 @@ msgid "Night"
 msgstr "夜晚"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:695
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:260
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:266
 msgid "The Remix API is not available in this session, so these settings cannot be applied. Run nativeloader_status for details."
 msgstr "本次游戏中 Remix API 不可用，因此无法应用这些设置。运行 nativeloader_status 可查看详情。"
 
@@ -253,8 +253,8 @@ msgid "Weather"
 msgstr "天气"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:744
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:273
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:275
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:279
 msgid "(leave to Remix)"
 msgstr "（由 Remix 决定）"
 
@@ -312,8 +312,153 @@ msgstr "稍后提醒"
 msgid "Don't remind me about %s"
 msgstr "不再提醒我更新到 %s"
 
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+msgid "Realistic"
+msgstr "写实"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+msgid "Fresh arterial"
+msgstr "鲜红动脉血"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:9
+msgid "Dark venous"
+msgstr "暗红静脉血"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+msgid "Aged, dried"
+msgstr "陈旧干血"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+msgid "Black ink"
+msgstr "黑墨"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+msgid "Toxic green"
+msgstr "毒液绿"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:10
+msgid "Blue blood"
+msgstr "蓝血"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
+msgid "Violet"
+msgstr "紫色"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
+msgid "Golden ichor"
+msgstr "金色灵液"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:11
+msgid "Synthetic white"
+msgstr "合成白血"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:12
+msgid "Rainbow"
+msgstr "彩虹"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:12
+msgid "Custom colours"
+msgstr "自定义颜色"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:23
+msgid "Enable Blood Overhaul RTX"
+msgstr "启用 Blood Overhaul RTX"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:24
+msgid "Eighteen new patterns and twelve colour schemes, with wet PBR surfaces under RTX. Crunchy's Blood Overhaul is optional."
+msgstr "18 种新图案和 12 种配色，RTX 下呈现湿润的 PBR 表面。无需安装 Crunchy 的 Blood Overhaul。"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:25
+msgid "Realistic bullet impacts"
+msgstr "写实子弹命中效果"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
+msgid "Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."
+msgstr "定向喷溅、短暂血雾和落地留下小血迹的液滴。关闭可恢复引擎原有的血液命中效果。"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
+msgid "Impact amount"
+msgstr "命中效果量"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
+msgid "Zero uses the stock impact. Detail reduces with viewing distance; the particle and stain limits always apply."
+msgstr "设为零使用原版效果。远处减少细节；粒子和血迹数量始终受上限约束。"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
+msgid "Colour scheme"
+msgstr "配色方案"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:31
+msgid "Mix all blood patterns"
+msgstr "混用所有血迹图案"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
+msgid "Splat size"
+msgstr "血迹大小"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
+msgid "Recolour flying droplets"
+msgstr "为飞溅液滴着色"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
+msgid "Custom colours apply when the Custom colours scheme is selected."
+msgstr "选择“自定义颜色”配色方案后，以下颜色才会生效。"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
+msgid "Red blood"
+msgstr "红血"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
+msgid "Alien blood"
+msgstr "异种血液"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
+msgid "Limits: 640 particles per second, 512 alive; 48 new stains per second, 384 until map cleanup or Clear all decals. Existing stains stay when impacts are turned off."
+msgstr "上限：每秒 640 个粒子，同时存在 512 个；每秒 48 处新血迹，清理地图或“清除所有贴花”前累计不超过 384 处。关闭命中效果后已有血迹仍保留。"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
+msgid "Test splats where you look"
+msgstr "在准星处测试血迹"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
+msgid "Clear all decals"
+msgstr "清除所有贴花"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
+msgid "Reset blood settings"
+msgstr "重置血液设置"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
+msgid "New patterns made with an AI image model. Base and style credit: Crunchy's 2022 Blood Overhaul (2683396098); its original textures and derived maps are not bundled."
+msgstr "新图案由 AI 图像模型制作。基础及风格来源：Crunchy 的 2022 Blood Overhaul（2683396098）；未捆绑其原始纹理或衍生贴图。"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:47
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
+msgid "Blood"
+msgstr "血液"
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:50
+msgid "Blood and impacts"
+msgstr "血液与命中效果"
+
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:12
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+msgid "Dynamic toolgun screen"
+msgstr "动态工具枪屏幕"
+
+#: nativeloader/lua/autorun/client/nativeloader_bundled_panels.lua:21
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:176
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:357
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:358
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:359
+#: nativeloader/lua/nativeloader/guide_pages.lua:124
+msgid "Rendering"
+msgstr "渲染"
+
 #: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:338
 msgid "Choose eye-white materials"
 msgstr "选择眼白材质"
 
@@ -391,37 +536,28 @@ msgstr "目录"
 msgid "RTX Remix guide"
 msgstr "RTX Remix 指南"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:17
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:351
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:352
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:353
-#: nativeloader/lua/nativeloader/guide_pages.lua:124
-msgid "Rendering"
-msgstr "渲染"
-
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:18
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/nativeloader/guide_pages.lua:146
+#: nativeloader/lua/nativeloader/guide_pages.lua:148
 msgid "Lights"
 msgstr "灯光"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:19
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:20
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
-#: nativeloader/lua/nativeloader/guide_pages.lua:158
+#: nativeloader/lua/nativeloader/guide_pages.lua:160
 msgid "Water and glass"
 msgstr "水与玻璃"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:349
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:355
 #: nativeloader/lua/nativeloader/guide_pages.lua:87
 msgid "Start here"
 msgstr "从这里开始"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:22
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
 #: nativeloader/lua/nativeloader/guide_pages.lua:98
 msgid "Remix settings"
 msgstr "Remix 设置"
@@ -436,18 +572,18 @@ msgid "Ultra"
 msgstr "超高"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:228
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:211
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:234
 msgid "High"
 msgstr "高"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:211
 msgid "Medium"
 msgstr "中"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:74
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:205
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:211
 msgid "Low"
 msgstr "低"
 
@@ -501,7 +637,7 @@ msgid "Frame generation"
 msgstr "帧生成"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:82
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:275
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:281
 msgid "Off"
 msgstr "关闭"
 
@@ -581,221 +717,221 @@ msgstr "泛光、动态模糊和胶片颗粒。"
 msgid "Tone map colour purity"
 msgstr "色调映射色彩纯度"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:209
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:215
 msgid "No tier layer is available."
 msgstr "没有可用的档位配置层。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:210
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:216
 #, c-format
 msgid "Performance tier %s is not applied: %s. See Performance and memory in the guide."
 msgstr "性能档位 %s 未应用：%s。请参阅指南中的“性能与内存”。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:213
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:219
 msgid "Automatic selection"
 msgstr "自动选择"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:213
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:219
 msgid "Configuration override"
 msgstr "配置覆盖"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:214
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
 msgid "Compatibility fallback"
 msgstr "兼容回退"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:219
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:225
 #, c-format
 msgid "Performance tier: %s (%s; %s, %s MiB VRAM). To change it, set remix.performance_tier in native-loader\\config.json to auto, high, medium or low, then restart Garry's Mod."
 msgstr "性能档位：%s（%s；%s，%s MiB 显存）。如需更改，请在 native-loader\\config.json 中将 remix.performance_tier 设为 auto、high、medium 或 low，然后重启 Garry's Mod。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:220
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:226
 msgid "Unknown source"
 msgstr "未知来源"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:227
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:233
 msgid "Below the minimum"
 msgstr "低于最低配置"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:227
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:233
 msgid "Minimum"
 msgstr "最低配置"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:228
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:234
 msgid "Recommended"
 msgstr "推荐配置"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:233
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:239
 #, c-format
 msgid "Memory profile: %s (%s MiB VRAM, %s MiB RAM). Characters kept ready for an instant spawn: %s; the others load when first used. To change it, set remix.memory_profile in native-loader\\config.json to auto, minimum, recommended or high, then restart Garry's Mod."
 msgstr "内存档位：%s（%s MiB 显存，%s MiB 内存）。保持就绪、可立即生成的角色：%s 个；其余角色在首次使用时加载。如需更改，请在 native-loader\\config.json 中将 remix.memory_profile 设为 auto、minimum、recommended 或 high，然后重启 Garry's Mod。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:238
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
 msgid "RTX Remix is running in this session. Every setting of the RTX package is in this tab, in the groups on the left."
 msgstr "RTX Remix 正在本次游戏中运行。RTX 包的所有设置都在此选项卡中，按左侧分组排列。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:244
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
 msgid "Open the RTX Remix guide"
 msgstr "打开 RTX Remix 指南"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:245
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
 msgid "Performance and memory guide"
 msgstr "性能与内存指南"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:246
-#: nativeloader/lua/nativeloader/guide_pages.lua:326
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
+#: nativeloader/lua/nativeloader/guide_pages.lua:328
 msgid "Print the loader's status to the console"
 msgstr "在控制台输出加载器状态"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:247
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
 msgid "When RTX first ran, the RTX add-ons took the settings of the original RTX install, except for settings you had already changed. This button applies all of them again, also over your own changes."
 msgstr "RTX 首次运行时，RTX 插件采用了原始 RTX 安装中的设置，但保留了您已更改的设置。此按钮会重新应用所有这些设置，也会覆盖您自己的更改。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:248
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:254
 msgid "Use the classic RTX settings"
 msgstr "使用经典 RTX 设置"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:249
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:255
 msgid "RTX session guard"
 msgstr "RTX 会话保护"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:250
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:256
 msgid "Stops other add-ons from undoing RTX settings or drawing post-processing over the picture. Turn it off only to test an add-on that misbehaves."
 msgstr "防止其他插件还原 RTX 设置或在画面上叠加后期处理效果。仅在测试行为异常的插件时才关闭此项。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:251
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:257
 msgid "Remix's own menu: press Alt+X, and save your changes there to keep them. Before you change single settings, set Graphics Preset, or DLSS Preset for the DLSS settings, to Custom; the guide shows how."
 msgstr "Remix 自带的菜单：按 Alt+X，并在其中保存更改以便保留。更改单项设置前，请先将“图形预设”设为“自定义”；更改 DLSS 设置则将“DLSS 预设”设为“自定义”。指南中有具体步骤。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:252
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:258
 msgid "Language"
 msgstr "语言"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:253
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:259
 msgid "Same as Garry's Mod"
 msgstr "与 Garry's Mod 相同"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:255
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:261
 msgid "Language of this tab and the guide"
 msgstr "此选项卡和指南的语言"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:262
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:268
 msgid "Changes here apply at once, for this session. To keep them, press Alt+X and save them there. The values shown are this panel's own choices, not a live reading of Remix."
 msgstr "此处的更改在本次游戏中即时生效。要保留更改，请按 Alt+X 并在其中保存。这里显示的是本面板的选择，并非 Remix 当前值的实时显示。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:263
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:269
 msgid "Reapply these overrides at every launch"
 msgstr "每次启动时重新应用这些覆盖值"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:264
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:270
 msgid "Off (the default), Remix starts with its own saved settings. On, this panel applies its choices at every start, over those settings."
 msgstr "关闭时（默认），Remix 启动时使用自己保存的设置。开启时，本面板会在每次启动时应用其选择，覆盖这些设置。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:274
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:280
 msgid "On"
 msgstr "开启"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:278
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:284
 #, c-format
 msgid "Set %s here"
 msgstr "在此设置%s"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:310
 #: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr "启动时提示启用超分辨率和帧生成"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:307
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:313
 msgid "A number is used only while the box above it, Set ... here, is ticked. Zero is a valid value for sky brightness and colour purity."
 msgstr "只有勾选数值上方的“在此设置…”复选框，该数值才会生效。天空亮度和色彩纯度均可设为零。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:308
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:314
 msgid "Clear this panel's overrides"
 msgstr "清除本面板的覆盖值"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:312
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:318
 msgid "Local player shadow"
 msgstr "本地玩家阴影"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:313
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
 msgid "Shows the shadow and reflection of your own body while you play in first person. Other players and ragdolls are not affected."
 msgstr "在第一人称视角下显示自身身体的阴影和反射，不影响其他玩家和布娃娃。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:314
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
 msgid "Body height offset (units)"
 msgstr "身体高度偏移（单位）"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:315
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:321
 msgid "Raises (positive) or lowers (negative) only that body. Your view and your collisions stay where they are."
 msgstr "正值抬高、负值降低渲染出的身体。视角和碰撞位置保持不变。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:319
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
 msgid "Keep toolgun text sharp"
 msgstr "保持工具枪文字清晰"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:320
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
 msgid "Draws the toolgun's screen at full resolution after DLSS or another upscaler, so its text stays readable. Animated and custom screens keep working."
 msgstr "在 DLSS 或其他超分辨率处理后，以全分辨率绘制工具枪屏幕，让文字保持清晰可读。动画和自定义屏幕仍可正常使用。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:324
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
 msgid "Hide outline meshes"
 msgstr "隐藏描边网格"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:325
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
 msgid "Hides the outline shells that many anime models have: path tracing draws them as a dark layer over the model. The model's other materials are not changed."
 msgstr "隐藏许多动漫模型自带的描边外壳：路径追踪会将其绘制成覆盖模型的暗层。模型的其他材质不会改变。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:326
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:332
 msgid "Imported game PBR"
 msgstr "导入角色的游戏 PBR"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:327
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
 msgid "Uses the game's own maps for characters imported from Wuthering Waves, Endfield and Silver Palace. Skin and faces stay as they are. Off restores the original materials."
 msgstr "使用从鸣潮、终末地和白银之城导入的角色自带的游戏贴图。皮肤和面部保持原样。关闭后恢复原始材质。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:328
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:334
 msgid "Steady eye whites for imported characters"
 msgstr "导入角色的稳定眼白"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
 msgid "Keeps the whites of imported characters' eyes clean and bright. It finds them by their material names; if it misses one, choose them yourself below. Characters with a PBR pack keep its materials."
 msgstr "让导入角色的眼白保持干净明亮。通过材质名称识别眼白；若有遗漏，可在下方手动选择。有 PBR 包的角色保留包内材质。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:330
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:336
 msgid "Eye-white brightness"
 msgstr "眼白亮度"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:331
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:337
 msgid "In percent; 100 is the tuned default. A change applies at once, to steady eye whites and to the eye glow of PBR packs that follows the scene's light; 0 removes that glow."
 msgstr "百分比：100 为调校后的默认值。更改即时生效，影响稳定眼白和 PBR 包中随场景光照调整的眼部发光；0 可关闭这部分发光。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:333
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:339
 msgid "Hide painted shadows"
 msgstr "隐藏绘制的阴影"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:334
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:340
 msgid "Leaves out the shadows that imported characters have painted over their eyes, under their fringe and on their faces: path tracing casts real shadows there. Their bodygroups and saves do not change."
 msgstr "隐藏导入角色眼睛上、刘海下和脸部绘制的阴影：路径追踪会在那里投下真实阴影。身体组和存档保持不变。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:335
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:341
 msgid "Solid hair"
 msgstr "不透明头发"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:336
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:342
 msgid "Draws an imported character's hair solid when its texture is mostly opaque but the alpha test would cut holes into it, as in hair from Endfield. Hair cut out of its texture strand by strand keeps its cutouts."
 msgstr "当导入角色的头发纹理大部分不透明，却会被 Alpha 测试切出孔洞时（如终末地的头发），将其绘制为不透明。对于在纹理中逐根裁出发丝轮廓的头发，仍会保留原有的镂空效果。"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:350
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:356
 msgid "Common Remix settings"
 msgstr "常用 Remix 设置"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:351
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:357
 msgid "Player models"
 msgstr "玩家模型"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:352
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:358
 msgid "Toolgun screen"
 msgstr "工具枪屏幕"
 
-#: nativeloader/lua/autorun/client/nativeloader_menu.lua:353
+#: nativeloader/lua/autorun/client/nativeloader_menu.lua:359
 msgid "Model outlines"
 msgstr "模型描边"
 
@@ -1195,780 +1331,788 @@ msgstr "自动分类：自动将纹理分到 Remix 的各个类别。"
 msgid "Toolgun screen: keeps the toolgun's screen text sharp."
 msgstr "工具枪屏幕：让工具枪屏幕上的文字保持清晰。"
 
+#: nativeloader/lua/nativeloader/guide_pages.lua:135
+msgid "Dynamic toolgun screen, beside Toolgun screen in Rendering, customizes the live display, its layouts and language. The same panel selects its entity-tracking tool."
+msgstr "“渲染”中的“动态工具枪屏幕”位于“工具枪屏幕”旁，可自定义实时显示、布局和语言。同一面板也可选择其实体跟踪工具。"
+
 #: nativeloader/lua/nativeloader/guide_pages.lua:136
+msgid "Blood > Blood and impacts sets the blood patterns, colours and bullet spray. Turn Realistic bullet impacts off, or set Impact amount to zero, for the engine's original impact. Clear all decals removes existing stains and starts a fresh stain budget. Crunchy's add-on is optional."
+msgstr "“血液 > 血液与命中效果”可设置血迹图案、颜色和子弹喷溅。关闭“写实子弹命中效果”或将“命中效果量”设为零，可使用引擎原版效果。“清除所有贴花”会移除已有血迹并重置血迹预算。无需安装 Crunchy 的插件。"
+
+#: nativeloader/lua/nativeloader/guide_pages.lua:138
 msgid "Pseudoplayer Enabled: lets you see your own shadow and reflection."
 msgstr "启用玩家模型替身：让您看到自身的阴影和反射。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:137
+#: nativeloader/lua/nativeloader/guide_pages.lua:139
 msgid "Pseudoweapon Enabled: the same for the weapon you hold."
 msgstr "启用武器模型替身：让手持武器也有同样的效果。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:138
+#: nativeloader/lua/nativeloader/guide_pages.lua:140
 msgid "Hardware Skinning: needed by some mesh replacements; experimental."
 msgstr "硬件蒙皮：某些网格替换需要此项；实验性功能。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:139
+#: nativeloader/lua/nativeloader/guide_pages.lua:141
 msgid "Fix Skybox Leaking: hides parts of the map that show through the sky."
 msgstr "修复天空盒穿透：隐藏透过天空显示出来的地图部分。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:140
+#: nativeloader/lua/nativeloader/guide_pages.lua:142
 msgid "Disable Remix API Lights: ticked (the default), Remix uses the game's own lights; unticked, every map light becomes a Remix light."
 msgstr "禁用 Remix API 光源：勾选时（默认），Remix 使用游戏原有光源；取消勾选后，每个地图光源都会转换为 Remix 光源。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:141
+#: nativeloader/lua/nativeloader/guide_pages.lua:143
 msgid "Map Fixes: repairs broken map geometry on this map, at some cost in frame rate."
 msgstr "地图修复：修复当前地图中有问题的几何体，但会降低帧率。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:143
+#: nativeloader/lua/nativeloader/guide_pages.lua:145
 msgid "Performance Mode: draws the map's world and props faster, and breaks mesh replacements."
 msgstr "性能模式：加快地图场景和道具的绘制，但会导致网格替换失效。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:144
+#: nativeloader/lua/nativeloader/guide_pages.lua:146
 msgid "Culling and 3D Sky: which props are skipped, and the map's 3D skybox. Both need Performance Mode."
 msgstr "不可见物体剔除和 3D 天空盒：控制跳过哪些道具，以及地图的 3D 天空盒。两者都需要开启“性能模式”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:145
+#: nativeloader/lua/nativeloader/guide_pages.lua:147
 msgid "Advanced: Engine Patches. Leave them alone unless you are asked to change them."
 msgstr "高级：引擎补丁。除非有人请您调整，否则请保持原样。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:147
+#: nativeloader/lua/nativeloader/guide_pages.lua:149
 msgid "Press your flashlight key (F by default) for a path-traced flashlight. Lights > Flashlight sets how it looks."
 msgstr "按手电筒按键（默认为 F），使用路径追踪手电筒。可在“灯光 > 手电筒”中设置其外观。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:149
+#: nativeloader/lua/nativeloader/guide_pages.lua:151
 msgid "Brightness and radius of the light."
 msgstr "光源的亮度和半径。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:150
+#: nativeloader/lua/nativeloader/guide_pages.lua:152
 msgid "Cone Angle and Cone Softness: the width of the beam and how soft its edge is."
 msgstr "光锥角度和光锥边缘柔和度：光束的宽度，以及边缘的柔和程度。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:151
+#: nativeloader/lua/nativeloader/guide_pages.lua:153
 msgid "Volumetric Scale: how much the beam lights up fog and dust."
 msgstr "体积光倍率：光束照亮雾和尘埃的程度。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:152
+#: nativeloader/lua/nativeloader/guide_pages.lua:154
 msgid "The light's color."
 msgstr "光源的颜色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:153
+#: nativeloader/lua/nativeloader/guide_pages.lua:155
 msgid "Position Offset: where the light sits relative to your eyes: forward, right and up."
 msgstr "位置偏移：光源相对于眼睛的位置，分为前向、右向和向上。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:154
+#: nativeloader/lua/nativeloader/guide_pages.lua:156
 msgid "Reset: back to the defaults."
 msgstr "重置：恢复默认设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:155
+#: nativeloader/lua/nativeloader/guide_pages.lua:157
 msgid "Map: by default Remix lights the map from the game's own lights. When Disable Remix API Lights (Rendering > Base Options) is unticked, every map light becomes a Remix light, and the Map panel scales the brightness, size and glow in fog of point lights, spot lights and the sun."
 msgstr "地图：默认情况下，Remix 使用游戏原有光源为地图提供光照。取消勾选“禁用 Remix API 光源”（渲染 > 基本选项）后，每个地图光源都会转换为 Remix 光源，而“地图”面板可调节点光源、聚光灯和太阳的亮度、尺寸以及雾中发光效果的倍率。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:156
+#: nativeloader/lua/nativeloader/guide_pages.lua:158
 msgid "Wrapper - Basic, Wrapper - Dynamic and Wrapper - Projected Texture turn the lights of other add-ons into Remix lights. Entity Light HUD shows the Remix lights near you."
 msgstr "“基础光源转换”、“动态光源转换”和“投射纹理光源转换”会将其他插件的光源转换为 Remix 光源。“实体光源 HUD”显示您附近的 Remix 光源。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:157
+#: nativeloader/lua/nativeloader/guide_pages.lua:159
 msgid "Advanced MMD Animation Player: its flashlight becomes a Remix light when the Remix API is ready (nativeloader_status says Remix API: ready). The light's strength grows with its radius: a radius of 1 is almost invisible; start with 20 to 30."
 msgstr "Advanced MMD Animation Player：Remix API 就绪后（nativeloader_status 显示 Remix API: ready），其手电筒会转换为 Remix 光源。光源强度随半径增大而增强：半径为 1 时几乎看不见；请从 20 到 30 开始尝试。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:160
+#: nativeloader/lua/nativeloader/guide_pages.lua:162
 msgid "Map windows and Spawned glass: annealed glass breaks into large shards, tempered glass into many small pieces."
 msgstr "地图窗户和生成的玻璃：退火玻璃会碎成大块，钢化玻璃会碎成许多小块。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:161
+#: nativeloader/lua/nativeloader/guide_pages.lua:163
 msgid "Glass strength."
 msgstr "玻璃强度。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:162
+#: nativeloader/lua/nativeloader/guide_pages.lua:164
 msgid "Show cracks."
 msgstr "显示裂纹。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:163
+#: nativeloader/lua/nativeloader/guide_pages.lua:165
 msgid "Player break speed: how fast you must move to break a window. At the default of 250, walking does not break windows."
 msgstr "玩家撞碎速度：撞碎窗户所需的移动速度。默认值为 250，步行不会撞碎窗户。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:164
+#: nativeloader/lua/nativeloader/guide_pages.lua:166
 msgid "Debris lifetime and budget: how long broken pieces stay, and how many there may be."
 msgstr "碎片寿命和碎片数量上限：碎片保留多久，以及最多能有多少碎片。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:165
+#: nativeloader/lua/nativeloader/guide_pages.lua:167
 msgid "Clear broken glass."
 msgstr "清除碎玻璃。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:166
+#: nativeloader/lua/nativeloader/guide_pages.lua:168
 msgid "The server settings need an administrator; in a single-player game that is you. Kind, strength and piece size apply to new panes: clean up the map to replace its windows. Flying through glass in noclip never breaks it."
 msgstr "服务器设置需要管理员权限；单人游戏中您就是管理员。类型、强度和碎片大小只对新玻璃板生效：请清理地图来替换窗户。使用穿墙模式飞过玻璃不会撞碎它。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:167
+#: nativeloader/lua/nativeloader/guide_pages.lua:169
 msgid "RTX Water makes the map's water path traced, with waves, ripples from players, objects and bullets, and splashes. Choose the water type and the waves there, or leave them on Auto (map default)."
 msgstr "RTX Water 为地图水面启用路径追踪，带来波浪、玩家、物体和子弹产生的涟漪，以及水花。可在此选择水体类型和波浪，也可以保持“自动（地图默认值）”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:169
+#: nativeloader/lua/nativeloader/guide_pages.lua:171
 msgid "Enable RTX Water."
 msgstr "启用 RTX Water。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:170
+#: nativeloader/lua/nativeloader/guide_pages.lua:172
 msgid "Water type and Waves: Auto (map default) uses what the map sets."
 msgstr "水体类型和波浪：“自动（地图默认值）”使用地图的设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:171
+#: nativeloader/lua/nativeloader/guide_pages.lua:173
 msgid "The waves: strength, speed, direction and size."
 msgstr "波浪的强度、速度、方向和尺寸。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:172
+#: nativeloader/lua/nativeloader/guide_pages.lua:174
 msgid "Waves from players, NPCs, objects and bullets, and how far they travel."
 msgstr "玩家、NPC、物体和子弹产生的水波，以及水波传播的距离。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:173
+#: nativeloader/lua/nativeloader/guide_pages.lua:175
 msgid "Splashes thrown up by bodies and bullets."
 msgstr "物体和子弹溅起的水花。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:175
+#: nativeloader/lua/nativeloader/guide_pages.lua:177
 msgid "The Remix menu (Alt+X)"
 msgstr "Remix 菜单 (Alt+X)"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:176
+#: nativeloader/lua/nativeloader/guide_pages.lua:178
 msgid "Alt+X opens and closes Remix's own menu, drawn over the game. It comes in two forms: the simple menu, User Graphics Settings, and the developer menu with every option. While the menu is open, the mouse works in the menu."
 msgstr "按 Alt+X 可打开或关闭叠加在游戏画面上的 Remix 菜单。它有两种形式：简易菜单“用户图形设置”，以及包含所有选项的开发者菜单。菜单打开时，鼠标用于操作菜单。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:177
+#: nativeloader/lua/nativeloader/guide_pages.lua:179
 msgid "The simple menu"
 msgstr "简易菜单"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:179
+#: nativeloader/lua/nativeloader/guide_pages.lua:181
 msgid "The tabs. General: the language, DLSS and frame generation. Graphics: Graphics Preset and the quality settings. Content: Remix's replacements on or off. Permissions: what NVIDIA may collect."
 msgstr "各个选项卡。常规：语言、DLSS 和帧生成。图形：图形预设和画质设置。内容：开启或关闭 Remix 替换。权限：允许 NVIDIA 收集哪些信息。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:180
+#: nativeloader/lua/nativeloader/guide_pages.lua:182
 msgid "DLSS Preset: Custom lets you choose the DLSS settings below yourself."
 msgstr "DLSS 预设：设为“自定义”后，即可自行选择下方的 DLSS 设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:181
+#: nativeloader/lua/nativeloader/guide_pages.lua:183
 msgid "DLSS Mode: how much smaller the game is drawn before DLSS enlarges it. Performance is faster, Quality is sharper."
 msgstr "DLSS 模式：决定先以多低的分辨率绘制游戏，再由 DLSS 放大。“性能”更快，“质量”更清晰。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:182
+#: nativeloader/lua/nativeloader/guide_pages.lua:184
 msgid "Frame Generation."
 msgstr "帧生成。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:183
+#: nativeloader/lua/nativeloader/guide_pages.lua:185
 msgid "Developer Settings Menu: opens the developer menu."
 msgstr "开发者设置菜单：打开开发者菜单。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:184
+#: nativeloader/lua/nativeloader/guide_pages.lua:186
 msgid "Save Settings: keeps your changes in user.conf. It is orange while something is not saved."
 msgstr "保存设置：将更改保存在 user.conf 中。有未保存的更改时，此按钮呈橙色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:185
+#: nativeloader/lua/nativeloader/guide_pages.lua:187
 msgid "Delete All User Settings: forgets everything saved in user.conf."
 msgstr "删除所有用户设置：清除 user.conf 中保存的所有设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:186
+#: nativeloader/lua/nativeloader/guide_pages.lua:188
 msgid "The developer menu"
 msgstr "开发者菜单"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:188
+#: nativeloader/lua/nativeloader/guide_pages.lua:190
 msgid "Graphics Settings Menu: back to the simple menu."
 msgstr "图形设置菜单：返回简易菜单。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:189
+#: nativeloader/lua/nativeloader/guide_pages.lua:191
 msgid "Default Menu: when ticked, Alt+X opens this developer menu instead of the simple one."
 msgstr "默认菜单：勾选后，按 Alt+X 会打开此开发者菜单，而非简易菜单。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:190
+#: nativeloader/lua/nativeloader/guide_pages.lua:192
 msgid "The tabs: Rendering, Game Setup, Enhancements, About and Dev Settings."
 msgstr "选项卡包括：渲染、游戏设置、增强、关于和开发者设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:191
+#: nativeloader/lua/nativeloader/guide_pages.lua:193
 msgid "How much video memory Remix uses."
 msgstr "Remix 使用的显存量。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:192
+#: nativeloader/lua/nativeloader/guide_pages.lua:194
 msgid "A blue dot marks a setting that differs from its default."
 msgstr "蓝点标记与默认值不同的设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:193
+#: nativeloader/lua/nativeloader/guide_pages.lua:195
 msgid "Each section of a tab opens and closes with a click on its name. At the very end of the developer menu is Settings Management, where its changes are saved."
 msgstr "点击选项卡中各部分的名称即可展开或收起。开发者菜单的最下方是“设置管理”，用于保存其中的更改。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:194
+#: nativeloader/lua/nativeloader/guide_pages.lua:196
 msgid "Keeping your changes"
 msgstr "保留更改"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:195
+#: nativeloader/lua/nativeloader/guide_pages.lua:197
 msgid "Remix reads its settings from files at every start. A change you make in the menu lasts until you quit, unless you save it."
 msgstr "Remix 每次启动时都会从文件读取设置。在菜单中所做的更改只保留到退出游戏，除非您保存了它们。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:197
+#: nativeloader/lua/nativeloader/guide_pages.lua:199
 msgid "To change single settings, first set the preset to Custom: Graphics Preset on the simple menu's Graphics tab, and DLSS Preset on its General tab for the DLSS settings. Another preset is applied again at every start, over the single settings you changed. To use a whole preset instead, just choose it."
 msgstr "要更改单项设置，请先将预设设为“自定义”：图形设置对应简易菜单“图形”选项卡中的“图形预设”，DLSS 设置对应“常规”选项卡中的“DLSS 预设”。其他预设会在每次启动时重新应用，覆盖您更改的单项设置。如果想使用一整套预设，直接选择即可。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:198
+#: nativeloader/lua/nativeloader/guide_pages.lua:200
 msgid "Change the settings you want."
 msgstr "更改您需要的设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:199
+#: nativeloader/lua/nativeloader/guide_pages.lua:201
 msgid "Check what will be saved: hold the mouse over Save Settings, or open View Changes in the developer menu's Settings Management."
 msgstr "检查将要保存的内容：将鼠标悬停在“保存设置”上，或打开开发者菜单“设置管理”中的“查看更改”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:200
+#: nativeloader/lua/nativeloader/guide_pages.lua:202
 msgid "Save. In the simple menu, click Save Settings. In the developer menu, User Settings (user.conf): Save keeps graphics settings such as the presets, DLSS and frame generation, and Remix Config (rtx.conf): Save keeps developer settings."
 msgstr "保存。在简易菜单中，点击“保存设置”。在开发者菜单中，“用户设置 (user.conf)：”下的“保存”用于保留预设、DLSS 和帧生成等图形设置，“Remix 配置 (rtx.conf)：”下的“保存”用于保留开发者设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:201
+#: nativeloader/lua/nativeloader/guide_pages.lua:203
 msgid "Start the game again once, to check that your settings came back."
 msgstr "重启一次游戏，检查设置是否保留。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:203
+#: nativeloader/lua/nativeloader/guide_pages.lua:205
 msgid "View Changes: the list of what Save would write to user.conf."
 msgstr "查看更改：列出点击“保存”将写入 user.conf 的内容。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:204
+#: nativeloader/lua/nativeloader/guide_pages.lua:206
 msgid "User Settings (user.conf): Save keeps your graphics settings."
 msgstr "用户设置 (user.conf)：点击“保存”可保留图形设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:205
+#: nativeloader/lua/nativeloader/guide_pages.lua:207
 msgid "Migrate developer settings to rtx.conf: do not press it."
 msgstr "将开发者设置迁移到 rtx.conf：请勿点击。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:206
+#: nativeloader/lua/nativeloader/guide_pages.lua:208
 msgid "Remix Config (rtx.conf): Save keeps developer settings."
 msgstr "Remix 配置 (rtx.conf)：点击“保存”可保留开发者设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:207
+#: nativeloader/lua/nativeloader/guide_pages.lua:209
 msgid "Do not press Migrate developer settings to rtx.conf. Before you save, check what will be saved: the RTX add-ons set some values for the current map through the Remix API, and saving them would apply them to every map."
 msgstr "请勿点击“将开发者设置迁移到 rtx.conf”。保存前，请检查将要保存的内容：RTX 插件会通过 Remix API 为当前地图设置一些值，保存后，这些值会应用于所有地图。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:208
+#: nativeloader/lua/nativeloader/guide_pages.lua:210
 msgid "Both files are in the Garry's Mod folder, and they win over the RTX package's defaults."
 msgstr "这两个文件都位于 Garry's Mod 文件夹中，其中的设置优先于 RTX 包的默认设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:209
+#: nativeloader/lua/nativeloader/guide_pages.lua:211
 msgid "The graphics preset and the loader's tier"
 msgstr "图形预设与加载器档位"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:210
+#: nativeloader/lua/nativeloader/guide_pages.lua:212
 msgid "The loader's performance tier, shown in Start here, only sets the package's starting values for your graphics card. The graphics preset and everything you save in Alt+X win over it."
 msgstr "“从这里开始”中显示的加载器性能档位，只是为您的显卡设定 RTX 包的初始值。图形预设和您在 Alt+X 中保存的所有设置都优先于它。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:212
+#: nativeloader/lua/nativeloader/guide_pages.lua:214
 msgid "Characters"
 msgstr "角色"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:213
+#: nativeloader/lua/nativeloader/guide_pages.lua:215
 msgid "Characters from MMD and from other games come into Garry's Mod through the Model Hotloader. The RTX package adds automatic PBR for characters from some games, and steady eye whites."
 msgstr "来自 MMD 和其他游戏的角色通过 Model Hotloader 导入 Garry's Mod。RTX 包为部分游戏的角色添加了自动 PBR，以及稳定眼白功能。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:214
+#: nativeloader/lua/nativeloader/guide_pages.lua:216
 msgid "Importing a character"
 msgstr "导入角色"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:216
+#: nativeloader/lua/nativeloader/guide_pages.lua:218
 msgid "Hold Q and click External Models at the top left of the spawn menu. For the same in a window of its own, type mmdhl_open in the console."
 msgstr "按住 Q，点击生成菜单左上方的“外部模型”。要在独立窗口中打开同样的界面，请在控制台输入 mmdhl_open。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:217
+#: nativeloader/lua/nativeloader/guide_pages.lua:219
 msgid "Click Import Character Models and choose the model's file."
 msgstr "点击“导入角色模型”，选择模型文件。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:218
+#: nativeloader/lua/nativeloader/guide_pages.lua:220
 msgid "Wait until the import is done. The character then appears in your library."
 msgstr "等待导入完成，角色随后会出现在模型库中。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:220
+#: nativeloader/lua/nativeloader/guide_pages.lua:222
 msgid "Import Character Models: choose a model's file to import."
 msgstr "导入角色模型：选择要导入的模型文件。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:221
+#: nativeloader/lua/nativeloader/guide_pages.lua:223
 msgid "Your library, in folders. Click a character to select it."
 msgstr "按文件夹排列的模型库。点击角色即可选中。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:222
+#: nativeloader/lua/nativeloader/guide_pages.lua:224
 msgid "The selected character, with a preview you can turn with the mouse."
 msgstr "已选角色，以及可用鼠标旋转的预览。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:223
+#: nativeloader/lua/nativeloader/guide_pages.lua:225
 msgid "Spawn it: as a ragdoll, as a friendly or hostile NPC, or as your player model."
 msgstr "生成角色：可作为布娃娃、友方或敌对 NPC，或用作您的玩家模型。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:224
+#: nativeloader/lua/nativeloader/guide_pages.lua:226
 msgid "Spawning"
 msgstr "生成角色"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:225
+#: nativeloader/lua/nativeloader/guide_pages.lua:227
 msgid "Select a character in the library, then click Spawn Ragdoll, Spawn Friendly NPC, Spawn Hostile NPC or Use as Player Model. Characters you saved as NPCs also appear in the spawn menu's NPCs tab."
 msgstr "在模型库中选择角色，然后点击“生成布娃娃”、“生成友方 NPC”、“生成敌对 NPC”或“用作玩家模型”。保存为 NPC 的角色也会出现在生成菜单的“NPC”选项卡中。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:226
+#: nativeloader/lua/nativeloader/guide_pages.lua:228
 msgid "To save memory, a character is loaded the first time you use it on a map. A large character can take a few seconds then; after that it spawns at once. When a map starts, your most recently used characters are loaded in advance: up to five on a recommended computer and ten on a high one, as Performance and memory explains."
 msgstr "为节省内存，角色会在当前地图中首次使用时才加载。数据量大的角色可能需要等待几秒，之后就能即时生成。地图开始时，最近使用的角色会提前加载：推荐配置的电脑最多加载五个，高配置的电脑最多加载十个，详见“性能与内存”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:227
+#: nativeloader/lua/nativeloader/guide_pages.lua:229
 msgid "Automatic PBR for game characters"
 msgstr "游戏角色的自动 PBR"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:228
+#: nativeloader/lua/nativeloader/guide_pages.lua:230
 msgid "Characters imported from Wuthering Waves, Endfield and Silver Palace bring the game's own normal and material maps. The RTX package uses them automatically, so these characters look right under path tracing. Skin and faces stay as they are, and a real Remix replacement, such as a PBR pack you installed, always comes first."
 msgstr "从鸣潮、终末地和白银之城导入的角色自带游戏的法线贴图和材质贴图。RTX 包会自动使用它们，让这些角色在路径追踪下呈现正确的效果。皮肤和面部保持原样，真正的 Remix 替换（如您安装的 PBR 包）始终优先。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:230
+#: nativeloader/lua/nativeloader/guide_pages.lua:232
 msgid "Imported game PBR: ticked, the game's texture maps are used; unticked, the original materials."
 msgstr "导入的游戏 PBR：勾选时使用游戏的纹理贴图；取消勾选则使用原始材质。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:231
+#: nativeloader/lua/nativeloader/guide_pages.lua:233
 msgid "The character: the one you look at, or choose another here."
 msgstr "角色：您正看向的角色，也可以在此选择其他角色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:232
+#: nativeloader/lua/nativeloader/guide_pages.lua:234
 msgid "Its materials, each with its state: automatic or cached (the game's maps are used), override (your choice), none, or waiting (not drawn yet)."
 msgstr "角色的各个材质及其状态：自动或已缓存（使用游戏贴图）、手动覆盖（您的选择）、无，或等待中（尚未绘制）。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:233
+#: nativeloader/lua/nativeloader/guide_pages.lua:235
 msgid "Map family: a set of maps that belong together."
 msgstr "贴图组：一组配套的贴图。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:234
+#: nativeloader/lua/nativeloader/guide_pages.lua:236
 msgid "Single maps: normal, packed and emission."
 msgstr "单独贴图：法线贴图、打包贴图和自发光贴图。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:235
+#: nativeloader/lua/nativeloader/guide_pages.lua:237
 msgid "The buttons that apply your choice."
 msgstr "用于应用所选设置的按钮。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:237
+#: nativeloader/lua/nativeloader/guide_pages.lua:239
 msgid "Spawn the character and look at it."
 msgstr "生成角色并看向它。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:238
+#: nativeloader/lua/nativeloader/guide_pages.lua:240
 msgid "Open Rendering > Imported game PBR. For a separate window, type rtx_topbr_game_editor in the console."
 msgstr "打开“渲染 > 导入的游戏 PBR”。要使用独立窗口，请在控制台输入 rtx_topbr_game_editor。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:239
+#: nativeloader/lua/nativeloader/guide_pages.lua:241
 msgid "Click List looked-at character, then click a material in the list."
 msgstr "点击“列出所看角色”，然后点击列表中的一个材质。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:240
+#: nativeloader/lua/nativeloader/guide_pages.lua:242
 msgid "Choose a Map family and click Use selected family. Or choose single maps, set Game layout to the character's game, and click Use individual maps."
 msgstr "选择“贴图组”，点击“使用所选贴图组”。也可以选择单独贴图，将“游戏格式”设为角色所属的游戏，再点击“使用单独贴图”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:241
+#: nativeloader/lua/nativeloader/guide_pages.lua:243
 msgid "No game maps for this texture turns the maps off for this material. Return to automatic undoes your choice."
 msgstr "“此纹理不使用游戏贴图”会关闭该材质的游戏贴图。“恢复自动”会撤销您的选择。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:242
+#: nativeloader/lua/nativeloader/guide_pages.lua:244
 msgid "A choice applies to every character that shows the same texture, and it is kept for your next games."
 msgstr "选择会应用于所有显示同一纹理的角色，并保留到以后的游戏。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:243
+#: nativeloader/lua/nativeloader/guide_pages.lua:245
 msgid "Eye whites"
 msgstr "眼白"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:244
+#: nativeloader/lua/nativeloader/guide_pages.lua:246
 msgid "Under path tracing, the whites of anime eyes can look grey or dirty. Steady eye whites for imported characters, in Rendering > Model outlines, keeps them clean and bright on imported characters without a PBR pack. It recognizes eye-white materials by their names; when it misses one, or takes a wrong one, choose them yourself."
 msgstr "在路径追踪下，动漫角色的眼白可能显得灰暗或脏污。“渲染 > 模型描边”中的“导入角色的稳定眼白”可让没有 PBR 包的导入角色眼白保持干净明亮。它通过名称识别眼白材质；若有遗漏或误判，可自行选择。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:246
+#: nativeloader/lua/nativeloader/guide_pages.lua:248
 msgid "Hide outline meshes: hides the outline shells of anime models."
 msgstr "隐藏描边网格：隐藏动漫模型的描边外壳。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:247
+#: nativeloader/lua/nativeloader/guide_pages.lua:249
 msgid "Imported game PBR."
 msgstr "导入角色的游戏 PBR。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:248
+#: nativeloader/lua/nativeloader/guide_pages.lua:250
 msgid "Steady eye whites for imported characters."
 msgstr "导入角色的稳定眼白。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:249
+#: nativeloader/lua/nativeloader/guide_pages.lua:251
 msgid "Eye-white brightness, in percent: 100 is the tuned default."
 msgstr "眼白亮度，以百分比表示：100 为调校后的默认值。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:250
+#: nativeloader/lua/nativeloader/guide_pages.lua:252
 msgid "Choose eye-white materials: opens the chooser."
 msgstr "选择眼白材质：打开选择窗口。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:252
+#: nativeloader/lua/nativeloader/guide_pages.lua:254
 msgid "Spawn the character."
 msgstr "生成角色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:253
+#: nativeloader/lua/nativeloader/guide_pages.lua:255
 msgid "Open Rendering > Model outlines and click Choose eye-white materials."
 msgstr "打开“渲染 > 模型描边”，点击“选择眼白材质”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:254
+#: nativeloader/lua/nativeloader/guide_pages.lua:256
 msgid "Choose the character at the top, if it is not chosen already."
 msgstr "如果尚未选中该角色，请在顶部选择它。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:255
+#: nativeloader/lua/nativeloader/guide_pages.lua:257
 msgid "Tick Eye white on the eye-white materials, and untick it on the others."
 msgstr "在眼白材质上勾选“眼白”，并取消勾选其他材质上的“眼白”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:257
+#: nativeloader/lua/nativeloader/guide_pages.lua:259
 msgid "The character whose materials are listed."
 msgstr "当前列出材质的角色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:258
+#: nativeloader/lua/nativeloader/guide_pages.lua:260
 msgid "A material's texture; its name and its state are beside it. Here the state says Automatic: eye white."
 msgstr "材质的纹理；旁边是名称和状态。此处状态为“自动：眼白”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:259
+#: nativeloader/lua/nativeloader/guide_pages.lua:261
 msgid "Eye white: ticked for eye whites. Use automatic detection undoes your choice for this material."
 msgstr "眼白：眼白材质需勾选。“使用自动识别”会撤销您对此材质的选择。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:260
+#: nativeloader/lua/nativeloader/guide_pages.lua:262
 msgid "More materials, 24 to a page."
 msgstr "更多材质，每页 24 个。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:261
+#: nativeloader/lua/nativeloader/guide_pages.lua:263
 msgid "Your choice is saved for this character and applies to all its copies at once, without respawning."
 msgstr "选择按角色保存，对其所有实例即时生效，无需重新生成。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:262
+#: nativeloader/lua/nativeloader/guide_pages.lua:264
 msgid "Open the eye-white chooser"
 msgstr "打开眼白选择窗口"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:263
+#: nativeloader/lua/nativeloader/guide_pages.lua:265
 msgid "Painted shadows and hair"
 msgstr "绘制的阴影与头发"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:264
+#: nativeloader/lua/nativeloader/guide_pages.lua:266
 msgid "Many anime characters have shadows painted over their eyes, under their fringe and on their faces. Path tracing casts real shadows there, so Hide painted shadows, in Rendering > Model outlines, leaves the painted ones out. Bodygroups and saves do not change; untick it to see them again."
 msgstr "许多动漫角色的眼睛上、刘海下和脸部都画有阴影。路径追踪会在那里投下真实阴影，因此“渲染 > 模型描边”中的“隐藏绘制的阴影”会隐藏这些画上去的阴影。身体组和存档保持不变；取消勾选即可再次显示这些阴影。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:265
+#: nativeloader/lua/nativeloader/guide_pages.lua:267
 msgid "Some characters from games keep a mask in the alpha of their hair texture, and the alpha test cuts see-through holes into their hair. Solid hair, in the same panel, draws such hair solid. Hair that is cut out of its texture strand by strand keeps its cutouts."
 msgstr "一些游戏角色在头发纹理的 Alpha 通道中存有遮罩，Alpha 测试会在头发上切出透明孔洞。同一面板中的“不透明头发”会将这类头发绘制为不透明。对于在纹理中逐根裁出发丝轮廓的头发，仍会保留原有的镂空效果。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:266
+#: nativeloader/lua/nativeloader/guide_pages.lua:268
 msgid "Motions"
 msgstr "动作"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:267
+#: nativeloader/lua/nativeloader/guide_pages.lua:269
 msgid "The Motion importer tab, next to External Models, imports MMD motions (VMD files) with their music, and plays them on characters."
 msgstr "“外部模型”旁边的“动作导入器”选项卡可导入 MMD 动作（VMD 文件）及其音乐，并在角色上播放。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:269
+#: nativeloader/lua/nativeloader/guide_pages.lua:271
 msgid "Performance and memory"
 msgstr "性能与内存"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:270
+#: nativeloader/lua/nativeloader/guide_pages.lua:272
 msgid "What your computer needs"
 msgstr "电脑配置要求"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:271
+#: nativeloader/lua/nativeloader/guide_pages.lua:273
 msgid "RTX Remix needs a graphics card with hardware ray tracing: NVIDIA RTX 20 or newer, AMD Radeon RX 6000 or newer, or Intel Arc."
 msgstr "RTX Remix 需要支持硬件光线追踪的显卡：NVIDIA RTX 20 或更新型号、AMD Radeon RX 6000 或更新型号，或 Intel Arc。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:272
+#: nativeloader/lua/nativeloader/guide_pages.lua:274
 msgid "The minimum is 8 GB of VRAM and 16 GB of system memory (RAM). With the recommended 16 GB of VRAM and 32 GB of RAM, the game should run smoothly. Computers below the minimum are not supported: the game may stutter or run out of memory on them."
 msgstr "最低要求是 8 GB VRAM 和 16 GB 系统内存（RAM）。推荐使用 16 GB VRAM 和 32 GB RAM，此配置应能流畅运行游戏。不支持低于最低配置的电脑：游戏可能会卡顿或内存耗尽。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:273
+#: nativeloader/lua/nativeloader/guide_pages.lua:275
 msgid "The performance tier"
 msgstr "性能档位"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:274
+#: nativeloader/lua/nativeloader/guide_pages.lua:276
 msgid "At every start the loader picks a performance tier for your NVIDIA graphics card: high, medium or low. High keeps the package's full settings. Medium and low use fewer light bounces and smaller memory budgets, so the frame rate holds up. A laptop graphics card counts one step lower."
 msgstr "每次启动时，加载器都会为您的 NVIDIA 显卡选择性能档位：high、medium 或 low。高档位保留 RTX 包的完整设置。中、低档位使用更少的光线反弹次数和更小的内存预算，以维持帧率。笔记本显卡按低一档计算。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:275
+#: nativeloader/lua/nativeloader/guide_pages.lua:277
 msgid "Start here shows the tier, your graphics card, and whether the tier was chosen automatically or set in config.json. Settings you save in Alt+X still win over it."
 msgstr "“从这里开始”会显示档位、显卡，以及档位是自动选择还是由 config.json 设定。您在 Alt+X 中保存的设置仍然优先。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:276
+#: nativeloader/lua/nativeloader/guide_pages.lua:278
 msgid "Your loader is older than 0.11.0 and has no performance tiers. Update bin\\win64\\winmm.dll to loader 0.11.0 or later before you change tiers or GPU crash diagnostics: older loaders reject those settings and start without RTX."
 msgstr "您的加载器早于 0.11.0，没有性能档位。更改档位或 GPU 崩溃诊断设置前，请先将 bin\\win64\\winmm.dll 更新为 0.11.0 或更新版本的加载器：旧版加载器会拒绝这些设置，并在不启用 RTX 的情况下启动。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:277
+#: nativeloader/lua/nativeloader/guide_pages.lua:279
 msgid "The memory profile"
 msgstr "内存配置"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:278
+#: nativeloader/lua/nativeloader/guide_pages.lua:280
 msgid "Loader 0.13.0 or later also picks a memory profile from your VRAM and your RAM: the smaller of the two decides. The profile sets how much the game keeps ready:"
 msgstr "0.13.0 或更新版本的加载器还会根据 VRAM 和 RAM 选择内存配置：以两者中较低的一档为准。该配置决定游戏预先保留多少内容："
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:280
+#: nativeloader/lua/nativeloader/guide_pages.lua:282
 msgid "Minimum (8 GB VRAM, 16 GB RAM): no character is loaded in advance, and the game frees the system-memory copies of its textures."
 msgstr "最低配置（8 GB VRAM、16 GB RAM）：不提前加载角色，并释放游戏纹理在系统内存中的副本。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:281
+#: nativeloader/lua/nativeloader/guide_pages.lua:283
 msgid "Recommended (16 GB VRAM, 32 GB RAM): up to five recently used characters are loaded in advance when a map starts."
 msgstr "推荐配置（16 GB VRAM、32 GB RAM）：地图开始时，提前加载最多五个最近使用的角色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:282
+#: nativeloader/lua/nativeloader/guide_pages.lua:284
 msgid "High (24 GB VRAM and 64 GB RAM, or more): up to ten characters are loaded in advance."
 msgstr "高（24 GB VRAM 和 64 GB RAM 或更多）：提前加载最多十个角色。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:283
+#: nativeloader/lua/nativeloader/guide_pages.lua:285
 msgid "On every profile, game textures that nothing has drawn for a minute leave the graphics card once they fill a quarter of its memory, and come back when they are used again."
 msgstr "所有配置下，当游戏纹理占满显存的四分之一时，已有一分钟未被绘制的纹理会从显卡中释放，再次使用时重新加载。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:284
+#: nativeloader/lua/nativeloader/guide_pages.lua:286
 msgid "Start here shows your profile and how many characters it keeps ready."
 msgstr "“从这里开始”会显示您的内存配置，以及预先保留的角色数量。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:285
+#: nativeloader/lua/nativeloader/guide_pages.lua:287
 msgid "Your loader reports no memory profile, so every character loads when it is first used. Update bin\\win64\\winmm.dll to loader 0.13.0 or later to get one."
 msgstr "您的加载器未报告内存配置，因此每个角色都在首次使用时加载。请将 bin\\win64\\winmm.dll 更新为 0.13.0 或更新版本的加载器，以使用内存配置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:286
+#: nativeloader/lua/nativeloader/guide_pages.lua:288
 msgid "Choosing the tier or profile yourself"
 msgstr "自行选择档位或内存配置"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:288
-#: nativeloader/lua/nativeloader/guide_pages.lua:356
+#: nativeloader/lua/nativeloader/guide_pages.lua:290
+#: nativeloader/lua/nativeloader/guide_pages.lua:358
 msgid "Close Garry's Mod."
 msgstr "关闭 Garry's Mod。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:289
-#: nativeloader/lua/nativeloader/guide_pages.lua:357
+#: nativeloader/lua/nativeloader/guide_pages.lua:291
+#: nativeloader/lua/nativeloader/guide_pages.lua:359
 msgid "Open native-loader\\config.json in the Garry's Mod folder with a text editor."
 msgstr "用文本编辑器打开 Garry's Mod 文件夹中的 native-loader\\config.json。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:290
+#: nativeloader/lua/nativeloader/guide_pages.lua:292
 msgid "Add the settings you want, as in this complete example. If you changed the file before, keep your own allow entries and other settings."
 msgstr "按照这个完整示例添加所需设置。如果之前修改过此文件，请保留您自己的 allow 条目和其他设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:291
+#: nativeloader/lua/nativeloader/guide_pages.lua:293
 msgid "Save the file and start the game. Start here shows the result."
 msgstr "保存文件并启动游戏。在“从这里开始”中查看结果。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:293
+#: nativeloader/lua/nativeloader/guide_pages.lua:295
 msgid "remix.performance_tier is auto, high, medium or low; auto lets the loader choose."
 msgstr "remix.performance_tier 可设为 auto、high、medium 或 low；auto 表示由加载器选择。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:294
+#: nativeloader/lua/nativeloader/guide_pages.lua:296
 msgid "For the memory profile, put a comma after \"low\" and add \"memory_profile\": \"recommended\" on the next line. The value is auto, minimum, recommended or high; auto lets the loader choose."
 msgstr "要设置内存配置，请在 \"low\" 后添加逗号，并在下一行添加 \"memory_profile\": \"recommended\"。可用值为 auto、minimum、recommended 或 high；auto 表示由加载器选择。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:295
+#: nativeloader/lua/nativeloader/guide_pages.lua:297
 msgid "Invalid JSON turns RTX off: keep every brace, comma and quote. Restart Garry's Mod after each change."
 msgstr "无效的 JSON 会关闭 RTX：请保留每个大括号、逗号和引号。每次更改后都需重启 Garry's Mod。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:296
+#: nativeloader/lua/nativeloader/guide_pages.lua:298
 msgid "Tips for 8 GB graphics cards and 16 GB of RAM"
 msgstr "适用于 8 GB 显卡和 16 GB RAM 的建议"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:298
+#: nativeloader/lua/nativeloader/guide_pages.lua:300
 msgid "Play at 1920x1080: 4K needs far more memory."
 msgstr "以 1920x1080 运行游戏：4K 需要多得多的内存。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:299
+#: nativeloader/lua/nativeloader/guide_pages.lua:301
 msgid "Use a system-managed Windows page file on a drive with at least 30 GB free."
 msgstr "在至少有 30 GB 可用空间的驱动器上，使用由系统管理的 Windows 分页文件。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:300
+#: nativeloader/lua/nativeloader/guide_pages.lua:302
 msgid "Close browsers and stop OBS recording before you play."
 msgstr "游戏前请关闭浏览器，并停止 OBS 录制。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:301
+#: nativeloader/lua/nativeloader/guide_pages.lua:303
 msgid "Spawn fewer heavy characters at once, and unsubscribe from Workshop add-ons you no longer use."
 msgstr "减少同时生成的高负载角色数量，并退订不再使用的创意工坊插件。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:302
+#: nativeloader/lua/nativeloader/guide_pages.lua:304
 msgid "Remove Remix mods you no longer use from rtx-remix\\mods: most load all their textures at every start."
 msgstr "从 rtx-remix\\mods 中移除不再使用的 Remix 模组：大多数模组会在每次启动时加载其所有纹理。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:303
+#: nativeloader/lua/nativeloader/guide_pages.lua:305
 msgid "Turn frame generation off in Alt+X and save it, with Save Settings or, in the developer menu, User Settings (user.conf): Save, so that it stays off."
 msgstr "在 Alt+X 中关闭帧生成，然后点击“保存设置”，或在开发者菜单中点击“用户设置 (user.conf)：”下的“保存”（User Settings (user.conf): Save），以保持关闭。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:304
+#: nativeloader/lua/nativeloader/guide_pages.lua:306
 msgid "Keep Garry's Mod's texture detail at its highest. Lower detail changes the textures Remix recognizes, and replacements stop matching."
 msgstr "将 Garry's Mod 的纹理细节保持在最高级别。降低细节会改变 Remix 识别的纹理，导致替换内容无法匹配。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:305
+#: nativeloader/lua/nativeloader/guide_pages.lua:307
 msgid "Watch Committed in Task Manager > Performance > Memory: the memory in use, and the limit. When the two are close, close other programs."
 msgstr "留意“任务管理器 > 性能 > 内存”中的“已提交”（Committed）：分别为正在使用的内存量和上限。两者接近时，请关闭其他程序。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:306
+#: nativeloader/lua/nativeloader/guide_pages.lua:308
 msgid "Reading memory in the game"
 msgstr "在游戏中查看内存用量"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:307
+#: nativeloader/lua/nativeloader/guide_pages.lua:309
 msgid "Console: rtx_vram_stats prints how much VRAM the game uses, by category."
 msgstr "控制台：rtx_vram_stats 按类别输出游戏使用的 VRAM 量。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:308
+#: nativeloader/lua/nativeloader/guide_pages.lua:310
 msgid "The RTX package records garrysmod\\data\\native-loader\\vram.csv and vram.previous.csv every 30 seconds. nativeloader_vram_telemetry 0 stops it, and 1 starts it again. After three failed readings it stops for the map; switch it off and on to retry. These files stay on your computer."
 msgstr "RTX 包每 30 秒记录一次 garrysmod\\data\\native-loader\\vram.csv 和 vram.previous.csv。nativeloader_vram_telemetry 0 可停止记录，1 可重新开始。三次读取失败后，本地图中会停止记录；关闭后再开启可重试。这些文件只保存在您的电脑上。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:309
+#: nativeloader/lua/nativeloader/guide_pages.lua:311
 msgid "The loader also records native-loader\\logs\\memory.csv: the game's RAM and the system's commit, every 10 seconds."
 msgstr "加载器还会每 10 秒记录一次 native-loader\\logs\\memory.csv，内容为游戏的 RAM 用量和系统的已提交内存。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:310
+#: nativeloader/lua/nativeloader/guide_pages.lua:312
 msgid "After a crash"
 msgstr "崩溃之后"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:312
+#: nativeloader/lua/nativeloader/guide_pages.lua:314
 msgid "Before you start the game again, copy status.json, session.json and both vram CSV files from garrysmod\\data\\native-loader\\, and copy the rtx-remix\\logs\\ folder. The next start replaces the two JSON files and Remix's logs."
 msgstr "再次启动游戏前，请从 garrysmod\\data\\native-loader\\ 复制 status.json、session.json 和两个 vram CSV 文件，并复制 rtx-remix\\logs\\ 文件夹。下次启动会替换这两个 JSON 文件和 Remix 的日志。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:313
+#: nativeloader/lua/nativeloader/guide_pages.lua:315
 msgid "At the next start the loader keeps a copy of the last session's logs, crash dumps and memory history in native-loader\\logs\\sessions\\, for the last five sessions and at most 200 MB. Copy that folder before newer sessions replace it; if none was kept, copy crashes\\ and native-loader\\logs\\gpu\\ yourself."
 msgstr "下次启动时，加载器会将上次游戏的日志、崩溃转储和内存记录备份到 native-loader\\logs\\sessions\\，保留最近五次游戏的记录，总计最多 200 MB。请在更新的游戏记录将其替换前复制该文件夹；若未保留备份，请自行复制 crashes\\ 和 native-loader\\logs\\gpu\\。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:314
+#: nativeloader/lua/nativeloader/guide_pages.lua:316
 msgid "This loader keeps no copies of earlier sessions: also copy the matching dumps from crashes\\ before you restart, and update bin\\win64\\winmm.dll to loader 0.11.0 or later."
 msgstr "此加载器不保留之前游戏的备份：重启前，还请复制 crashes\\ 中对应的转储文件，并将 bin\\win64\\winmm.dll 更新为 0.11.0 或更新版本的加载器。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:315
+#: nativeloader/lua/nativeloader/guide_pages.lua:317
 msgid "To report the crash, send those files, copies of rtx.conf, dxvk.conf and user.conf from the Garry's Mod folder, and garrysmod\\console.log if you have it."
 msgstr "报告崩溃时，请发送这些文件、Garry's Mod 文件夹中 rtx.conf、dxvk.conf 和 user.conf 的副本，以及 garrysmod\\console.log（如果有）。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:316
+#: nativeloader/lua/nativeloader/guide_pages.lua:318
 msgid "Say which map, characters and mods you used, what you did just before, the time and time zone, the frame rate and the Committed reading."
 msgstr "请说明所用的地图、角色和模组，崩溃前刚做过什么，时间和时区，帧率，以及“已提交”的读数。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:317
+#: nativeloader/lua/nativeloader/guide_pages.lua:319
 msgid "For a GPU hang, also send the Display or nvlddmkm events from Event Viewer > Windows Logs > System, and any matching dump in C:\\Windows\\LiveKernelReports\\WATCHDOG. Dumps can hold some of the game's memory: check what you share."
 msgstr "如果 GPU 卡死，还请发送“事件查看器 > Windows 日志 > 系统”中的 Display 或 nvlddmkm 事件，以及 C:\\Windows\\LiveKernelReports\\WATCHDOG 中对应的转储文件。转储可能包含部分游戏内存：请检查您分享的内容。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:318
+#: nativeloader/lua/nativeloader/guide_pages.lua:320
 msgid "If you are asked for a GPU crash dump: change diagnostics.gpu_crash_dumps from \"off\" to \"next_start\" in the complete example above, and restart. The value stays \"next_start\"; to ask for another diagnostic start, delete native-loader\\remix\\gpu-crash-dumps.used. Diagnostics slow the game a little."
 msgstr "如果有人请您提供 GPU 崩溃转储：在上面的完整示例中，将 diagnostics.gpu_crash_dumps 从 \"off\" 改为 \"next_start\"，然后重启。该值会保持为 \"next_start\"；要再进行一次诊断启动，请删除 native-loader\\remix\\gpu-crash-dumps.used。诊断会让游戏稍慢一些。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:320
+#: nativeloader/lua/nativeloader/guide_pages.lua:322
 msgid "Troubleshooting"
 msgstr "故障排除"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:321
+#: nativeloader/lua/nativeloader/guide_pages.lua:323
 msgid "First look"
 msgstr "首先检查"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:323
+#: nativeloader/lua/nativeloader/guide_pages.lua:325
 msgid "Open the console with the ~ key. If it does not open, turn on Options > Keyboard > Advanced > Enable developer console."
 msgstr "按 ~ 键打开控制台。如果无法打开，请启用“选项 > 键盘 > 高级 > 启用开发者控制台”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:324
+#: nativeloader/lua/nativeloader/guide_pages.lua:326
 msgid "Type nativeloader_status and press Enter, or click the button below and then open the console."
 msgstr "输入 nativeloader_status 并按 Enter，或点击下方按钮后再打开控制台。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:325
+#: nativeloader/lua/nativeloader/guide_pages.lua:327
 msgid "nativeloader_status prints what the loader installed and started, and whether the Remix API is ready. activation: active means that RTX is on."
 msgstr "nativeloader_status 会输出加载器安装和启动的内容，以及 Remix API 是否就绪。activation: active 表示 RTX 已开启。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:327
+#: nativeloader/lua/nativeloader/guide_pages.lua:329
 msgid "Common problems"
 msgstr "常见问题"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:328
+#: nativeloader/lua/nativeloader/guide_pages.lua:330
 msgid "The RTX Remix tab is missing."
 msgstr "RTX Remix 选项卡不见了。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:329
+#: nativeloader/lua/nativeloader/guide_pages.lua:331
 msgid "RTX is off in this session. Run nativeloader_status: it says why, for example \"enabled\": false under \"remix\" in config.json, or a graphics card without ray tracing."
 msgstr "本次游戏未开启 RTX。运行 nativeloader_status 查看原因，例如 config.json 中 \"remix\" 下的 \"enabled\": false，或显卡不支持光线追踪。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:330
+#: nativeloader/lua/nativeloader/guide_pages.lua:332
 msgid "The game closes while it starts."
 msgstr "游戏在启动过程中关闭。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:331
+#: nativeloader/lua/nativeloader/guide_pages.lua:333
 msgid "Look in rtx-remix\\logs for a file named last_crash, and at the end of remix-dxvk.log. Keep the game in its window, as it is by default: exclusive fullscreen crashes Remix."
 msgstr "查看 rtx-remix\\logs 中名为 last_crash 的文件，以及 remix-dxvk.log 的末尾。请保持默认的窗口模式：独占全屏会导致 Remix 崩溃。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:332
+#: nativeloader/lua/nativeloader/guide_pages.lua:334
 msgid "Changes made in Alt+X are lost when the game restarts."
 msgstr "在 Alt+X 中做的更改在重启游戏后丢失。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:333
+#: nativeloader/lua/nativeloader/guide_pages.lua:335
 msgid "Save them in Alt+X. For single settings, first set Graphics Preset, or DLSS Preset for the DLSS settings, to Custom. The Remix menu (Alt+X) shows the steps."
 msgstr "请在 Alt+X 中保存更改。更改单项设置前，先将“图形预设”设为“自定义”；更改 DLSS 设置则将“DLSS 预设”设为“自定义”。具体步骤见“Remix 菜单 (Alt+X)”。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:334
+#: nativeloader/lua/nativeloader/guide_pages.lua:336
 msgid "The frame rate is low."
 msgstr "帧率低。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:335
+#: nativeloader/lua/nativeloader/guide_pages.lua:337
 msgid "Choose a lower graphics preset, or a faster DLSS mode such as Performance. Frame generation is off by default; on RTX 40 and 50 cards it can make motion smoother."
 msgstr "选择较低的图形预设，或“性能”等更快的 DLSS 模式。帧生成默认关闭；在 RTX 40 和 50 系列显卡上，开启后可让画面运动更流畅。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:336
+#: nativeloader/lua/nativeloader/guide_pages.lua:338
 msgid "An add-on draws over the picture or undoes RTX settings."
 msgstr "有插件在画面上叠加内容或还原 RTX 设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:337
+#: nativeloader/lua/nativeloader/guide_pages.lua:339
 msgid "The console names it, in a line that starts with [nativeloader] RTX guard. To compare, untick RTX session guard in Start here, and tick it again afterwards."
 msgstr "控制台中以 [nativeloader] RTX guard 开头的一行会指出该插件。要进行对比，请在“从这里开始”中取消勾选“RTX 会话保护”，对比后再勾选。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:338
+#: nativeloader/lua/nativeloader/guide_pages.lua:340
 msgid "Couldn't mount file appears for the RTX Workshop item."
 msgstr "RTX 创意工坊项目出现 Couldn't mount file 提示。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:339
+#: nativeloader/lua/nativeloader/guide_pages.lua:341
 msgid "That is expected: the loader installs this item itself, instead of the game."
 msgstr "这是正常现象：该项目由加载器负责安装，而不是由游戏安装。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:340
+#: nativeloader/lua/nativeloader/guide_pages.lua:342
 msgid "An imported character looks grey, or its eyes look dirty."
 msgstr "导入的角色看起来灰暗，或眼睛显得脏污。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:341
+#: nativeloader/lua/nativeloader/guide_pages.lua:343
 msgid "Check Rendering > Model outlines: Imported game PBR and Steady eye whites for imported characters should be ticked. Characters explains both."
 msgstr "检查“渲染 > 模型描边”：应勾选“导入角色的游戏 PBR”和“导入角色的稳定眼白”。“角色”中介绍了这两项功能。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:342
+#: nativeloader/lua/nativeloader/guide_pages.lua:344
 msgid "An imported character has a dark band over its eyes, or holes in its hair."
 msgstr "导入的角色眼睛上有一条暗带，或头发上有孔洞。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:343
+#: nativeloader/lua/nativeloader/guide_pages.lua:345
 msgid "Check Rendering > Model outlines: Hide painted shadows and Solid hair should be ticked. Characters explains both."
 msgstr "检查“渲染 > 模型描边”：应勾选“隐藏绘制的阴影”和“不透明头发”。“角色”中介绍了这两项功能。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:344
+#: nativeloader/lua/nativeloader/guide_pages.lua:346
 msgid "The first spawn of a character takes a few seconds."
 msgstr "首次生成角色需要几秒。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:345
+#: nativeloader/lua/nativeloader/guide_pages.lua:347
 msgid "That is expected: a character is loaded the first time you use it in a game."
 msgstr "这是正常现象：角色会在本次游戏中首次使用时加载。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:346
+#: nativeloader/lua/nativeloader/guide_pages.lua:348
 msgid "Files to look at"
 msgstr "可查看的文件"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:347
+#: nativeloader/lua/nativeloader/guide_pages.lua:349
 msgid "These paths start in the Garry's Mod folder, the one that holds gmod.exe."
 msgstr "这些路径均以 Garry's Mod 文件夹为起点，即存放 gmod.exe 的文件夹。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:349
+#: nativeloader/lua/nativeloader/guide_pages.lua:351
 msgid "native-loader\\logs\\loader.log: what the loader did at this start."
 msgstr "native-loader\\logs\\loader.log：加载器本次启动时的操作记录。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:350
+#: nativeloader/lua/nativeloader/guide_pages.lua:352
 msgid "garrysmod\\data\\native-loader\\status.json and session.json: the same, as data."
 msgstr "garrysmod\\data\\native-loader\\status.json 和 session.json：相同内容的数据形式。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:351
+#: nativeloader/lua/nativeloader/guide_pages.lua:353
 msgid "rtx-remix\\logs\\remix-dxvk.log: Remix's own log, with every setting in effect near the top."
 msgstr "rtx-remix\\logs\\remix-dxvk.log：Remix 自身的日志，开头附近列出了所有生效的设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:352
+#: nativeloader/lua/nativeloader/guide_pages.lua:354
 msgid "native-loader\\logs\\sessions\\: copies kept from earlier sessions."
 msgstr "native-loader\\logs\\sessions\\：保留的往次游戏记录备份。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:353
+#: nativeloader/lua/nativeloader/guide_pages.lua:355
 msgid "After a crash: what to copy and send"
 msgstr "崩溃之后：需要复制和发送的内容"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:354
+#: nativeloader/lua/nativeloader/guide_pages.lua:356
 msgid "Turning RTX off for a while"
 msgstr "暂时关闭 RTX"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:358
+#: nativeloader/lua/nativeloader/guide_pages.lua:360
 msgid "Add \"enabled\": false inside \"remix\", as in the example below. If the file has no \"remix\" part yet, add the one shown. Keep your other settings."
 msgstr "按下方示例，在 \"remix\" 中添加 \"enabled\": false。如果文件中还没有 \"remix\" 部分，请添加示例中的这一部分。保留其他设置。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:359
+#: nativeloader/lua/nativeloader/guide_pages.lua:361
 msgid "Save the file and start the game: it is plain Garry's Mod, without the RTX add-ons. To turn RTX back on, change false to true."
 msgstr "保存文件并启动游戏：此时是没有 RTX 插件的普通 Garry's Mod。要重新开启 RTX，请将 false 改为 true。"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:361
+#: nativeloader/lua/nativeloader/guide_pages.lua:363
 msgid "The game window"
 msgstr "游戏窗口"
 
-#: nativeloader/lua/nativeloader/guide_pages.lua:362
+#: nativeloader/lua/nativeloader/guide_pages.lua:364
 msgid "With RTX the game runs in a borderless window as large as your screen, because exclusive fullscreen crashes Remix. For another size, add -w and -h to the game's launch options in Steam, for example -w 1920 -h 1080."
 msgstr "启用 RTX 时，游戏会在与屏幕同样大小的无边框窗口中运行，因为独占全屏会导致 Remix 崩溃。要使用其他尺寸，请在 Steam 中为游戏启动选项添加 -w 和 -h，例如 -w 1920 -h 1080。"

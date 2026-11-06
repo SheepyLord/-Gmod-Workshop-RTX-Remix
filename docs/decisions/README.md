@@ -161,3 +161,5 @@ Each with the reason it lost.
 
 - [0121: Source effect categories for this session](0121-source-effect-categories-for-the-session.md) (R20-D, automatic particle/decal and blended-mesh tags).
 - [0122: Offscreen raster canvases keep their native draws](0122-raster-canvases-keep-their-native-draws.md) (R20-D, alpha masks and post-injection canvas updates).
+- [0118: Bundle the user's screen and owned blood patterns](0118-bundled-toolgun-screen-and-owned-blood-patterns.md) (R20-C, item 48; provenance boundaries and coexistence).
+- [0119: Client blood impacts with bounded spatter](0119-client-blood-impacts-with-bounded-spatter.md) (R20-C; stock fallback, normal particle/decal paths and budgets).

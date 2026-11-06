@@ -1,0 +1,1868 @@
+{
+ "schema": 1,
+ "part": "blood-overhaul-rtx",
+ "origins": {
+  "nlblood/lua/nlblood/shapes.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nlblood\\lua\\nlblood\\shapes.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "2cb1d64755211765442216d4e90b0dfff6f879e2",
+    "dirty": false
+   },
+   "imported": "2026-11-06T10:22:56+00:00"
+  },
+  "nlblood/lua/nlblood/schemes.lua": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nlblood\\lua\\nlblood\\schemes.lua",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "2cb1d64755211765442216d4e90b0dfff6f879e2",
+    "dirty": false
+   },
+   "imported": "2026-11-06T10:22:56+00:00"
+  },
+  "nlblood": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nlblood",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "2cb1d64755211765442216d4e90b0dfff6f879e2",
+    "dirty": false
+   },
+   "imported": "2026-11-06T10:26:05+00:00"
+  },
+  "nl_blood_overhaul_rtx": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "2cb1d64755211765442216d4e90b0dfff6f879e2",
+    "dirty": false
+   },
+   "imported": "2026-11-06T10:26:05+00:00"
+  },
+  "nl_blood_overhaul_rtx/replacements.usda": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx\\replacements.usda",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "d3c37912fe1ff77af63ec40717add691d104376d",
+    "dirty": false
+   },
+   "imported": "2026-11-06T12:40:22+00:00"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_drop.a.rtex.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx\\textures\\nlfluid_drop.a.rtex.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "d3c37912fe1ff77af63ec40717add691d104376d",
+    "dirty": false
+   },
+   "imported": "2026-11-06T12:40:22+00:00"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_mist.a.rtex.dds": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-blood\\out\\r20c\\prepared\\nl_blood_overhaul_rtx\\textures\\nlfluid_mist.a.rtex.dds",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "d3c37912fe1ff77af63ec40717add691d104376d",
+    "dirty": false
+   },
+   "imported": "2026-11-06T12:40:22+00:00"
+  }
+ },
+ "files": {
+  "nl_blood_overhaul_rtx/mod.usda": {
+   "size": 298,
+   "sha256": "781a734bb5cd00f661761a0943e6792a3a3246446628df85b76841cafa96bf12",
+   "mtime_ns": 1793960291351898600,
+   "stored": "plain"
+  },
+  "nl_blood_overhaul_rtx/replacements.usda": {
+   "size": 95650,
+   "sha256": "d51a37e3d0c8688ac9608e02d8196171c461c7f47a10f8fdb7517e4be9ff2b18",
+   "mtime_ns": 1793968393729588300,
+   "stored": "plain"
+  },
+  "nl_blood_overhaul_rtx/textures/arterial_trail.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "f762cfadf3254e5bbc286a851487adbbb6744baf0936b8bea682c634590637e9",
+   "mtime_ns": 1793170227219496000,
+   "stored": "xz",
+   "stored_size": 596648,
+   "stored_sha256": "119acb59f0840241d6fd9a250aa461f4613ed1358ecbed0c3c4262cd698a96d8"
+  },
+  "nl_blood_overhaul_rtx/textures/arterial_trail.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "3b167656beaf24d8e810a85b62cc87f1383616a03b8f6c83e6495f087a9a5a36",
+   "mtime_ns": 1793170226750296100,
+   "stored": "xz",
+   "stored_size": 445696,
+   "stored_sha256": "9d5de30429e898561a930b3e101b983a192d031a917fc7508928f3edfaccde19"
+  },
+  "nl_blood_overhaul_rtx/textures/arterial_trail.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "3d50d9a606c157d559dbb1deecaf585a360c3c5f29a599799965145d637101ee",
+   "mtime_ns": 1793170226779822500,
+   "stored": "xz",
+   "stored_size": 144196,
+   "stored_sha256": "98d5a26d0a6a35b2b78cf24e759d733384037ff1f8a5816b36a2afc7e70dfe01"
+  },
+  "nl_blood_overhaul_rtx/textures/arterial_trail_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "b8737518903a5f58664a1f8c814cf90f8a7547bbfb658f055576d6c357415f79",
+   "mtime_ns": 1793170228373226100,
+   "stored": "xz",
+   "stored_size": 525952,
+   "stored_sha256": "c68bf2a35330f7e01197eff0e52766a21677caa7626978face9e2702ae9a628e"
+  },
+  "nl_blood_overhaul_rtx/textures/castoff_sweep.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "b0074a04a5b217c0fc8f9677e7611134794de7f04dd95a4a97ef9884ddc4286d",
+   "mtime_ns": 1793170228308186200,
+   "stored": "xz",
+   "stored_size": 519608,
+   "stored_sha256": "8cd6bcf96186a53e775dd4bb28697019d7b8da781ab4cdd26800ca8c1d63b965"
+  },
+  "nl_blood_overhaul_rtx/textures/castoff_sweep.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "260eae820acc8e6a81463310ae550088baeee6eb4561f119008885ee23841d7d",
+   "mtime_ns": 1793170227396123200,
+   "stored": "xz",
+   "stored_size": 385728,
+   "stored_sha256": "0c85de7e3b02b66e9371a68b0533b7f809fa7e29e36187fc300135ad563a0015"
+  },
+  "nl_blood_overhaul_rtx/textures/castoff_sweep.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "5bae275116c5101d57ab3e98cacfd29320dafd53980fcb4287822ba16862f740",
+   "mtime_ns": 1793170227319880000,
+   "stored": "xz",
+   "stored_size": 97888,
+   "stored_sha256": "90fd4f7819b73a466414e25f481328853ac9a1f7321866fece99d1130d035e16"
+  },
+  "nl_blood_overhaul_rtx/textures/castoff_sweep_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "00152db862cd594047c63830ae6e52bc5dab4019a62f7c2ac0b4f9450b2f42f2",
+   "mtime_ns": 1793170228723699300,
+   "stored": "xz",
+   "stored_size": 462576,
+   "stored_sha256": "865353aeef30a92db893bf3a6740618298ad248d5a98493d2bd4ff54de44b486"
+  },
+  "nl_blood_overhaul_rtx/textures/dark_core_halo.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "143cf9ca8858545760f5beab9ff9c4d60068ff40fbf1a068cb394c4ed3ef8252",
+   "mtime_ns": 1793170228724699200,
+   "stored": "xz",
+   "stored_size": 818208,
+   "stored_sha256": "509bcee74f066306cf3a228194ca98bbd63bdc3e2208c0e948e2758800b2eac5"
+  },
+  "nl_blood_overhaul_rtx/textures/dark_core_halo.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "e7ffaedcc7e021f21f6c31f0e95b064d3bebcae9bd8e61dc382d7e4560b5fc52",
+   "mtime_ns": 1793170228010231000,
+   "stored": "xz",
+   "stored_size": 789272,
+   "stored_sha256": "2859a567662531f04b0291f25b2093fc232efeeb4faa8d5ea323fe9e9656a8f6"
+  },
+  "nl_blood_overhaul_rtx/textures/dark_core_halo.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "a444c67348fe0ed983f3ee7303d39a42416e1d14ab1903eb1496fc83cd397964",
+   "mtime_ns": 1793170227993209300,
+   "stored": "xz",
+   "stored_size": 226936,
+   "stored_sha256": "49a74e1d4ce20a7bf1219bee50b5c4cdee52f75ce67d9e226b87dba109b50893"
+  },
+  "nl_blood_overhaul_rtx/textures/dark_core_halo_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "f8d4b5760c048f7c9318ff788f9e5a8143d54bd41b4df96f803736ee73cadc0e",
+   "mtime_ns": 1793170229553460300,
+   "stored": "xz",
+   "stored_size": 732412,
+   "stored_sha256": "1006a5597a479d66628ce9afd1db1ccb393e7084e0a9adb22e9435a89840c008"
+  },
+  "nl_blood_overhaul_rtx/textures/directional_spray.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "e8dc114cc22c789bbba1524f46610096fc23ed797cc8fd6962ffc281b18c9a3f",
+   "mtime_ns": 1793170229622716000,
+   "stored": "xz",
+   "stored_size": 609072,
+   "stored_sha256": "60e1a8ef65937b6ec2e8e70397c09ed077a8caa9b72bd2465fbaf76c422bf473"
+  },
+  "nl_blood_overhaul_rtx/textures/directional_spray.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "95b94fdc04d2bba3d9de3a3cdb7244016e7b29205e319d2b84403a09e6afc1ca",
+   "mtime_ns": 1793170228867846500,
+   "stored": "xz",
+   "stored_size": 489984,
+   "stored_sha256": "6e025149203232210f9b40282c598f31d8777c713b0ac03f93bd00eeb613f2e1"
+  },
+  "nl_blood_overhaul_rtx/textures/directional_spray.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "f4b85b5d0010735644132e81614f12677a0a38264c887eefdd92109395056795",
+   "mtime_ns": 1793170228989871000,
+   "stored": "xz",
+   "stored_size": 122256,
+   "stored_sha256": "a46b46279e46bd19424bc7f1b63229501e35477c2be2c54360a45bc482018d36"
+  },
+  "nl_blood_overhaul_rtx/textures/directional_spray_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "fe54afdae5e703a8f7c888bb74f72269dcf04899fe31a4c8c689960a04bffccd",
+   "mtime_ns": 1793170230485902300,
+   "stored": "xz",
+   "stored_size": 538956,
+   "stored_sha256": "5b91f2c81b20a15bb5ea8c2729d8f70ca0114684d53d886b74725163e11dd60b"
+  },
+  "nl_blood_overhaul_rtx/textures/double_impact.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "5533f67cb06085666aacec77b817d0f5fab04e7c18002857c2a4d12a2564bebf",
+   "mtime_ns": 1793170230439592600,
+   "stored": "xz",
+   "stored_size": 663272,
+   "stored_sha256": "723d5a80358b0f6592176ead0864b8d403b9dfbe15b1d282b570e96aadcc15b9"
+  },
+  "nl_blood_overhaul_rtx/textures/double_impact.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "329897b4e58d93833baf36cc0eacc4b5cd3940115372ad03c7cbbb87556d3abe",
+   "mtime_ns": 1793170229470613500,
+   "stored": "xz",
+   "stored_size": 578604,
+   "stored_sha256": "c832ba8d478124f9e6b71f26c392f1b5227b96b7d2aeea7bc833e36d74c8453b"
+  },
+  "nl_blood_overhaul_rtx/textures/double_impact.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "77884b53d21a38c44d0d8c4250a1deddcaf226d1ef23f056d16de9302ffbe306",
+   "mtime_ns": 1793170229640862600,
+   "stored": "xz",
+   "stored_size": 187328,
+   "stored_sha256": "25c3f7deeb78997c1c02f0969c34cffe34900820a331ebe050b783505086bca0"
+  },
+  "nl_blood_overhaul_rtx/textures/double_impact_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "38eb5fd92637b91c276a34ad144ad7b0076abf6bdf3f3b876c1d6826166dadda",
+   "mtime_ns": 1793170231069659000,
+   "stored": "xz",
+   "stored_size": 590660,
+   "stored_sha256": "f07b2c18525abf0f8671f21a96e7b21a5a49a3c21342f14d1a8b4691f65194c1"
+  },
+  "nl_blood_overhaul_rtx/textures/drip_runs.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "e67810723651ba646e920b234e3d70143c8cac338c97cc0917358167ab3a19d0",
+   "mtime_ns": 1793170231190170500,
+   "stored": "xz",
+   "stored_size": 608472,
+   "stored_sha256": "d0c5b54e598a6f6742356f6776958a9ee9514ff35b7cfa456f4bf4bba3831ea3"
+  },
+  "nl_blood_overhaul_rtx/textures/drip_runs.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "dc5d0b0b4c0c95b0acfef8a5268ee25b60a7853818288f5fcb7b42f56c876f70",
+   "mtime_ns": 1793170230248569700,
+   "stored": "xz",
+   "stored_size": 507044,
+   "stored_sha256": "abc21024a89c8e3346dd88bfd19e9b32f0f13ad564a31f20a8e820634ad8700d"
+  },
+  "nl_blood_overhaul_rtx/textures/drip_runs.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "efca7cb918f8261e894331111276a0ab277d490de5747783ba67ecc508a47a87",
+   "mtime_ns": 1793170230306015400,
+   "stored": "xz",
+   "stored_size": 145260,
+   "stored_sha256": "c08bd3982aad0f47a48ce55340fd67d473ebd61ad9acc819f5caa28f91247614"
+  },
+  "nl_blood_overhaul_rtx/textures/drip_runs_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "1d75df45117f5e3a7c08497dc7c1ae196ea58cdbfabad78b257f353b18a18eb9",
+   "mtime_ns": 1793170231946272800,
+   "stored": "xz",
+   "stored_size": 533252,
+   "stored_sha256": "ac6d9265af822cd07971a601f07c9df0e26dd9e83bb718a51792acdb2f2afa3f"
+  },
+  "nl_blood_overhaul_rtx/textures/drops_scatter.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "be8736e21e18d419de287651d554b6efd6d062a182224d57b2a50411b6cf0dd3",
+   "mtime_ns": 1793170232079508500,
+   "stored": "xz",
+   "stored_size": 719408,
+   "stored_sha256": "68303e3919c79145f5c4f7ebb784c0de26d0b453f7b3012b614abe71b23b260a"
+  },
+  "nl_blood_overhaul_rtx/textures/drops_scatter.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "60142e8f3c0aa6b71e728ee1f9112c4292cad318125bd7cfe33911b827d12565",
+   "mtime_ns": 1793170231046962600,
+   "stored": "xz",
+   "stored_size": 546964,
+   "stored_sha256": "a9f51e3ce685a887a102bc5108ad642cc3b054b3e82ce26d39254bc1ba4b9a35"
+  },
+  "nl_blood_overhaul_rtx/textures/drops_scatter.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "e58519dcc213a97900b9d140276314cdb1f60314c3d5b834f1b1ace765be33fc",
+   "mtime_ns": 1793170231086195700,
+   "stored": "xz",
+   "stored_size": 125272,
+   "stored_sha256": "06454584c8903da5ae944eb197d260f6de47c1a4aca15527cbdc48ad9b6ddac4"
+  },
+  "nl_blood_overhaul_rtx/textures/drops_scatter_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "c70712ae5dce5f816e6aa0da4b05656d97b0ebbc0f798d61814ee5ef27cf679e",
+   "mtime_ns": 1793170232813233500,
+   "stored": "xz",
+   "stored_size": 640020,
+   "stored_sha256": "114f89504716d4128d44fd2d34f284f7cee210186841e906d2810d023dde407b"
+  },
+  "nl_blood_overhaul_rtx/textures/heavy_splash.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "64cd83c795390efd72f362626a8886125ce05f5593a3cfe5babf17eaf0c3de9d",
+   "mtime_ns": 1793170232841587200,
+   "stored": "xz",
+   "stored_size": 701976,
+   "stored_sha256": "ca8103e09313c54575f148b37b46679a1fdbf37df65ac93eb744d73e381491dc"
+  },
+  "nl_blood_overhaul_rtx/textures/heavy_splash.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "d6389bc9b46528595c5817edf9c0dd50b38864937cb0cb0324cd8762b3fa279d",
+   "mtime_ns": 1793170231751009700,
+   "stored": "xz",
+   "stored_size": 605536,
+   "stored_sha256": "7deccf04f9e68a75fc866567f230cabccef210bb721050a4b51065f0a97ba836"
+  },
+  "nl_blood_overhaul_rtx/textures/heavy_splash.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "f86adb7edd73c8eb3519fce52f219d57302781cc5a77e6fed724097ae9fec068",
+   "mtime_ns": 1793170231805561100,
+   "stored": "xz",
+   "stored_size": 189476,
+   "stored_sha256": "83ae877b0f0c8abacf0315680ff6d7125043d2f9862a6e9c520d363b63996a90"
+  },
+  "nl_blood_overhaul_rtx/textures/heavy_splash_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "df1442a354f202e2e4ab366ce945cddda9a7146e5daeeda65bda36f1f62e9dd2",
+   "mtime_ns": 1793170232988294100,
+   "stored": "xz",
+   "stored_size": 620732,
+   "stored_sha256": "fdf34afcce34763474a32b0904a4c1ab28efdf8a7adbb307aa45f0b29e2f90d2"
+  },
+  "nl_blood_overhaul_rtx/textures/impact_dense.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "04de41d297389d5ec2ffe019cab417c4f5502589b7958ef46a9530f134594d67",
+   "mtime_ns": 1793170233005310100,
+   "stored": "xz",
+   "stored_size": 760936,
+   "stored_sha256": "2c7f7d7bd60043d3544ad24782dd8082fff633edba359edbea974a7fde82badb"
+  },
+  "nl_blood_overhaul_rtx/textures/impact_dense.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "d2fc73be5933636afb1e633ac22ba939a8f19ff0948f11fd0bf9e7df1d8891b8",
+   "mtime_ns": 1793170232511257400,
+   "stored": "xz",
+   "stored_size": 674600,
+   "stored_sha256": "57e22bb7d3a62f0da010baf250c4c942c5af632213308bb848691985e2b7ffe3"
+  },
+  "nl_blood_overhaul_rtx/textures/impact_dense.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "7f6bc788c92585c7a4908e4ec87b9bda17665c5dc8d8f12ae298591762c9cccd",
+   "mtime_ns": 1793170232726599000,
+   "stored": "xz",
+   "stored_size": 228072,
+   "stored_sha256": "4a869adfb906bd3ff2fbbf56c33b0c00ca1db2a2373d4b093c8bab0846dbb1dc"
+  },
+  "nl_blood_overhaul_rtx/textures/impact_dense_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "a3e368e7df2f6b0e0967250450498c051dbdfe57d7f02e3f7b0705dd3628186e",
+   "mtime_ns": 1793170234201153800,
+   "stored": "xz",
+   "stored_size": 680436,
+   "stored_sha256": "d245c240e0f4fc2104d318de97fc0642ed744c935ce6a474a5cb3bba7f370f3f"
+  },
+  "nl_blood_overhaul_rtx/textures/long_swipe.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "555f51d8bb0a385d789f6319250ad1c6f760ba556a2acfb34d8c9c8f41c173de",
+   "mtime_ns": 1793170234462749400,
+   "stored": "xz",
+   "stored_size": 463616,
+   "stored_sha256": "7e786367bada15066e5743a36f535e4a9750f8cfa5a2a647a6810b0d12595a5d"
+  },
+  "nl_blood_overhaul_rtx/textures/long_swipe.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "e434d18525f40fce9c95e1f08d5b430fd3abbdc6da492cfb104f1fc8779df5d2",
+   "mtime_ns": 1793170233448173600,
+   "stored": "xz",
+   "stored_size": 379660,
+   "stored_sha256": "41ae7f735da58f043160be66523ba576067216bfdd66d8dc9f83c34052ad4c93"
+  },
+  "nl_blood_overhaul_rtx/textures/long_swipe.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "7d8711547fda865642458f49af345bff681fb92cc5a5035413ff9266d38dca7b",
+   "mtime_ns": 1793170233392217300,
+   "stored": "xz",
+   "stored_size": 109988,
+   "stored_sha256": "e4b78991240b6b28fa73317f8c55fd80b937cf92b307fe3d967d40ab60d3a123"
+  },
+  "nl_blood_overhaul_rtx/textures/long_swipe_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "c5c8c448f9752df3c3494bc0cac03a12c7c75b93f9d761608ff3b4431b321e3a",
+   "mtime_ns": 1793170234604246600,
+   "stored": "xz",
+   "stored_size": 419000,
+   "stored_sha256": "faf444b0f56b6add03111b397bcb34fc5c07ef911ba645e56f2ba6792385ca01"
+  },
+  "nl_blood_overhaul_rtx/textures/mist_cloud.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "1049c02aba8bec4688edb8748a8654f554612e57ca9fa363d2b20109f46ba90b",
+   "mtime_ns": 1793170234531269600,
+   "stored": "xz",
+   "stored_size": 726492,
+   "stored_sha256": "0c6e469cd332b3d6fd2cb5d016d24b3d5452a6dbe16e78ec5649d4eee7dbd068"
+  },
+  "nl_blood_overhaul_rtx/textures/mist_cloud.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "72354f8428d32af9669e71436852d7dbb3ae16c3cf6de53965249b1320747453",
+   "mtime_ns": 1793170234055910300,
+   "stored": "xz",
+   "stored_size": 580712,
+   "stored_sha256": "e8d387f0d6ce35aa15e1f4ec6dae4423d61e14ead4109d390035f165d7f1f940"
+  },
+  "nl_blood_overhaul_rtx/textures/mist_cloud.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "70b9ffbea6d6c4351e2d1d2cc1024138f84bcdc1fd573cddae6a1b66b5ac71bb",
+   "mtime_ns": 1793170234050405800,
+   "stored": "xz",
+   "stored_size": 141960,
+   "stored_sha256": "3fcebf2a84c163ad98d46eb051e8aee7bdbeb21e4ec6061ae13fcb72ccf5ebf2"
+  },
+  "nl_blood_overhaul_rtx/textures/mist_cloud_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "01d749bcd2858040b6e3d84f0ff64c7fdd6cb17863b401e95077cb3d80135635",
+   "mtime_ns": 1793170235563466600,
+   "stored": "xz",
+   "stored_size": 610852,
+   "stored_sha256": "fff43d4560512a12d32e06d023943da765f5413f23fa95db126f8ccb9e1288b3"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_drop.a.rtex.dds": {
+   "size": 22020,
+   "sha256": "c948044452ab4eb038039f0d8f141575176a4d0cf3d30513f1ddd0dd163ada07",
+   "mtime_ns": 1793968393424135300,
+   "stored": "xz",
+   "stored_size": 2000,
+   "stored_sha256": "5b1bd5d008ec11c1a7804ea73c781bbd1c860a0ff18d9da6ef8a3a31992a9d69"
+  },
+  "nl_blood_overhaul_rtx/textures/nlfluid_mist.a.rtex.dds": {
+   "size": 5636,
+   "sha256": "4640d2710f31295096267522a35cbd437cf877e0721574a93810d813a9097858",
+   "mtime_ns": 1793968393654073100,
+   "stored": "xz",
+   "stored_size": 2768,
+   "stored_sha256": "aa63918bb1dc244856aff4c550edf62663d988d2b112ac2fd801f6f593ca6b0e"
+  },
+  "nl_blood_overhaul_rtx/textures/pooled_smear.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "cf82a9185f442fb5285de10c7144432d1399253b482f78c6a223d26f35889e4e",
+   "mtime_ns": 1793170235600050600,
+   "stored": "xz",
+   "stored_size": 682196,
+   "stored_sha256": "e7ddca58dbe599c368b7eb94954b19586fda2c9a440fb3becf618f89b6a3804d"
+  },
+  "nl_blood_overhaul_rtx/textures/pooled_smear.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "2a253324985d68120f08540fadc14309e6adf04d26f552ba08cfc2160c37069e",
+   "mtime_ns": 1793170234734284600,
+   "stored": "xz",
+   "stored_size": 619176,
+   "stored_sha256": "2726e65b60c00b9cac2eaf1a64a4ea7dec2e43e38a875972e39994cd92ad09ec"
+  },
+  "nl_blood_overhaul_rtx/textures/pooled_smear.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "506371be3306d2442abbb7a99cb2ed29d7f258184b63b030447582eb3438d7b7",
+   "mtime_ns": 1793170235109580600,
+   "stored": "xz",
+   "stored_size": 191440,
+   "stored_sha256": "efa23b985ed1393c3ec5e750ceb17cb1ed8a04da36eb596019778c1f62a9f277"
+  },
+  "nl_blood_overhaul_rtx/textures/pooled_smear_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "ad6b3974b1d505d131661dfc70c81670856db6513c0151c3689855258c3ccef9",
+   "mtime_ns": 1793170235975771500,
+   "stored": "xz",
+   "stored_size": 615952,
+   "stored_sha256": "57da15e051026f35a801308fc53ac00278a3625ecd9d229691128e5ead4d458e"
+  },
+  "nl_blood_overhaul_rtx/textures/ring_spatter.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "778665df9f13bc8c6f281d8986f777aa39f269e7ff8b1796f0a8ae1329194d62",
+   "mtime_ns": 1793170236293331400,
+   "stored": "xz",
+   "stored_size": 696700,
+   "stored_sha256": "0351372663c5cf618917eb3c5d8ab7f5dc1329d7365492b1dab39cdef8d02b9f"
+  },
+  "nl_blood_overhaul_rtx/textures/ring_spatter.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "e4a8fda3ad9a21c6f37f277e74a38275d93804499ca71f167ee2839abc169fea",
+   "mtime_ns": 1793170235348945900,
+   "stored": "xz",
+   "stored_size": 537552,
+   "stored_sha256": "11e13e8494671d07c9d07bc9e8b7237fa087462ca0cdfc8d44b154ded3a223d9"
+  },
+  "nl_blood_overhaul_rtx/textures/ring_spatter.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "2c08e63a5b9c25e707f97e0ad5bde893db8d541342936fd50fae7bd88887f5d1",
+   "mtime_ns": 1793170235689059600,
+   "stored": "xz",
+   "stored_size": 150844,
+   "stored_sha256": "14fdbdebf5f681bb0e8062fbe651c6dccf732d2369509638853265efc842fb06"
+  },
+  "nl_blood_overhaul_rtx/textures/ring_spatter_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "1949f4feee39381351143604913a25021f3c182dd0d9b7fa19cd45dd0ec0ca65",
+   "mtime_ns": 1793170236771778300,
+   "stored": "xz",
+   "stored_size": 614104,
+   "stored_sha256": "6cc2e421c922497553567376f7eb492cff3673b7d09768cde01acf8aeabe6b0e"
+  },
+  "nl_blood_overhaul_rtx/textures/shotgun_clusters.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "55f3fb714f8a1f7337b0ce767b84c7033f7c9b997183edd205ac7ab90cc149e0",
+   "mtime_ns": 1793170237193461500,
+   "stored": "xz",
+   "stored_size": 706228,
+   "stored_sha256": "fe8a8aa26af10112334273a01d26d304ba6edce091f77addcff25271069d78af"
+  },
+  "nl_blood_overhaul_rtx/textures/shotgun_clusters.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "27613e2ab1ffcaa1f8e6886dc6ec6b85db40d201fd7bd567e164320a99515e3b",
+   "mtime_ns": 1793170236236169000,
+   "stored": "xz",
+   "stored_size": 553424,
+   "stored_sha256": "7be1a50d632dff3f875430e74ed744ef72fe35a348b867a3ac946f5b5719501a"
+  },
+  "nl_blood_overhaul_rtx/textures/shotgun_clusters.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "b4694e43a476c40c83c40aa5fbf67e93d3653f61dc7e98486e0a5133138a184c",
+   "mtime_ns": 1793170236269230800,
+   "stored": "xz",
+   "stored_size": 127136,
+   "stored_sha256": "6347c479debb70247ed5c2c69cdc9df1673cd7e9fd0b090df9802d651286f756"
+  },
+  "nl_blood_overhaul_rtx/textures/shotgun_clusters_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "55998c32fdc3c022df55fc178a3eff14b063c17d2ee5a1437db8e1781b1c174c",
+   "mtime_ns": 1793170237523761500,
+   "stored": "xz",
+   "stored_size": 619964,
+   "stored_sha256": "96e0313378e17f68593e655ca4d77bf2cf60c045d99d02e1842c97cddc60d998"
+  },
+  "nl_blood_overhaul_rtx/textures/sparse_mist.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "ae0d4f2bea83341916378301858d2d64af2ab103190e00df8df777ce63b7ed0f",
+   "mtime_ns": 1793170237889137300,
+   "stored": "xz",
+   "stored_size": 436884,
+   "stored_sha256": "8668eb7690302f7dac594c9541f5ee57ac67819524d6088e2c851eb439629d7b"
+  },
+  "nl_blood_overhaul_rtx/textures/sparse_mist.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "9e5662877d66a21b1fcc2b4cdda7573f6d9ef0e842752aa58b13fe63c61dbd1a",
+   "mtime_ns": 1793170236896154800,
+   "stored": "xz",
+   "stored_size": 237452,
+   "stored_sha256": "ce742fc072c63362ec92b4a303d14b90b16ce9063bb666432920c3a545993ee9"
+  },
+  "nl_blood_overhaul_rtx/textures/sparse_mist.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "18551faa3e1e7a644fa4dd38a7b24e50a56de9de087adfb249d1693406d2c1e2",
+   "mtime_ns": 1793170236903160500,
+   "stored": "xz",
+   "stored_size": 50560,
+   "stored_sha256": "2e1771c7277d692c3cc32175e768613f3df8e5657ea2afb354e1f36e97972476"
+  },
+  "nl_blood_overhaul_rtx/textures/sparse_mist_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "0b1c63b4f998d45d36f056cadcf82faf44cf16395a9d38442cf2ad794c291941",
+   "mtime_ns": 1793170238666523200,
+   "stored": "xz",
+   "stored_size": 384868,
+   "stored_sha256": "19fa9405c888221d7f90f78f33e91927f0bb0ff3dea0a137343ba94fc12c9a48"
+  },
+  "nl_blood_overhaul_rtx/textures/spray_fan.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "c181de2005e15e31cefa52daafd317ea3104f9114aa2a851440e58676f07c63b",
+   "mtime_ns": 1793170238798711000,
+   "stored": "xz",
+   "stored_size": 710960,
+   "stored_sha256": "b75c8b2fba0044a134f0c1e04c18e39cbe629062df7b26e3911a98508406b65b"
+  },
+  "nl_blood_overhaul_rtx/textures/spray_fan.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "1444fe112042223e6ae21f25c8e54857b6728a9deec397366299082867c7e1d9",
+   "mtime_ns": 1793170237565237500,
+   "stored": "xz",
+   "stored_size": 606244,
+   "stored_sha256": "c4435888bcb24bc5642696559c768f771780bd66ae4e8311846c300624feaa6e"
+  },
+  "nl_blood_overhaul_rtx/textures/spray_fan.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "f60daa25f2d0949911b5220570583c2c703057991936e9f64af33a298cb51f07",
+   "mtime_ns": 1793170237848865200,
+   "stored": "xz",
+   "stored_size": 151496,
+   "stored_sha256": "fe13018aa66215e0ff426c4153b7c2d15d7a963785a9dcbf62d07910d8ecf699"
+  },
+  "nl_blood_overhaul_rtx/textures/spray_fan_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "d5f39b6f42ae3f7eb6c1e2c97089d2370316319e6cbcac70353300bc00713b16",
+   "mtime_ns": 1793170239333513800,
+   "stored": "xz",
+   "stored_size": 626940,
+   "stored_sha256": "5786d1ed8da22b6c8b8c7ae3de2c372ab6a7abf397ddb1a79cf25e63dea7c4b2"
+  },
+  "nl_blood_overhaul_rtx/textures/streak_web.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "bd3fd683b835c6f3d559972dcbe6d6b4d400b336b9904b4aafd86cba8304ceff",
+   "mtime_ns": 1793170239369789000,
+   "stored": "xz",
+   "stored_size": 802148,
+   "stored_sha256": "452431772e94ef86b339b5bbd813f91ddfb017ac1eb95ddfd16c95cc70f78715"
+  },
+  "nl_blood_overhaul_rtx/textures/streak_web.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "78e86d949d917b20d9942051947ed53fd5930bc76b117013136a0fa090a069f9",
+   "mtime_ns": 1793170238495422100,
+   "stored": "xz",
+   "stored_size": 715884,
+   "stored_sha256": "cbae37bc2dcf3e32f0e8062b700ca81d8823aff25bfc1c76e0a62a61c68298ce"
+  },
+  "nl_blood_overhaul_rtx/textures/streak_web.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "d4713e6fce0a39dd1c57b65d1dedd989041b6486a0ba9b73843c7b46be33fbe1",
+   "mtime_ns": 1793170238528969600,
+   "stored": "xz",
+   "stored_size": 166360,
+   "stored_sha256": "d6dfd1f01b1ec44fb1e5890d9f9826ca4eead90f1b955f4182ee2b05e9cc6e5b"
+  },
+  "nl_blood_overhaul_rtx/textures/streak_web_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "b3862e1cc018611afff62c0f824a7fd3c936534eec7cf889bb223dbe63f7f6a5",
+   "mtime_ns": 1793170240296050300,
+   "stored": "xz",
+   "stored_size": 717480,
+   "stored_sha256": "bb4391c563cba14e6490ec451d1bce9bdbef3b89ab7bb91d890f8246fbb59a74"
+  },
+  "nl_blood_overhaul_rtx/textures/torn_blotches.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "8587f780e09aa67031dd149a473c4dcfe4e368b096e6519c37bb7d10aae32ae7",
+   "mtime_ns": 1793170240253299600,
+   "stored": "xz",
+   "stored_size": 832664,
+   "stored_sha256": "c3eb0cd7b9853d5cd5af4d010e562b676e6f8e9828ba67605f4aae8aaa947b21"
+  },
+  "nl_blood_overhaul_rtx/textures/torn_blotches.n.rtex.dds": {
+   "size": 1398276,
+   "sha256": "54c18bc4b9e78b96be6de24ce9aaf3d80ed93df28fd4e9a65051206aa42aac26",
+   "mtime_ns": 1793170239276634500,
+   "stored": "xz",
+   "stored_size": 765052,
+   "stored_sha256": "e1ff2822d03fd6f3938a0b90658de1a30cf208ea08e512b460f04700a9016749"
+  },
+  "nl_blood_overhaul_rtx/textures/torn_blotches.r.rtex.dds": {
+   "size": 699212,
+   "sha256": "f8a7496f70cd21825e65c7c7846c25cefab91d627b9571a9afd40f6af1207132",
+   "mtime_ns": 1793170239394737900,
+   "stored": "xz",
+   "stored_size": 238048,
+   "stored_sha256": "a0173a24d4656150a96b2fb136332b51d71ba049e878b20120014c7b9067b3e6"
+  },
+  "nl_blood_overhaul_rtx/textures/torn_blotches_n.a.rtex.dds": {
+   "size": 1398276,
+   "sha256": "6ab15889ed5e7a75fbd6e32ce24511add29d89be8df5c58e66c8366b202d16c5",
+   "mtime_ns": 1793170241114925900,
+   "stored": "xz",
+   "stored_size": 737872,
+   "stored_sha256": "439778a740022976fac05b7e91b96211ed5e8ba5386b6f80e4f7542570edf894"
+  },
+  "nlblood/addon.json": {
+   "size": 103,
+   "sha256": "5122df3a97426eb2e4e9484fd736bfbb3734304dcd088bb6071e2208085be76e",
+   "mtime_ns": 1793960291351898600,
+   "stored": "plain"
+  },
+  "nlblood/lua/nlblood/schemes.lua": {
+   "size": 1692,
+   "sha256": "2f2af8d74930cea206d1e99eb5fedf7eb9540527b65043d2f8f9a7c5fe2edbca",
+   "mtime_ns": 1793169522902414800,
+   "stored": "plain"
+  },
+  "nlblood/lua/nlblood/shapes.lua": {
+   "size": 771,
+   "sha256": "d7a28256de29110a43828044268937a2c6739d649f2194efef70da952c320c33",
+   "mtime_ns": 1793960291351898600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/arterial_trail.vmt": {
+   "size": 263,
+   "sha256": "d0607cacdcff07c70e34e5ce9a505123610e4df084368dc8768aad8965cda5fb",
+   "mtime_ns": 1793960290817272600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/arterial_trail_model.vmt": {
+   "size": 191,
+   "sha256": "4b5f7740ce9756389b1a95722f373b7587b328a6d79e31f7633b7ec61c1a3d75",
+   "mtime_ns": 1793960290817272600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/castoff_sweep.vmt": {
+   "size": 261,
+   "sha256": "42de821b3e739737d35d3b7298eb4fb7dbdcc922e77ade5518e737fea0314124",
+   "mtime_ns": 1793960290851450700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/castoff_sweep_model.vmt": {
+   "size": 190,
+   "sha256": "bea0faa21c0077c1df4483f62b0cb632d94441d08ad5564c22071876b8741959",
+   "mtime_ns": 1793960290851450700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/dark_core_halo.vmt": {
+   "size": 263,
+   "sha256": "947ecb134340b7f3d0bb2497dff25207177a06932fa091a2260ae32be80e7ae0",
+   "mtime_ns": 1793960290888430300,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/dark_core_halo_model.vmt": {
+   "size": 191,
+   "sha256": "08a71407a3fb778e9063c44ad34f77835f70b7e28fdcab2e03bef822b3ff7cfc",
+   "mtime_ns": 1793960290888430300,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/directional_spray.vmt": {
+   "size": 269,
+   "sha256": "39136ce99da21bb7f147c7ebc65e685a55cf6ee62ea2608a2246358fa2c8446a",
+   "mtime_ns": 1793960290920440200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/directional_spray_model.vmt": {
+   "size": 194,
+   "sha256": "697902a7859f8a6da21315dbe7aede04563afa7d93d349aa25be5af4ff2619ca",
+   "mtime_ns": 1793960290920440200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/double_impact.vmt": {
+   "size": 261,
+   "sha256": "5e37602629792de9399545142dee9202f89219315ff12e488f2ddb9d76c2ccc4",
+   "mtime_ns": 1793960290952452400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/double_impact_model.vmt": {
+   "size": 190,
+   "sha256": "03d08eb3e1626ffdac1ea96dbadb51837de5fc954f769c6415bd49558a21c894",
+   "mtime_ns": 1793960290952452400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/drip_runs.vmt": {
+   "size": 253,
+   "sha256": "aa01da0335b60d1cea28667999ba57cd3bd45835d71434b301f54a3665746743",
+   "mtime_ns": 1793960290984452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/drip_runs_model.vmt": {
+   "size": 186,
+   "sha256": "ac8b1c8d970b15e6fc9bb9fd898ddcd0072e5cfeb540abcec47c630ab793084f",
+   "mtime_ns": 1793960290984452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/drops_scatter.vmt": {
+   "size": 261,
+   "sha256": "c3c902053b7a8224808c66f91e1534007bb2eb286b413141970a783632e15c33",
+   "mtime_ns": 1793960291015451600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/drops_scatter_model.vmt": {
+   "size": 190,
+   "sha256": "8c146b1217ea93baa1612de5f0eda2eb5a987ac28a50a7ce38cd5394f475e1fd",
+   "mtime_ns": 1793960291015451600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/heavy_splash.vmt": {
+   "size": 259,
+   "sha256": "92b319c73be8d8b460b89a630c17f6f205e87fb7af57c8190ee02d5a7a649d17",
+   "mtime_ns": 1793960291046459100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/heavy_splash_model.vmt": {
+   "size": 189,
+   "sha256": "9032aaa3790b067174a0ccda03e7c48952349bf87956f7aa375800675597552d",
+   "mtime_ns": 1793960291046459100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/impact_dense.vmt": {
+   "size": 259,
+   "sha256": "fd583c294ae524b09449603397bf08ee8b2a3ce16cee95f8e031c909c199a8f8",
+   "mtime_ns": 1793960291077524700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/impact_dense_model.vmt": {
+   "size": 189,
+   "sha256": "2dca3be69a648503fed5c08c983f1294a1c76751d07f0b453a7bfa025ca0dcad",
+   "mtime_ns": 1793960291077524700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/long_swipe.vmt": {
+   "size": 255,
+   "sha256": "3983ae848b1c555ebb7f26e5ea651145e1b5f438e017368475876b36fe4989f7",
+   "mtime_ns": 1793960291107532600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/long_swipe_model.vmt": {
+   "size": 187,
+   "sha256": "f2d2a60ac63883556912f5f906747054090bfb8702a19066be7e79c11a54e71d",
+   "mtime_ns": 1793960291107532600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/mist_cloud.vmt": {
+   "size": 255,
+   "sha256": "6f63eaeb8e78433ec5ef5a3caebb6950e842895bf6df0a314f8cd2cfafc653da",
+   "mtime_ns": 1793960291137302600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/mist_cloud_model.vmt": {
+   "size": 187,
+   "sha256": "320413c8e99d4ceff6b9cc785cf047776861ab8428cdca2ac7c537d8341f17a4",
+   "mtime_ns": 1793960291137302600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/pooled_smear.vmt": {
+   "size": 259,
+   "sha256": "503b19243a118d0bfb778976c483fb5d05b77fb684b3bf48f05c6be7dfb67e86",
+   "mtime_ns": 1793960291166556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/pooled_smear_model.vmt": {
+   "size": 189,
+   "sha256": "54ad1375d2fea68f5f1948454dad346c2c9f602a61ade61cdd5b4a837827bda5",
+   "mtime_ns": 1793960291167556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/ring_spatter.vmt": {
+   "size": 259,
+   "sha256": "864d72f974c270b13747da0a5f5fe9845197755002b00d40a44f510d6221469a",
+   "mtime_ns": 1793960291198060100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/ring_spatter_model.vmt": {
+   "size": 189,
+   "sha256": "ed91b0a66d984d862760f4b6265ef26c9b2b085b3de9709929ac4c573d21be55",
+   "mtime_ns": 1793960291199060000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/shotgun_clusters.vmt": {
+   "size": 267,
+   "sha256": "9ad6031d8aba61ad72cce5c6edc7a8bef81558b64ce55958b9a43d4fbff5d55a",
+   "mtime_ns": 1793960291229059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/shotgun_clusters_model.vmt": {
+   "size": 193,
+   "sha256": "eca1a7cb787699580b3aa600c8e7a51291d47c1613bec387a3e124eb71957496",
+   "mtime_ns": 1793960291229059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/sparse_mist.vmt": {
+   "size": 257,
+   "sha256": "ff53e673d2e43321f7a3258a519925d92cdca555b157acfb1b647b833f65c35f",
+   "mtime_ns": 1793960291258568800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/sparse_mist_model.vmt": {
+   "size": 188,
+   "sha256": "5dc0d4888833ae388b58ee7d0981243fee601bc9aee95044e6b428275dae69dc",
+   "mtime_ns": 1793960291258568800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/spray_fan.vmt": {
+   "size": 253,
+   "sha256": "ac7777ede9d094a8413bf7e1aef47ea36f159652c04daad461595d207a23a4ed",
+   "mtime_ns": 1793960291289075200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/spray_fan_model.vmt": {
+   "size": 186,
+   "sha256": "e10d2b6320cd218685bfeecdd068ebfa30309898ea9b0ba6d6ebc7622dae8df6",
+   "mtime_ns": 1793960291289075200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/streak_web.vmt": {
+   "size": 255,
+   "sha256": "111c7c93fe91c5800769e129bcb5b55eb0475f556fd06918fe2b542be9b3af9d",
+   "mtime_ns": 1793960291319379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/streak_web_model.vmt": {
+   "size": 187,
+   "sha256": "72b532b04d17c2f01945d23932173389bd8c0c223b5ed97270570120a7412afd",
+   "mtime_ns": 1793960291320379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/torn_blotches.vmt": {
+   "size": 261,
+   "sha256": "69e0f1b218a032a282db675067dc9573fc75a94d1e745d688f5dea8726447c5c",
+   "mtime_ns": 1793960291349898700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/alien/torn_blotches_model.vmt": {
+   "size": 190,
+   "sha256": "f8f197ff8e0af04cc8b59726e7c558c9f0e888dfca45d62432d609ee732e775d",
+   "mtime_ns": 1793960291349898700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/arterial_trail.vmt": {
+   "size": 263,
+   "sha256": "e7be98981ac2eb25094addf2097c4b2858bd4c68a9af3c5889778693a563bb52",
+   "mtime_ns": 1793960290817272600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/arterial_trail_model.vmt": {
+   "size": 191,
+   "sha256": "1f2a3523a5452483debce803ae034c573c79fb523fc9064791921ad1f758117d",
+   "mtime_ns": 1793960290817272600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/castoff_sweep.vmt": {
+   "size": 261,
+   "sha256": "f8416a682e4c6deccf9f09a7a8f535d307733aee04d6dab2d1995eedbbc14b81",
+   "mtime_ns": 1793960290851450700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/castoff_sweep_model.vmt": {
+   "size": 190,
+   "sha256": "baf64f51743a58e72e334c6abb901b065822edf03c03886f02a063d94929130a",
+   "mtime_ns": 1793960290852450500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/dark_core_halo.vmt": {
+   "size": 263,
+   "sha256": "5efafac5ea68658e4200c37a4277d287933bebde675460b8b152934501119da9",
+   "mtime_ns": 1793960290888932000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/dark_core_halo_model.vmt": {
+   "size": 191,
+   "sha256": "38247e36683acde595c2f14be50c0234304ef85e45efd1b74b5bf5be8c2ee18c",
+   "mtime_ns": 1793960290888932000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/directional_spray.vmt": {
+   "size": 269,
+   "sha256": "6e6694a5b48b516d48cfa056a495278578faeb53d35eb31684e35b893233d05f",
+   "mtime_ns": 1793960290920440200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/directional_spray_model.vmt": {
+   "size": 194,
+   "sha256": "81c2cac4e6934d85ed1e81daed1712ba685a16f7ddc38da4e5507eb09816c3c0",
+   "mtime_ns": 1793960290920440200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/double_impact.vmt": {
+   "size": 261,
+   "sha256": "92c8df5334b22966e2befdbf1b88f5e2d1edee0a8e8e45469e6579e1ef2935b6",
+   "mtime_ns": 1793960290952452400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/double_impact_model.vmt": {
+   "size": 190,
+   "sha256": "1b46537f7e34a1117497fc6cb2472975a67fa7683a47e05a134799816ae6f646",
+   "mtime_ns": 1793960290953452500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/drip_runs.vmt": {
+   "size": 253,
+   "sha256": "c7b4b688c840f197623a2c8795179d2b35a2ee7e80562204ac2ab2c6e104ce30",
+   "mtime_ns": 1793960290984452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/drip_runs_model.vmt": {
+   "size": 186,
+   "sha256": "3a1f3dd250954eabbfde79c5efd39a06fb8ec6a10ef6326b07c62af00033aad2",
+   "mtime_ns": 1793960290984452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/drops_scatter.vmt": {
+   "size": 261,
+   "sha256": "bb931b8289b9924b8dde319d12519f9cb7a213e33796d0a928b4f6a5166974b5",
+   "mtime_ns": 1793960291016451400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/drops_scatter_model.vmt": {
+   "size": 190,
+   "sha256": "66f4cdd81573d2e1aef210bcc2b22f78c8b0041293eb2886faf7209a81b0da1a",
+   "mtime_ns": 1793960291016451400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/heavy_splash.vmt": {
+   "size": 259,
+   "sha256": "0530164f06e90ecd7a75a2103e10d58dd6fa3dbc8ef4df9a0fc2217da1543a0f",
+   "mtime_ns": 1793960291046459100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/heavy_splash_model.vmt": {
+   "size": 189,
+   "sha256": "ac46d960af1afaf3d0833cd4c9b90fb3c3d4573af254ab19aaaa49f2fd5678aa",
+   "mtime_ns": 1793960291046459100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/impact_dense.vmt": {
+   "size": 259,
+   "sha256": "9978d44cd834541bbfe7a12b59886427645f7e0550c4571822ff98cd93ced8ba",
+   "mtime_ns": 1793960291077524700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/impact_dense_model.vmt": {
+   "size": 189,
+   "sha256": "76d51818b27d29967efcd060f0ff675a11a0a5d1529459cf319ef6f270f17c61",
+   "mtime_ns": 1793960291077524700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/long_swipe.vmt": {
+   "size": 255,
+   "sha256": "2abde966c4ef318ebe67e585a14f0a7c2c2ec07f09b0b2ea2976f373dcf90299",
+   "mtime_ns": 1793960291107532600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/long_swipe_model.vmt": {
+   "size": 187,
+   "sha256": "2e54f7e8eec49603271978a450484cdde9e4bd60e2e39dc528c2dbf6ca89e060",
+   "mtime_ns": 1793960291107532600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/mist_cloud.vmt": {
+   "size": 255,
+   "sha256": "9b1c25dd25f385110a9708988df4eb03d87531b5b3849ef2ffe1a3192e725d08",
+   "mtime_ns": 1793960291137302600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/mist_cloud_model.vmt": {
+   "size": 187,
+   "sha256": "68ed20f6b228f03e3fe7e832bf75b5d0e2b668cf1306182512b20ee661cd07e4",
+   "mtime_ns": 1793960291138302500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/pooled_smear.vmt": {
+   "size": 259,
+   "sha256": "bacaece82484c168f2bfe17b430b649275865d1f4d7ee94c4ba4ed0eea491d85",
+   "mtime_ns": 1793960291167556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/pooled_smear_model.vmt": {
+   "size": 189,
+   "sha256": "0b03f324d8094d7f4b4218bc66f088ed2680e08393b711679b56a92499fba8bc",
+   "mtime_ns": 1793960291167556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/ring_spatter.vmt": {
+   "size": 259,
+   "sha256": "d543f344ae1044246bcf085b135ed1da3ce4e20912d4cacb84804125042dd0b0",
+   "mtime_ns": 1793960291199060000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/ring_spatter_model.vmt": {
+   "size": 189,
+   "sha256": "4b72943228cddf2cecf1efa4a243663f5ea874a013bab79308b98ade71844056",
+   "mtime_ns": 1793960291199060000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/shotgun_clusters.vmt": {
+   "size": 267,
+   "sha256": "435982e3981419c7de1e4f1ad9822f1afd9f61dd3015bea86ba818918a682d9b",
+   "mtime_ns": 1793960291229059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/shotgun_clusters_model.vmt": {
+   "size": 193,
+   "sha256": "9c9d19d412ce90a6b243d3764c4cc8448a609973e7ab8b223d0185fbc066cb79",
+   "mtime_ns": 1793960291230059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/sparse_mist.vmt": {
+   "size": 257,
+   "sha256": "706edb5951b80eb7cdb3bc909e1666db6b99813f8223b971b1dea3235be78a8c",
+   "mtime_ns": 1793960291259568700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/sparse_mist_model.vmt": {
+   "size": 188,
+   "sha256": "925e5241a243ae7ae6a02a5f8577589cdd801cd392e03dce596828e3f9d9f7e6",
+   "mtime_ns": 1793960291259568700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/spray_fan.vmt": {
+   "size": 253,
+   "sha256": "62de30b31724754da6447f1a74f647475bad6e294868caec8e3da9a571fba6ea",
+   "mtime_ns": 1793960291289075200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/spray_fan_model.vmt": {
+   "size": 186,
+   "sha256": "34aec62237e2ae611d400613096fc126fc975e7db7c0209ff277040be4d0dd3a",
+   "mtime_ns": 1793960291289075200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/streak_web.vmt": {
+   "size": 255,
+   "sha256": "8d43248734e97d80aecc6729c59166e9718845cfb6170d8c36175e469198150d",
+   "mtime_ns": 1793960291320379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/streak_web_model.vmt": {
+   "size": 187,
+   "sha256": "7bccfde2a576b75d4e331d4758cf9b3d35a3721987880a9e26b4862940f17876",
+   "mtime_ns": 1793960291320379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/torn_blotches.vmt": {
+   "size": 261,
+   "sha256": "f734a3bbb068ee7f906e1f67b7b3960250bc9ddaa6daed08220f306c70665d63",
+   "mtime_ns": 1793960291349898700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/green/torn_blotches_model.vmt": {
+   "size": 190,
+   "sha256": "026d590b3050683887af964a098723364ae2e85db5138612a88935b9363e1860",
+   "mtime_ns": 1793960291349898700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/arterial_trail.vmt": {
+   "size": 259,
+   "sha256": "67867a3202e7eb0a122a87c8c42e80bb9e39fad093b9e2ecabd10f7d3d617278",
+   "mtime_ns": 1793960290816272500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/arterial_trail_model.vmt": {
+   "size": 189,
+   "sha256": "265ec5e9aa74991a84a9e76e2ed6c12fd8274e64b919a0f9e785fd3ca9fc9cb4",
+   "mtime_ns": 1793960290816272500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/castoff_sweep.vmt": {
+   "size": 257,
+   "sha256": "dfb167ece61adfe6960d815299add7a787c60a9bfdfe7b4814fff5d151f1871c",
+   "mtime_ns": 1793960290850447900,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/castoff_sweep_model.vmt": {
+   "size": 188,
+   "sha256": "748a4a1b4eaa493ddfb63114c74bfea154edec879902280545db373dc9765dfe",
+   "mtime_ns": 1793960290850447900,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/dark_core_halo.vmt": {
+   "size": 259,
+   "sha256": "e743fc2d63b53d002d31b9073333cbace517c648adb23b3843507d35fa606e7e",
+   "mtime_ns": 1793960290887430300,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/dark_core_halo_model.vmt": {
+   "size": 189,
+   "sha256": "813a60301ebde7f53dcc3c1c5c4d788f5a51cbaceceee64dbc42946c68bb0bb7",
+   "mtime_ns": 1793960290887430300,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/directional_spray.vmt": {
+   "size": 265,
+   "sha256": "6b3e3a72ef1305b7a14aceffc5a4df7027c113adcacb078e0017d45e7f08d863",
+   "mtime_ns": 1793960290919440300,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/directional_spray_model.vmt": {
+   "size": 192,
+   "sha256": "95f06f684b21dc9f274504698d71edb6f6c2f597f14b3aa5c44de7cfe1324e32",
+   "mtime_ns": 1793960290919440300,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/double_impact.vmt": {
+   "size": 257,
+   "sha256": "846ab7c8e721d9468e9c948c06c5cfa66ab65735818a200879f96cde3ac32822",
+   "mtime_ns": 1793960290952452400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/double_impact_model.vmt": {
+   "size": 188,
+   "sha256": "1c9fccdc88310e46ef70219690f1ca4a86b9b9d5c49fbe2ab3615c2fc8789339",
+   "mtime_ns": 1793960290952452400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/drip_runs.vmt": {
+   "size": 249,
+   "sha256": "a6b022f22bbd1fc833834b587ca115c880415287cb7c69fa1c4d1fcba4ce27e9",
+   "mtime_ns": 1793960290983451900,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/drip_runs_model.vmt": {
+   "size": 184,
+   "sha256": "9ec1fbc5997579853becc0fba1ed6ffe1fcfc39e99683bb010f31e444e8e19e5",
+   "mtime_ns": 1793960290984452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/drops_scatter.vmt": {
+   "size": 257,
+   "sha256": "c9a87cd5ff84162b01da55db972b46a3d0cb730024eb23d8315357d5a63f1fcb",
+   "mtime_ns": 1793960291015451600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/drops_scatter_model.vmt": {
+   "size": 188,
+   "sha256": "52552529e98712fcfbae65da3573ae3eacc67fdf12edaa73318dc2afd9a4c613",
+   "mtime_ns": 1793960291015451600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/heavy_splash.vmt": {
+   "size": 255,
+   "sha256": "6c37018f0e089597113cd8c0279ca1314c9be9bb34bef09380d23f99bb187b97",
+   "mtime_ns": 1793960291046459100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/heavy_splash_model.vmt": {
+   "size": 187,
+   "sha256": "8e2a68b35436b67539fec1bf6015782dd9592108f41edad2a3497893b3a97143",
+   "mtime_ns": 1793960291046459100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/impact_dense.vmt": {
+   "size": 255,
+   "sha256": "785593dccf7422fb963583a88f0e1213c5004d215796e3f7fec3b4e7ae35ea67",
+   "mtime_ns": 1793960291076524800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/impact_dense_model.vmt": {
+   "size": 187,
+   "sha256": "2d2565fef5a796dc916c390648e215a4ac2bc5c911ff888f744c197f9ac61060",
+   "mtime_ns": 1793960291076524800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/long_swipe.vmt": {
+   "size": 251,
+   "sha256": "4d38039079d2995d686eacca67a49a86a35c4f4061a47ebe0aa6b35cf14953c6",
+   "mtime_ns": 1793960291106030600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/long_swipe_model.vmt": {
+   "size": 185,
+   "sha256": "bc00ac3d9424ce925119fbe7e27b87979cf86805965d8e84d109ad74270e1323",
+   "mtime_ns": 1793960291106030600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/mist_cloud.vmt": {
+   "size": 251,
+   "sha256": "b6dad2ee61382a808198a4fc188e94c07ee90b1549d7aa527bc2816548eb7889",
+   "mtime_ns": 1793960291137302600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/mist_cloud_model.vmt": {
+   "size": 185,
+   "sha256": "901715cdfd18f265bf901c07a6bee3848245da21de5cc2c6f49a09b0e3b1c81b",
+   "mtime_ns": 1793960291137302600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/pooled_smear.vmt": {
+   "size": 255,
+   "sha256": "265663c1f55b8ad543e3defdd61772bed9005e5ea42fb5f4b007d1c147446ff1",
+   "mtime_ns": 1793960291166556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/pooled_smear_model.vmt": {
+   "size": 187,
+   "sha256": "586e194587147143dc25c49f1093f9539007eb914ad670ae2120a0df204a5466",
+   "mtime_ns": 1793960291166556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/ring_spatter.vmt": {
+   "size": 255,
+   "sha256": "ad54908393874c435c8a959bfe778663f46f8fa89d7c9fb6ef67b3c0da398810",
+   "mtime_ns": 1793960291198060100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/ring_spatter_model.vmt": {
+   "size": 187,
+   "sha256": "3249d436d6dac14a7aa75b7929729e78e416ba4de5246f8c2c2b2f482aa0f79d",
+   "mtime_ns": 1793960291198060100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/shotgun_clusters.vmt": {
+   "size": 263,
+   "sha256": "e808658d8794e1f51c61697935081325c870c20750ff2f5c3ca6d5570ddbeb5d",
+   "mtime_ns": 1793960291229059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/shotgun_clusters_model.vmt": {
+   "size": 191,
+   "sha256": "80c5d652c96af8130ed9009bbe10037f4ebe5e980998be6bfac0b44c1bd42fb2",
+   "mtime_ns": 1793960291229059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/sparse_mist.vmt": {
+   "size": 253,
+   "sha256": "ba94b71b3802826e9b4ada63dc75d65aaf588a4274e978d47d5606369c06d090",
+   "mtime_ns": 1793960291258568800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/sparse_mist_model.vmt": {
+   "size": 186,
+   "sha256": "18537e536240c6cfb4e2779c55e1ef6f810f95a18e886d8f74e79306c035a125",
+   "mtime_ns": 1793960291258568800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/spray_fan.vmt": {
+   "size": 249,
+   "sha256": "4c217e38741fdbe1473ab4fdd8dcaa67abb8dba8173b8412c82f6092eaa9ecab",
+   "mtime_ns": 1793960291288075100,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/spray_fan_model.vmt": {
+   "size": 184,
+   "sha256": "a1628100e8c9b54755363a21c278e31933a6841d0a264386e7932c0d278fe754",
+   "mtime_ns": 1793960291289075200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/streak_web.vmt": {
+   "size": 251,
+   "sha256": "cc2a81b57e50066f21330239112871fe6df1106f4ce41636ef8bc4a465851e48",
+   "mtime_ns": 1793960291319379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/streak_web_model.vmt": {
+   "size": 185,
+   "sha256": "9bd1af39cd2de4ed3dccf72ca251efbd43ce01cea81203b8f3b8e639ebceeea1",
+   "mtime_ns": 1793960291319379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/torn_blotches.vmt": {
+   "size": 257,
+   "sha256": "e13280c2c374e39e1f4b9468cf4ce9884b00638b34665dce8cf10781749f2675",
+   "mtime_ns": 1793960291348898800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/red/torn_blotches_model.vmt": {
+   "size": 188,
+   "sha256": "0bf0533db9555f0ad1625ed269a9a7a900544595a4e1b6083029379a29fadac1",
+   "mtime_ns": 1793960291348898800,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/arterial_trail.vtf": {
+   "size": 1398208,
+   "sha256": "63cb5dd76847d98ba5c0ffe6965f7a595a0cc749a4fd5c6490d02e9f3ec7e464",
+   "mtime_ns": 1793170207981893700,
+   "stored": "xz",
+   "stored_size": 472184,
+   "stored_sha256": "debf9d70a3aa79410df78938ca2608e07abcc346a79ae54d409dc4bfd4d05405"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/arterial_trail_n.vtf": {
+   "size": 1398208,
+   "sha256": "d890b3f9049fa0820744f601f9f04d3b379ef83f555472740faf3547ccfe2134",
+   "mtime_ns": 1793170208374291300,
+   "stored": "xz",
+   "stored_size": 440768,
+   "stored_sha256": "c4ed6ad1dbd081a572fa5fe83bd8e5f42bdc0e4d71aec78c51364752a0396fe9"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/castoff_sweep.vtf": {
+   "size": 1398208,
+   "sha256": "254af0fa1899e63883d68b37b7578ddd32553d2043126e81e992cebcec127d0a",
+   "mtime_ns": 1793170208131298700,
+   "stored": "xz",
+   "stored_size": 432108,
+   "stored_sha256": "27ded866e6a6ed53092b57ae9dddde94c1a0d48ff08503bdb20c0a230e0a3c61"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/castoff_sweep_n.vtf": {
+   "size": 1398208,
+   "sha256": "654180c5bc5d65c63351ec961e93fa151d37b92bd6545ed070383e890d545238",
+   "mtime_ns": 1793170208521176400,
+   "stored": "xz",
+   "stored_size": 403828,
+   "stored_sha256": "79888b97fda2a7c6bfb83e514ba3db4617cb4e6bca78b790e6bd44d0e47a4af6"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/dark_core_halo.vtf": {
+   "size": 1398208,
+   "sha256": "88b69313bc27bd5c195f39964675d4693c6121d00b555133b29e9fabbe2144f2",
+   "mtime_ns": 1793170208180582400,
+   "stored": "xz",
+   "stored_size": 738920,
+   "stored_sha256": "ee8d4e2332459a4c0d81c42dbd626121c80af50a74c8f6bc8164b22a95aca414"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/dark_core_halo_n.vtf": {
+   "size": 1398208,
+   "sha256": "f3497fd6a8c346d8c4c430fe21172206e2aecf33aaae61b6f5d753c6c66f08fb",
+   "mtime_ns": 1793170208686863300,
+   "stored": "xz",
+   "stored_size": 696252,
+   "stored_sha256": "4b69a9aace9777fdfb14c90ac431b55b3aea82fefb2eacba7feb10d8f092c1c3"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/directional_spray.vtf": {
+   "size": 1398208,
+   "sha256": "aa5ed55614c3b41f43f1dfe3fe07ce1a8e5bc063a221d29c63bea6beccb582f6",
+   "mtime_ns": 1793170208076677300,
+   "stored": "xz",
+   "stored_size": 520032,
+   "stored_sha256": "a2d209712cc0e7724cc018540e229c21dd03a99753e0025bf525c64bd64cf7c1"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/directional_spray_n.vtf": {
+   "size": 1398208,
+   "sha256": "0bf75fcdefdb45aa73327ed2f9dd9d9f6a2916893e49147edf3c50193b400713",
+   "mtime_ns": 1793170208591279900,
+   "stored": "xz",
+   "stored_size": 485104,
+   "stored_sha256": "beb98061611ef411518faab3b76dff45d0dbbbe67a4a80284edd491c28b7fdb5"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/double_impact.vtf": {
+   "size": 1398208,
+   "sha256": "df9258a4da2747c47eefaca7c532b1ed4344872570ea0473d83498fa4092b27e",
+   "mtime_ns": 1793170210430402900,
+   "stored": "xz",
+   "stored_size": 570652,
+   "stored_sha256": "fb793b1f1793bbda4549ef996522a9f649198c02c6c5207568e0eb76204be692"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/double_impact_n.vtf": {
+   "size": 1398208,
+   "sha256": "b2f3584263ec8d892003fb1bc3222c259a5fd8523523c506a4cd5f0c8f05262e",
+   "mtime_ns": 1793170210900698600,
+   "stored": "xz",
+   "stored_size": 534460,
+   "stored_sha256": "d99f78f00d6ff093a4bfcdc1463b01e219c203e7d4ae4077600760d749dafc37"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/drip_runs.vtf": {
+   "size": 1398208,
+   "sha256": "79bfb0a31542e65b0aeed6b1defba19b3b1929f97e582d7f0a65792d3a2ceb1b",
+   "mtime_ns": 1793170211079737100,
+   "stored": "xz",
+   "stored_size": 526508,
+   "stored_sha256": "c0d716808fa42bfc216a011ade2d90602d8d8a122446914289540ad8c1827788"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/drip_runs_n.vtf": {
+   "size": 1398208,
+   "sha256": "cfe9dd6ca15803e2bbc3ec61fefd27121f3f352e3346f4456a5e9ce10be50189",
+   "mtime_ns": 1793170211611183600,
+   "stored": "xz",
+   "stored_size": 486380,
+   "stored_sha256": "f301c390750924cbc90b0409a024ee53b8a00017bdd4745737d7628bb0d2d1ca"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/drops_scatter.vtf": {
+   "size": 1398208,
+   "sha256": "c7b15336aeceef50127ecd4606af2c630da3fdbdc8dec893a8fa4ea2bfd59c2b",
+   "mtime_ns": 1793170211392335500,
+   "stored": "xz",
+   "stored_size": 617432,
+   "stored_sha256": "4a259d82ef42851035449e68303ca2271310c2aa5241953a3eb9420f3fd8fed9"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/drops_scatter_n.vtf": {
+   "size": 1398208,
+   "sha256": "d9d6f37195e2730e99d0b392a272bb04dfe7a2ce0e52a493b88ebb64230bdbe4",
+   "mtime_ns": 1793170211915556600,
+   "stored": "xz",
+   "stored_size": 568544,
+   "stored_sha256": "834596e176c76ed20dca0ad2949e103a7d2c501e9fd416679c14349fa2effb25"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/heavy_splash.vtf": {
+   "size": 1398208,
+   "sha256": "9137ffa76e1fd660c03f85ae57bbc1bc6a36a7ab7b6af4ff27f7a50426439f72",
+   "mtime_ns": 1793170211453751400,
+   "stored": "xz",
+   "stored_size": 585032,
+   "stored_sha256": "8516de0b91b300c1bae8300646675f1864adfc94c50050a94a0e58ef47dcdc3b"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/heavy_splash_n.vtf": {
+   "size": 1398208,
+   "sha256": "b775286aee3dc89791394d30ab012d6d3ceddd9ce2c15424ebde4ef6f23a618a",
+   "mtime_ns": 1793170211953496700,
+   "stored": "xz",
+   "stored_size": 548952,
+   "stored_sha256": "48471343b3face84288de3340200368645d17baddfe11533a7a5e24c5b49ab5a"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/impact_dense.vtf": {
+   "size": 1398208,
+   "sha256": "6460b9f6c4aca84e430a18acaab4881f4a9a02039f6fa77740108350ee4c59af",
+   "mtime_ns": 1793170211771802800,
+   "stored": "xz",
+   "stored_size": 632924,
+   "stored_sha256": "a0a1c4af0fc26d024bc3d39cd70f65a50af535f9afb5bd1f24c1beef44d0aa18"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/impact_dense_n.vtf": {
+   "size": 1398208,
+   "sha256": "b31f3b3587579a7d7795048d1fea76415795a7b1c6191ca91b4791caee67b115",
+   "mtime_ns": 1793170212206672600,
+   "stored": "xz",
+   "stored_size": 596468,
+   "stored_sha256": "bb23eec93eb7038550d8aed6529c852562d7dea44a95a7708f2881bc082ce0da"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/long_swipe.vtf": {
+   "size": 1398208,
+   "sha256": "4702cea9600a13700e5adf02da435dfa31505255f60e3746a6a922da8420609c",
+   "mtime_ns": 1793170211565621800,
+   "stored": "xz",
+   "stored_size": 390180,
+   "stored_sha256": "9abceb4e5e1a20ed4f0645e83cafce092089b748ef62bbcee5ef08e5774e926b"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/long_swipe_n.vtf": {
+   "size": 1398208,
+   "sha256": "f78752148fc9816b67af0788b20b9d12a10f9e8d484f55c29316be3f95c576b0",
+   "mtime_ns": 1793170212064161400,
+   "stored": "xz",
+   "stored_size": 369240,
+   "stored_sha256": "a17d0107728b4181144df357c3e503caf753d3f6e8e6c3a84bf5434079a3d473"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/mist_cloud.vtf": {
+   "size": 1398208,
+   "sha256": "d60c296781ac300a52f1b0e8e94927481955b0708a9f724c9c22cdd4f1993327",
+   "mtime_ns": 1793170213604122300,
+   "stored": "xz",
+   "stored_size": 629396,
+   "stored_sha256": "4667155eaaaad0a714f5642aeb72212aac0461c3e2b8778ee06785e3c0f8cc0b"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/mist_cloud_n.vtf": {
+   "size": 1398208,
+   "sha256": "50be065774afc862988900ea9fd9cfedb05e1eb38081b389c78cd625ce166f06",
+   "mtime_ns": 1793170214004101000,
+   "stored": "xz",
+   "stored_size": 564332,
+   "stored_sha256": "27d1c9231fdb7e9cce5203b15cbc3708094968d320a6693930e69509e5ae45cf"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/pooled_smear.vtf": {
+   "size": 1398208,
+   "sha256": "5c2ad4597aa5947f1e8e0c546ed753ca51948dec74e5a88e4ee5d53f77687026",
+   "mtime_ns": 1793170214324404500,
+   "stored": "xz",
+   "stored_size": 600628,
+   "stored_sha256": "63e7614ae68282e3fa2abede89ec2b97ca56649d147d51f1d89c7015ead0905f"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/pooled_smear_n.vtf": {
+   "size": 1398208,
+   "sha256": "a546fbff5711a164710b7bd324bc938437b8f3eab291314f8cdb404c5ef4b8e5",
+   "mtime_ns": 1793170214788872600,
+   "stored": "xz",
+   "stored_size": 569884,
+   "stored_sha256": "34830233b01a27c0af30c5beae019f7d50da8a465351419d427802c2250cc993"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/ring_spatter.vtf": {
+   "size": 1398208,
+   "sha256": "a917b5945099e04996da7f40d718d380b807988cf45bf9b717d5e81479bed305",
+   "mtime_ns": 1793170214745753300,
+   "stored": "xz",
+   "stored_size": 591920,
+   "stored_sha256": "57c09a6e26cbcc89da484e37859cc059f53ed349e88a1e896c272d2aa356d3d5"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/ring_spatter_n.vtf": {
+   "size": 1398208,
+   "sha256": "bf770ab4b4bce7f0ae6e09e9790a748da427d9b04daf84cb3ac863ede82b7df9",
+   "mtime_ns": 1793170215314494600,
+   "stored": "xz",
+   "stored_size": 543168,
+   "stored_sha256": "9bb2a1b2694b7faebb485166f80bd431910fde9872bc03c0d1ab99db83de25ed"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/shotgun_clusters.vtf": {
+   "size": 1398208,
+   "sha256": "9e9c114973ce7ee72f4a1fd044ce52349a6b0889f8fc107a193f3891b0a96c52",
+   "mtime_ns": 1793170214762788700,
+   "stored": "xz",
+   "stored_size": 602932,
+   "stored_sha256": "043b16722de11d2991d6fc177d5a62ba3bcc4c2843b68e1a746d6c52c3e3a23e"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/shotgun_clusters_n.vtf": {
+   "size": 1398208,
+   "sha256": "c36538f225493c1eea5fceb5ede6983719b3bd4159acfeab846cc6c1e689421d",
+   "mtime_ns": 1793170215206749200,
+   "stored": "xz",
+   "stored_size": 556204,
+   "stored_sha256": "4c7ad0ad6a5cb7f8afa37cdca4e6dce727c59e8a3c9d1b2b9707d703f31e4bc0"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/sparse_mist.vtf": {
+   "size": 1398208,
+   "sha256": "b3f20a539ee13bada26c7c584c3b33b9206e1bd91e207ba9368a4f477dde0eb2",
+   "mtime_ns": 1793170214688267600,
+   "stored": "xz",
+   "stored_size": 344972,
+   "stored_sha256": "0db3c841bd176fc0e9afa9978046edb0513da403d203a9ccc45e13ed22c1f04e"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/sparse_mist_n.vtf": {
+   "size": 1398208,
+   "sha256": "0fda78afcf303724d4c4a22774d3a024af454122121e094ba9d7f31f7b799db3",
+   "mtime_ns": 1793170215245568400,
+   "stored": "xz",
+   "stored_size": 314428,
+   "stored_sha256": "1a3d265fdaab45d6fc952dc7b59d32f9a2338c1b18974191439ceab97cd6ab21"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/spray_fan.vtf": {
+   "size": 1398208,
+   "sha256": "ea0701a857b154a93c6d968d4b2a5c861f846507ba1d1cab90b98fbb299e4702",
+   "mtime_ns": 1793170214910510700,
+   "stored": "xz",
+   "stored_size": 640876,
+   "stored_sha256": "dfbd82148196987859af70ee3bd6f093acc54344885993a38893faf6adcecf41"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/spray_fan_n.vtf": {
+   "size": 1398208,
+   "sha256": "f2a29e192bb20eb0f8157ec1ec14ab21810834e8892cf58d8f84e9db95fd8d03",
+   "mtime_ns": 1793170215338037900,
+   "stored": "xz",
+   "stored_size": 586732,
+   "stored_sha256": "78a58aeb229fe8d33aecb8a72b9fd61bfa7667f26d222370c7e587407955103c"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/streak_web.vtf": {
+   "size": 1398208,
+   "sha256": "f31ada65669a28a7f4ba8b7fad63e0628ab710a554d78aef5674f8880b3c34c4",
+   "mtime_ns": 1793170216451242400,
+   "stored": "xz",
+   "stored_size": 734400,
+   "stored_sha256": "22d0b829f16ddcbfddd4f86fc32ecc8feff1cc11e1dc871f8bed4039613c4a0b"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/streak_web_n.vtf": {
+   "size": 1398208,
+   "sha256": "b14c6efaa0fc9149fef11ebb83281e7ffe54fc3502cb2945fcdc70f4f16f5c0a",
+   "mtime_ns": 1793170216906924800,
+   "stored": "xz",
+   "stored_size": 679448,
+   "stored_sha256": "d4c1ed5cd9726fcd8944e65cff85f97f830188f1ea085f04fbec468a7710d5ce"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/torn_blotches.vtf": {
+   "size": 1398208,
+   "sha256": "ad224dca7433a1ed6736619ad581351c7eaca0de69c146308387f767f280059b",
+   "mtime_ns": 1793170217370838100,
+   "stored": "xz",
+   "stored_size": 721900,
+   "stored_sha256": "de9c1717480848603d530e716cc89142e9266de0a1110515c950c9af508fe51a"
+  },
+  "nlblood/materials/decals/bloodoverhaul/tex/torn_blotches_n.vtf": {
+   "size": 1398208,
+   "sha256": "a589e28b22ba8fbd94d2c6c6f9e88238a77fd4e4ac9366636d0b886e38b2260e",
+   "mtime_ns": 1793170217866938800,
+   "stored": "xz",
+   "stored_size": 676776,
+   "stored_sha256": "7bbaa28c483b98b93921fee4db2f4f542edf91100a62284bfe004872bbf88c5e"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/arterial_trail.vmt": {
+   "size": 264,
+   "sha256": "c483d09f715606c18d1622d3a23f8c5f9fd20b2f70f1c29c1fa845eab6b90693",
+   "mtime_ns": 1793960290818272400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/arterial_trail_model.vmt": {
+   "size": 191,
+   "sha256": "ec9fe7d2cf0400c7a901854bfc4beb35f0a45a31d5ac1f31c320060f65ac1a9e",
+   "mtime_ns": 1793960290818272400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/castoff_sweep.vmt": {
+   "size": 262,
+   "sha256": "a7234405dbd63f79fe3ece6e07f845588ce4b2d041acb0dd4abe87550848a1a4",
+   "mtime_ns": 1793960290852450500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/castoff_sweep_model.vmt": {
+   "size": 190,
+   "sha256": "71f3c5a131004767564f3f6001ecb2e6cfb3b7d509917021d211f69e390da65a",
+   "mtime_ns": 1793960290852450500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/dark_core_halo.vmt": {
+   "size": 264,
+   "sha256": "933445738314976eb17a49d9594542cfb772c145b99e3c34b4e39d0945f7dc05",
+   "mtime_ns": 1793960290888932000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/dark_core_halo_model.vmt": {
+   "size": 191,
+   "sha256": "0c71a007a960d05d049e7e9930f06ed1dd49aaa3d41dd56e8865fdacb3982fd5",
+   "mtime_ns": 1793960290888932000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/directional_spray.vmt": {
+   "size": 270,
+   "sha256": "1f42f04fb64293faed64b8690b1fb8fe35feff3ba097e2a69e30421206f3e297",
+   "mtime_ns": 1793960290920440200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/directional_spray_model.vmt": {
+   "size": 194,
+   "sha256": "ae9073e96938fd77912394e20dd2cd11c311e59a40b5d616cef5b08252da8a26",
+   "mtime_ns": 1793960290920440200,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/double_impact.vmt": {
+   "size": 262,
+   "sha256": "10a16ef0f86fbee6831900c60480a4eb65053b7021c274f0ba6710fe59112582",
+   "mtime_ns": 1793960290953452500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/double_impact_model.vmt": {
+   "size": 190,
+   "sha256": "f32c33008f90a2cedb325b7b49e1dcfb5c482d37bf27e9d8b15bd5e447de6f07",
+   "mtime_ns": 1793960290953452500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/drip_runs.vmt": {
+   "size": 254,
+   "sha256": "48ca377b5c1f964b6ae0dcf9a5ddc68519cff80560a7d5253147316ae65b27d1",
+   "mtime_ns": 1793960290984452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/drip_runs_model.vmt": {
+   "size": 186,
+   "sha256": "2b0b7942adaa33b89d9c556d878c8e86a88bc3c46763c841d5341a491511b7bb",
+   "mtime_ns": 1793960290985452000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/drops_scatter.vmt": {
+   "size": 262,
+   "sha256": "1ca2881bf08f395a68d47d99500deb5c15da977f7123b04156532fa61bde0068",
+   "mtime_ns": 1793960291016451400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/drops_scatter_model.vmt": {
+   "size": 190,
+   "sha256": "d9a32488fc5d7fa74d206a15375426b4a06a9d0f60d49b3da0ee5abc033fdbfc",
+   "mtime_ns": 1793960291016451400,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/heavy_splash.vmt": {
+   "size": 260,
+   "sha256": "2a6afd30d906d36c6874920351b6d43ef547180449ede7e7d1ce437bb6831805",
+   "mtime_ns": 1793960291047460900,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/heavy_splash_model.vmt": {
+   "size": 189,
+   "sha256": "4d58b926c412cf4cd92fb691d6cfc173ffa2064a0e934b3384ede4288cfaf2dc",
+   "mtime_ns": 1793960291047460900,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/impact_dense.vmt": {
+   "size": 260,
+   "sha256": "0b28c04015d22ed149bb2cbfdb7fb2e7df1a9dda1bf50aab8d659cc4c4cc57aa",
+   "mtime_ns": 1793960291078524600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/impact_dense_model.vmt": {
+   "size": 189,
+   "sha256": "f6cb632ab0fa693a75a35707cf1d7b9fa2ac9e253cca5386ca1a0730e00bb189",
+   "mtime_ns": 1793960291078524600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/long_swipe.vmt": {
+   "size": 256,
+   "sha256": "01f2b8c242b642c44e408f5b82208eecb8ada45bc7cec61af3b69275427f2525",
+   "mtime_ns": 1793960291107532600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/long_swipe_model.vmt": {
+   "size": 187,
+   "sha256": "5a120bb30de4a37ae42d79a4f7c7e8ac37a25d04fb1788df8d1c112e5c60bf5d",
+   "mtime_ns": 1793960291107532600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/mist_cloud.vmt": {
+   "size": 256,
+   "sha256": "d2e15529f0040877cf37ee86f260b293998d186d765a875b3ed9dba62a1860fb",
+   "mtime_ns": 1793960291138302500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/mist_cloud_model.vmt": {
+   "size": 187,
+   "sha256": "96448c1d333e59afff0a17dd8d654445b62dd7067673838f41584d0852424ea8",
+   "mtime_ns": 1793960291138302500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/pooled_smear.vmt": {
+   "size": 260,
+   "sha256": "52a7cfa2af85fd2fb14e7e48d32a5b44e2afea577110df37861fab8c58b09735",
+   "mtime_ns": 1793960291167556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/pooled_smear_model.vmt": {
+   "size": 189,
+   "sha256": "fe902eeab6421e416c16777e822405b9a8bc90828bac3dc53a3177a55d9c0c32",
+   "mtime_ns": 1793960291167556600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/ring_spatter.vmt": {
+   "size": 260,
+   "sha256": "31ea1e001492f4f4cc760a8bad6457ad71b9d3fc7c3994c5d32683c6b10cdc03",
+   "mtime_ns": 1793960291199060000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/ring_spatter_model.vmt": {
+   "size": 189,
+   "sha256": "ea939230c08bce84383b1cd9a165c3fb2d1bd3dfc567a4cd1981635366d6cf81",
+   "mtime_ns": 1793960291199060000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/shotgun_clusters.vmt": {
+   "size": 268,
+   "sha256": "b648e002f9d20ada1e654cc54963c4bbd60b2e1d6d3bd48bdbe67447403a8dcb",
+   "mtime_ns": 1793960291230059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/shotgun_clusters_model.vmt": {
+   "size": 193,
+   "sha256": "7ae989465918724b163189373a6185cd98c65a1758624fca1eb4c6585cf47fa7",
+   "mtime_ns": 1793960291230059500,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/sparse_mist.vmt": {
+   "size": 258,
+   "sha256": "df09a930ef13fdcd5d27b5e1e81ef2b9991c8af9c59f1b7c1273023a9597b645",
+   "mtime_ns": 1793960291259568700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/sparse_mist_model.vmt": {
+   "size": 188,
+   "sha256": "c701608f0b4d06e902b28fcaaa289ee455f8ca61280e0c957546503a059f4b22",
+   "mtime_ns": 1793960291259568700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/spray_fan.vmt": {
+   "size": 254,
+   "sha256": "f31763e7ed430f3af4d4800793de4c4e68316f8ea900fa3b7055bc8371819a85",
+   "mtime_ns": 1793960291290075000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/spray_fan_model.vmt": {
+   "size": 186,
+   "sha256": "e43692a7bf8e2098f6dbf95b2f8048411dc9c16832b92d285cd633fc27438d5a",
+   "mtime_ns": 1793960291290075000,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/streak_web.vmt": {
+   "size": 256,
+   "sha256": "26e03614536ea7ba4bc8cfd8cbc981ab929957e35f36443ae14a85a3ae1d913f",
+   "mtime_ns": 1793960291320379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/streak_web_model.vmt": {
+   "size": 187,
+   "sha256": "4c1d223d003a7efcc9a6685814bfe652ba8f6a07517ddaf38e5d14d9dccf4071",
+   "mtime_ns": 1793960291320379600,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/torn_blotches.vmt": {
+   "size": 262,
+   "sha256": "72ceb7bd285e40d67aff4cf7cd99484881567791b22a5b19b46932b5eefa9642",
+   "mtime_ns": 1793960291350898700,
+   "stored": "plain"
+  },
+  "nlblood/materials/decals/bloodoverhaul/worker/torn_blotches_model.vmt": {
+   "size": 190,
+   "sha256": "1c69198cd6e331e9619cadade2ab1c9f454a172db9bca0e5e41643a9ec1b4317",
+   "mtime_ns": 1793960291350898700,
+   "stored": "plain"
+  },
+  "nlblood/materials/particle/nlfluid/drop.vtf": {
+   "size": 65616,
+   "sha256": "a9ccc9085aa84f67ae8c2e7cd9819837db2b18043c16f4acb498525958a382ef",
+   "mtime_ns": 1793960291360898500,
+   "stored": "xz",
+   "stored_size": 1476,
+   "stored_sha256": "20d421a03ce62eea41c36488748b639d67fe2e7dc417afc48edad9333e2ed176"
+  },
+  "nlblood/materials/particle/nlfluid/mist.vtf": {
+   "size": 16464,
+   "sha256": "95234f06304f6c21d1ce00f49b43632dc6ca855fb4942b165e0fe9a2b59f5720",
+   "mtime_ns": 1793960291363898400,
+   "stored": "xz",
+   "stored_size": 2388,
+   "stored_sha256": "bbba89696ab5b2ba647debb928d0e13b7f652a5598186e10030a0522a108b272"
+  }
+ }
+}

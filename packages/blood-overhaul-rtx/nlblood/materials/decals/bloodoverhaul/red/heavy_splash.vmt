@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/heavy_splash"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.050781"
+    "$color" "[1.000 1.000 1.000]"
+    "$modelmaterial" "decals/bloodoverhaul/red/heavy_splash_model"
+}

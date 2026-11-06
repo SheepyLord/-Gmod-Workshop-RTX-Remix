@@ -20,6 +20,8 @@ import shutil
 import subprocess
 import sys
 
+# Direct isolated invocation (R20's Python rule) still needs these repository-owned helpers.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from package_fixes import add_to_addons, collect, regular_file
 from package_runtime import (GMAPACK, ID, SEMVER, PackageError, check_private, copy_hashed, inside, inventory_paths,
                              is_link, path_problem, replace_folder, sha256_of, write_inventories)

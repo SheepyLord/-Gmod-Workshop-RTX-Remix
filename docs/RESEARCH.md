@@ -122,6 +122,63 @@
   Staging the unchanged indexed library under its D3D9 output directory resolved LoadLibrary error
   126. Its RemixCategories plugin was built explicitly. After refreshing generated RtxOptions.md,
   the complete dedicated suite passes 36/36 (`out/r20d/runtime-unit-pass.log`).
+## R20-C: owned blood assets and the stock dispatch (2026-11-06)
+
+- Multiplayer Lua visibility differs from SP: a package's private marker on disk was not visible
+  to the initial client check until the server sent it with AddCSLuaFile. The first legacy MP run
+  had one extra Utilities shortcut; the corrected vanilla MP run has blood=1, screen=1, shortcut=0.
+  Both full and independent parts explicitly deliver the marker/adapter.
+- Depot verification must use the PoC's own version. Its garrysmod.ver is 261026/2156; the field's
+  is 261104/1744. Cached PoC manifests 4001/7488132547021413298 and 4002/7341198560151933050 match
+  all 2,877 depot files (7,279,873,012 bytes); the newer field manifests gave version differences.
+
+- Both raw analytic VTF hashes were confirmed in the native draw cache: drop XXH64
+  `be79e0c9c18bc626`, mist `cac5d215d939df47`; their computed XXH3 counterparts are retained too.
+  Authored opacity material entries, BC7 albedos and a .05 scene-adaptive intrinsic fill restored
+  dark maroon tint and soft coverage (`out/r20c/integration-pbr-probe`), without a global option or
+  Lua hash registration. The two DDSs add only 4,768 compressed bytes. The new parts total
+  55,547,528 compressed bytes (52.97 MiB). All original analytic VTFs remain byte-identical.
+
+- The first locked sessions (`out/r20c/on-clean`, `off-clean`) confirmed NPC red/antlion/zombie
+  events and remote NPC dispatch. Engine amounts included 35 (pistol), 15/60 (other hits), and 50
+  for the NPC shooter's scripted bullet. Server ragdolls instead dispatched `Impact`, damage 2 or
+  536870914, surface property 39 (flesh), unit scale and a zero Normal; Start/Origin provide direction.
+  GetBloodColor may be nil. The adapter preserves native effects and infers ragdoll colour only
+  where needed. A missed pistol ray was corrected in the fixture by aiming at a chest bone closer up.
+- A material/particle sampler measured the original drops moving 20–110 units in .3 seconds and
+  hitting the floor. Missing landing stains were a world-validation bug: the PoC reports
+  `IsValid(game.GetWorld()) == false`. Using HitWorld fixed it: `integration-ragdolls` recorded
+  2,447 collisions, no trace misses and a strict 384-stain first epoch; explicit clearing then
+  admitted 200 more stains. The particle budget stayed at 512 live. Vanilla HUD diagnostics show
+  the procedural texture is a valid grey alpha bead and normal particle tints are red.
+- The early D runtime `ee3d239c...` rendered these particles as black silhouettes despite correct
+  texture dimensions/tint and an active generic observer. The separate Sprite comparison also
+  exposed opaque quads at its default mode. Final acceptance therefore runs without diagnostic
+  shaders (shared hashes affect runtime classification), against D's later runtime candidate.
+
+- The blood project's `tools/shapes.py` identifies eighteen `CODEX_UNITS` patterns separately from
+  `bo_blood*`, `bo_yblood*`, flesh and stains. `tools/publish.py:185-192` makes the old droplet from
+  `work/maps/bo_blood8/neutral.png`, so even the nominal companion output contains a derivative that
+  cannot ship here. `tools/prepare_blood.py` selects 109 source files and excludes 270 output files;
+  the committed audit retains paths/hashes. The new index has 36 pattern VTFs, 72 DDSs, two original
+  analytic particle VTFs and 72 hash overrides. Added LFS: 55,518,444 blood bytes + 24,316 screen
+  bytes = 55,542,760 compressed bytes (52.97 MiB). No source PNGs/reference images are imported.
+- [Valve's `util_shared.cpp:714-744,822-831`](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/shared/util_shared.cpp)
+  sends origin, incoming direction, blood colour and blood amount as `bloodimpact` CEffectData;
+  multiplayer multiplies amount by five before clamping it at 255. Amount is a proxy, not reliable
+  damage or exit-wound information. R20-C uses a square-root response around 12, capped .4–2.8, so
+  differing amounts retain differing spray sizes instead of all saturating at eight.
+- [Valve's callback](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/client/fx_blood.cpp)
+  selects red/green/yellow and episodic PCF systems, orienting them opposite the supplied direction.
+  [Facepunch documents](https://wiki.facepunch.com/gmod/util.Effect) `allowOverride=false` for
+  forwarding unchanged data to the engine. No PCF or stock material needs replacing.
+- `loader/client/bootstrap.lua:105-110` gives each verified file its own include environment.
+  The screen's packaged autorun adapter therefore also checks `DTScreen.Loaded`, covering a
+  server-delivered standalone before verified local loading. The early blood bootstrap retires
+  only legacy-owned callbacks/hooks and wrappers whose exact source is the old core. Other add-on
+  wrapper chains are preserved.
+- `tools/tests/test_render_guard_addons.py` inventories legacy exemptions. New screen/blood paths
+  intentionally receive none: R20-C uses ordinary particle/decal APIs for R20-D's generic policy.
 
 
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)

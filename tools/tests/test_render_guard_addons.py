@@ -87,7 +87,7 @@ class AddonRenderGuardTests(unittest.TestCase):
 class BundledMaterialPathTests(unittest.TestCase):
     def test_exemptions_are_exact_indexed_package_and_companion_virtual_paths(self):
         repo = render_guard.REPO
-        expected = set()
+        expected, ordinary = set(), set()
         for index in sorted((repo / "packages").glob("*/files.json")):
             for rel, entry in json.loads(index.read_text(encoding="utf-8"))["files"].items():
                 if "/lua/" not in rel or not rel.endswith(".lua") or "/glass-rewrite-remix/" in rel.lower():
@@ -97,15 +97,24 @@ class BundledMaterialPathTests(unittest.TestCase):
                 virtual = "lua/" + rel.split("/lua/", 1)[1].lower()
                 self.assertNotIn(virtual, expected, "bundled virtual path collision: " + rel)
                 expected.add(virtual)
+                # R20-C deliberately uses the ordinary rendering API, covered by R20-D's general
+                # compatibility work. Shipping a new part must not silently expand exemptions.
+                if index.parent.name in {"toolgun-screen", "blood-overhaul-rtx"}:
+                    ordinary.add(virtual)
         for root in (repo / "companion/nativeloader/lua", repo / "glass/addon/lua"):
             for source in root.rglob("*.lua"):
                 virtual = "lua/" + source.relative_to(root).as_posix().lower()
                 self.assertNotIn(virtual, expected, "bundled virtual path collision: " + str(source))
                 expected.add(virtual)
+                if source.name in {"!nativeloader_blood.lua", "nativeloader_blood_menu.lua", "blood_core.lua",
+                                   "blood_budget.lua", "blood_impacts.lua", "dts_package.lua", "dts_bootstrap.lua",
+                                   "nativeloader_bundled_panels.lua"}:
+                    ordinary.add(virtual)
         text = render_guard.GUARD.read_text(encoding="utf-8")
         block = re.search(r"for path in \(\[\[(.*?)\]\]\)", text, re.S)
         self.assertIsNotNone(block)
         actual = block.group(1).split()
         self.assertEqual(len(actual), len(set(actual)), "duplicate exemptions")
         self.assertGreater(len(expected), 300)
-        self.assertEqual(set(actual), expected)
+        self.assertTrue(ordinary.isdisjoint(actual), "new blood/screen paths must use ordinary rendering policy")
+        self.assertEqual(set(actual), expected - ordinary)
