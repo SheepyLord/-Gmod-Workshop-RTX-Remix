@@ -1,5 +1,19 @@
 # Research notes
 
+## R20-Q follow-up: packaged client bootstrap (2026-11-06)
+
+The live menu rejected `remix.performance_tier` in `nl::config::load` from
+`loader/client/module.cpp:188`. The packaged bootstrap was the R4 input: 456,192 bytes, SHA-256
+`de92d0261084c5d7dd7bdaca279a19012bf412fc00a1cbd31bfc385cff2104b4`.
+The current-source Release module is 460,800 bytes,
+`f23c711c4e6b3678661cbed45cf34d034d064b0444cd45c77a3e8b66851c508b`; its real menu reports
+`verified; waiting for the client realm` with the same current config. Main/pause warnings,
+the simulated older-loader companion reminder, and menu-cookie restart checks pass with it.
+`loader/client/bootstrap.lua:8` keeps normal single-player loading unchanged. The module was
+imported once through `inputs.py`; `out/r20q/afterfix/bridge-overlay.json`, `bridge-import.log`
+and `bridge-import-receipt.json` retain the comparison and import. Native trust/catalog policy
+and the corrected Remix runtime are unchanged by this artifact refresh.
+
 ## R20-Q: merged runtime readback versus the running sky (2026-11-06)
 
 - Current Steam build 26439081 uses depot manifests 4001/8532700529041238050 and

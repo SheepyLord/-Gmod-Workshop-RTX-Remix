@@ -8,6 +8,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Refresh the packaged native client bootstrap (R20-Q).** The old R4 DLL rejected current
+  performance-tier settings in the menu realm. The current-source build accepts the loader's
+  config and verified payload, preserving the existing source allowlist and catalog policy.
+
 - **Merged QA stopped at a native readback defect (R20-Q).** Unrelated animated sky settings
   repeatedly invalidate patch 0040's upscaling readiness. The refreshed stock PoC passes dupe,
   Physics Blood/combat and sky checks; full effect/hint/menu/screen/4K sign-off awaits the runtime follow-up

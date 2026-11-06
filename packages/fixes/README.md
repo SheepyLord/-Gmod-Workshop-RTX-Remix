@@ -6,6 +6,17 @@ source under `licenses/` are reserved documentation, excluded from the payload i
 builder includes the existing `licenses/oversized-skinning/` tree in the remixbinary add-on as its
 native source bundle, including the R6 change below.
 
+## R20-Q client-bootstrap refresh
+
+The stored `modules/gmsv_nlrtxclient_win64.dll` is rebuilt from the current
+[loader/client](../../loader/client/README.md) and `nl_core`, replacing the R4 build that rejected
+the current `remix.performance_tier` configuration key in the menu realm. The Release native
+checks and real menu/client lifecycle checks pass before its single final `inputs.py import`.
+The new input is 460,800 bytes, SHA-256
+`f23c711c4e6b3678661cbed45cf34d034d064b0444cd45c77a3e8b66851c508b`.
+Native source allowlisting and immutable catalog policy are unchanged. Rebuild/import this module
+when its linked config/catalog code changes; a local package build otherwise uses the stored input.
+
 ## R19 Lua inputs, ToPBR switches and the flashlight
 
 Imported 2026-11-05 with `inputs.py --file`; every other indexed input is unchanged
