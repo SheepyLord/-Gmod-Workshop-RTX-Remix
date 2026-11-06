@@ -1,65 +1,14 @@
 # Roadmap
 
-R20-Q's **requested follow-up checks are complete locally**: full live hint matrix, wall stains and
-upscaled live screen, controlled effect comparison, English/zh-CN main/pause reminders and saved
-choices, and four 3840x2160 old/current-package loads without reproduced device loss. The stale
-packaged client bootstrap is refreshed once. Colour/intensity parity of the stock ragdoll cloud,
-the historical 4K cause, Hotloader build notice and broader field parity remain review notes
-([follow-up report](handover/R20-Q-report.md#after-the-readiness-fix)).
-
-R20-Q **resumed after the readiness fix**, on combined runtime `00124bf6`. The complete live hint
-matrix passes with the sky running (3,140 steady ready samples, zero pending/wrong); the restored
-PoC stays on build 26439081. The follow-up screen, effects, menu and 4K checks are in progress
-([report, follow-up section](handover/R20-Q-report.md#after-the-readiness-fix)).
-
-R20-Q is **stopped at its runtime boundary**, with the PoC restored: patch 0040 invalidates live
-upscaling readiness on unrelated sky-option writes. Dupes, Physics Blood, combat/sky and two live
-off-state hint cases pass; full effect/hint/screen/menu/4K acceptance awaits the runtime follow-up.
-See [R20-Q-report.md](handover/R20-Q-report.md). The earlier start note below is retained as history.
-
-R20-Q integration QA is **in progress** on `r20-qa`: the merged loader 0.15.0/package,
-live hint readback and the 4K RTX comparison ([brief](handover/R20-Q-integration-qa.md)).
-The requested PoC vanilla refresh replaced exactly 46 manifest-reported outdated depot files
-from the verified field build 26439081; 2,877 stock files now match the current manifests.
-The pre-existing `autoexec.cfg` user-config difference remains separately reported.
-
-R20-A implementation is **complete locally** on `r20-menu` (loader 0.15.0), with translated update
-reminders and multiplayer entry warnings. Menu QA passes in English/Chinese at 900 and 2160;
-4K RTX map stability and the PoC's depot-manifest differences remain integration follow-ups.
-See [R20-A-report.md](handover/R20-A-report.md); the earlier start note below is retained as history.
-
-R20-A (items 46 and 50) is in progress on `r20-menu`: loader 0.15.0's published-release reminder,
-the older-loader companion fallback and the multiplayer entry warning. The release record stays
-at 0.14.0 until the next GitHub release exists. The R20 integration/release remains with the lead;
-see [the task brief](handover/R20-A-loader-menu.md).
-R20-E (item 45's native half) is **done** on `r20-native`: the atomic live
-publisher and `RemixConfig.GetUpscalingState()` report effective settings and device capabilities.
-Both builds, live edits through all supported backends, older-runtime nil fallback and exact PoC
-restoration pass; the module is imported once. Runtime 0040 awaits the combined R20 integration
-import ([report](handover/R20-E-report.md), [ADR 0123](decisions/0123-live-upscaling-readback.md)).
-R20-B (items 45 and 49) is **in progress** on `r20-qol`: the running 20-minute sky defaults and
-one-time preservation-aware migration are implemented, with the translated startup hint consumer
-and checkbox. The hint's required native live snapshot does not exist in the packaged API; its
-integration remains open under [ADR 0117](decisions/0117-startup-upscaling-hint-and-sky-defaults.md).
-
-R20-B's [handover](handover/R20-B-report.md) records item 49 done and the hint consumer validated:
-fresh/migrated 20-minute sky panels, the checkbox, simulated off/on states and once-per-process
-behavior across maps, plus waiting for the first-run guide to close. Release checks pass. Item 45's
-native live readback and actual off/on integration acceptance remain open; production hints stay silent.
-R20-D is **done** on `r20-render`: native camera closers and colored dupe previews, automatic
-NoSave Source effect categories, correct alpha canvases and premultiplied filters; runtime
-patches 0034/0035, one final DLL import, locked PoC comparisons and the Release gate
-([report](handover/R20-D-report.md)). The earlier in-progress entry below records its start.
-
-R20-D (items 44 and 51) is **in progress** on `r20-render`: camera alias bookkeeping,
-then automatic particle/decal compatibility and locked PoC comparisons ([brief](handover/R20-D-render-compat.md)).
-R20-C (item 48) is **done** on `r20-blood`: Dynamic Toolgun Screen and only the owned Blood Overhaul
-RTX patterns/PBR, settings in the RTX tab, bounded client blood impacts including ragdolls, and
-single-player/RTX-on/off/legacy-copy multiplayer evidence. Release checks pass (27 CTests,
-689 Python tests; two existing skips), matching PoC depots/restoration verified; integration and
-field release QA remain the manager's steps ([report](handover/R20-C-report.md),
-[brief](handover/R20-C-blood-and-toolgun.md), ADRs [0118](decisions/0118-bundled-toolgun-screen-and-owned-blood-patterns.md)
-and [0119](decisions/0119-client-blood-impacts-with-bounded-spatter.md)).
+R20 (the user's report of 2026-11-06, items 44-51) is **done** on `r20-int`, with loader **0.15.0**
+([plan](handover/R20-plan.md), [report](handover/R20-report.md)): particle and decal add-ons such as
+Physics Blood display correctly under RTX (session-only effect categories, runtime patches 0034 and
+0035); a startup hint when upscaling or frame generation is off, from the runtime's live state (patch
+0040, `RemixConfig.GetUpscalingState()`); the update reminder for outdated loaders (main menu from
+0.15.0, in game before it) and the warning before the server browser; Dynamic Toolgun Screen and the
+owned parts of Blood Overhaul RTX in the package with realistic blood impacts and their settings in the
+RTX tab; time passes by default with a 20-minute day; no `cam.End underflow` when saving a dupe.
+Integration QA in the refreshed PoC passes every item; release as v0.15.0 follows.
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader

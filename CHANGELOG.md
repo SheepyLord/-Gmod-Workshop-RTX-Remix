@@ -8,6 +8,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **The user's report of 2026-11-06, items 44-51; loader 0.15.0** ([plan](docs/handover/R20-plan.md),
+  [report](docs/handover/R20-report.md)): particle and decal add-ons such as Physics Blood display
+  correctly under RTX; a startup hint when upscaling or frame generation is off, from the runtime's live
+  state; a reminder to update an outdated loader (in the main menu from loader 0.15.0, in game before
+  it) and a warning before the server browser; Dynamic Toolgun Screen and Blood Overhaul RTX in the
+  package with realistic blood impacts and their settings in the RTX tab; time passes by default with a
+  20-minute day; no `cam.End underflow` when saving a dupe. The entries below give the details.
+
 - **Refresh the packaged native client bootstrap (R20-Q).** The old R4 DLL rejected current
   performance-tier settings in the menu realm. The current-source build accepts the loader's
   config and verified payload, preserving the existing source allowlist and catalog policy.
@@ -72,13 +80,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
   stock blood colours/custom schemes, amount controls and hard particle/stain budgets. Off restores
   the engine's original impact. No new networking, shared particle overrides or native trust changes.
 
-### R20
-
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main
   menu's project link, the Workshop page and the package indexes' origins points at the new name
-  (206 links). Runtime patch 0012's compiled-in fallback text keeps the old name until the runtime is
-  rebuilt; GitHub redirects it. Plan of the round: [R20-plan.md](docs/handover/R20-plan.md).
+  (206 links). Runtime patch 0034 also carries the renamed link of patch 0012's
+  compiled-in fallback text. Plan of the round: [R20-plan.md](docs/handover/R20-plan.md).
 
 ### R19
 
