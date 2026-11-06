@@ -1,12 +1,5 @@
 # Roadmap
 
-R20-T (the toolgun's nearly black display in the night field check) is **done** on `r20-toolgun`
-([brief](handover/R20-T-toolgun-night.md), [report](handover/R20-T-report.md)): disable depth on
-the companion's private HUD material so it always rasterizes after upscaling, even as the first HUD
-draw. Fixed noon/night 4K views pass with loaders 0.14.0 and 0.15.0; native RTX-off views and the
-older runtime comparison pass; the PoC is restored and the Release gate passes. Field retest and
-manager integration/publication follow.
-
 R20 (the user's report of 2026-11-06, items 44-51) is **done** on `r20-int`, with loader **0.15.0**
 ([plan](handover/R20-plan.md), [report](handover/R20-report.md)): particle and decal add-ons such as
 Physics Blood display correctly under RTX (session-only effect categories, runtime patches 0034 and
@@ -16,7 +9,9 @@ Physics Blood display correctly under RTX (session-only effect categories, runti
 owned parts of Blood Overhaul RTX in the package with realistic blood impacts and their settings in the
 RTX tab; time passes by default with a 20-minute day; no `cam.End underflow` when saving a dupe.
 Integration QA in the refreshed PoC passes every item. Released as **v0.15.0** (the GitHub release
-carries loader 0.15.0; the package's loader record names it).
+carries loader 0.15.0; the package's loader record names it). The field check of the published
+package ([R20-F](handover/R20-F-report.md)) found the toolgun's display nearly black at night, from a
+HUD material that wrote depth (older than R20); [R20-T](handover/R20-T-report.md) fixed it.
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader

@@ -8,12 +8,6 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
-- **A lit toolgun display at night (R20-T).** The companion's screen material now disables depth,
-  so its redraw always enters the raster HUD, including when it draws before other HUD elements.
-  It keeps the live screen's original colours and backlight instead of receiving world lighting
-  and DLSS smearing. No screen add-on or runtime binary is changed
-  ([report](docs/handover/R20-T-report.md), with 4K noon/night evidence).
-
 - **The user's report of 2026-11-06, items 44-51; loader 0.15.0** ([plan](docs/handover/R20-plan.md),
   [report](docs/handover/R20-report.md)): particle and decal add-ons such as Physics Blood display
   correctly under RTX; a startup hint when upscaling or frame generation is off, from the runtime's live
@@ -26,6 +20,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
   0.15.0, built by the loader workflow (run 42255754495); the package's record of the newest released
   loader (`companion/nativeloader/resource/loader-release.json`) now names it, so players on an older
   loader are reminded to update.
+- **A lit toolgun display at night (R20-T)**, found by the field check of the published package
+  ([R20-F](docs/handover/R20-F-report.md)): the companion's screen material now disables depth, so
+  its redraw always enters the raster HUD, including when it draws before other HUD elements. It
+  keeps the live screen's original colours and backlight instead of receiving world lighting and
+  DLSS smearing. The bug predates R20 (loader 0.14.0 shows it too). No screen add-on or runtime
+  binary is changed ([report](docs/handover/R20-T-report.md), with 4K noon/night evidence).
 
 - **Refresh the packaged native client bootstrap (R20-Q).** The old R4 DLL rejected current
   performance-tier settings in the menu realm. The current-source build accepts the loader's

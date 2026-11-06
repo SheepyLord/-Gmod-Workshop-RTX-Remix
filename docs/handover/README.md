@@ -3,7 +3,8 @@
 The latest round is R20, the user's report of 2026-11-06 (items 44-51), loader 0.15.0:
 [R20-report.md](R20-report.md), with its [plan](R20-plan.md) and the task reports
 ([A](R20-A-report.md), [B](R20-B-report.md), [C](R20-C-report.md), [D](R20-D-report.md),
-[E](R20-E-report.md), [Q](R20-Q-report.md)).
+[E](R20-E-report.md), [Q](R20-Q-report.md)), then the field check of the published package
+([R20-F](R20-F-report.md)) and the fix it led to, the toolgun display at night ([R20-T](R20-T-report.md)).
 
 R20-T diagnoses the night field finding and fixes the toolgun's HUD material depth state:
 [brief](R20-T-toolgun-night.md), [report](R20-T-report.md), branch `r20-toolgun`. The report keeps
