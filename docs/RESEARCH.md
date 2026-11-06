@@ -5800,3 +5800,36 @@ with the Release preset, MSVC 19.44.35228.0, Ninja 1.12.1 (VS 2022 Build Tools):
   glass module 443 (`glass/native`, `third_party/gmod`, `third_party/jolt`, `third_party/lzma`) besides
   the generated headers in the build folder (`bootstrap_data.h`, Jolt's precompiled header). `ninja -n
   <target>` prints `ninja: no work to do.` when the target is current.
+
+## After R20: git pathspecs that leave out the part folders' READMEs (2026-11-06)
+
+Measured for [ADR 0127](decisions/0127-part-folder-readmes-keep-the-release.md) with git 2.56.0.windows.1,
+in throwaway repositories under `out\tmp` (a fresh `git init` here sets `core.ignorecase=true`), with the
+pathspecs `packages ':(exclude)packages/README.md' ':(exclude,glob)packages/*/README.md'`:
+
+- **`git diff --quiet <base> HEAD`** exits 0 after a commit that changes, adds or deletes only
+  `packages/README.md` or `packages/p/README.md`, or adds a folder `packages/n/` holding only a
+  `README.md`; it exits 1 for `packages/p/lua/README.md`, `packages/p/sub/q/README.md`,
+  `packages/p/licenses/README.md`, `packages/p/LICENSE`, `packages/p/files.json`, and for
+  `packages/p/README.md` together with `packages/p/a.lua`.
+- **The match is case-sensitive although `core.ignorecase` is true**: replacing `packages/p/README.md`
+  by `readme.md` shows `A packages/p/readme.md` (exit 1).
+- **`git status --porcelain`** prints nothing for an untracked `packages/README.md`, `packages/p/README.md`
+  or new folder holding only a `README.md`; a new folder with any other file, or with only a deeper
+  README, prints collapsed (`?? packages/n/`, `?? packages/p/lua/`).
+- **Without `glob` magic `*` crosses `/`**: in this repository (1,727 tracked files under `packages/`)
+  `:(exclude)packages/*/README.md` leaves out 16 files, the `glob` form exactly 5: `packages/README.md`
+  and the READMEs of `blood-overhaul-rtx`, `fixes`, `glass` and `toolgun-screen`.
+- **Pathspec variables**: with `GIT_LITERAL_PATHSPECS=1` the exclusions are literal names that match
+  nothing, so a README-only commit exits 1. `GIT_ICASE_PATHSPECS=1` keeps the README case at 0 but also
+  leaves out `packages/p/readme.md` (exit 0). `GIT_GLOB_PATHSPECS=1` or `GIT_NOGLOB_PATHSPECS=1` alone
+  change nothing here (the explicit magic decides); both at once are fatal (exit 128: "global 'glob' and
+  'noglob' pathspec settings are incompatible"), which `same_inputs()` reads as "git cannot tell".
+- **What reads `packages/` directly**: `tools/workshop.json` takes part licences (`fixes`,
+  `model-hotloader`, `character-motion-importer`, `toolgun-screen` and `blood-overhaul-rtx` `LICENSE`)
+  and folders below `licenses/` (`fixes/licenses/oversized-skinning`, `fixes/licenses/rtxdebug`,
+  `model-hotloader/licenses`, two `CREDITS.txt`), all through `--add-to-addon`
+  (`package_fixes.add_to_addons`, which `package_content.py` shares), whose folders keep their Markdown
+  (`collect(..., docs=True)`); `companion_i18n.extract()` walks `packages/` for
+  `.lua` files only. Everything else comes from `out/inputs/<part>/`, which `inputs.unpack` writes from
+  each part's index alone.

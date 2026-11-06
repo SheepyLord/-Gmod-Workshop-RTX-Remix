@@ -105,6 +105,8 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
    `third_party/gmod/LICENSE` (shipped as notices), `.gitattributes` (it sets the bytes a checkout
    gives `/LICENSE` and the guard) and `workshop.json`. Before review R4 the four after `gmapack.py`
    were missing, and a change to them alone (`.gitattributes`, 2026-10-31) was never published.
+   The part folders' own READMEs (`packages/README.md`, `packages/<part>/README.md`; see step 3a) do
+   not count: they would not go into the item.
    `--dry-run` and `--allow-dirty` skip this check.
 2. **Lock.** Its state lives in the **main checkout's** `out\workshop`, whichever worktree runs it, so
    every worktree shares one record of what the item holds. Only one publish runs at a time: it holds
@@ -125,9 +127,13 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
 
    If the fingerprint matches the last upload's, it stops: **unchanged inputs**. This is the usual
    result of a commit that touches only docs or loader code; the item does not contain `winmm.dll`.
+   The part folders' own READMEs count here, unlike in steps 1 and 3a: the fingerprint only decides
+   whether the run looks further, and after a change to them alone the next steps upload nothing
+   (3a while the item holds a release, 5 for a development build, whose content is the same).
 3a. **A release on the item** (review R19, M1). When `published.json` holds a release built on GitHub
    (`source: github`, written by `--from-ci`) whose commit, `commit_sha`, has the packaging inputs `HEAD`
-   has (`git diff --quiet <commit_sha> HEAD -- <REPO_INPUTS>`), with the configuration this run uses
+   has (`git diff --quiet <commit_sha> HEAD -- <SHIPPED_INPUTS>`: `REPO_INPUTS` and
+   `':(exclude)packages/README.md' ':(exclude,glob)packages/*/README.md'`), with the configuration this run uses
    (`tools/workshop.json` of that commit), and no packaging input has an uncommitted change, it stops
    too: **unchanged inputs**. It records the fingerprint, so the next runs stop at step 3, and the
    release stays until an input changes; then the development build is uploaded as before (steps 4 to
@@ -135,6 +141,17 @@ Needs `gh` signed in with read access to this repository, and Steam (as below).
    from the stored binaries, found a digest other than the release's (its binaries were built on
    GitHub) and uploaded that development build over the release. A record without `commit_sha` (one
    written before R19), a commit this clone does not have, and `--force` skip this step.
+
+   **The part folders' own READMEs** ([ADR 0127](../docs/decisions/0127-part-folder-readmes-keep-the-release.md);
+   `NOT_IN_PACKAGE`) are left out of both comparisons, committed and uncommitted. `packages/README.md`
+   and each `packages/<part>/README.md` are about the parts, not in them: `tools/inputs.py` keeps that
+   name for the part folder itself (`PART_DOCS`), so no part has a file there and `unpack` never writes
+   one to `out\inputs`, and neither a packager nor `workshop.json` reads them. Until then a commit of
+   only those ended the hold, and the next commit, merge or push of `main` uploaded a development build
+   over the release. Git's glob magic keeps `*` in one folder, so a `README.md` deeper in a part, which
+   ships with its add-on, still counts, as do a part's `LICENSE`, `COPYING`, `files.json` and
+   `licenses/` (packagers ship them with `--add-to-addon`); the match is case-sensitive, so a part's
+   `readme.md` counts too.
 4. **Build.** It unpacks the `packages/` parts the config reads into `out\inputs\`
    ([`inputs.py`](inputs.py.md): every file checked against its index, its recorded time restored),
    builds the parts and combines them with [`package_workshop.py`](package_workshop.py.md) into
@@ -218,7 +235,11 @@ Each hook runs `publish_workshop.py --background --commit <commit> --reason "<wh
 
 **Git's hook environment is ignored.** Git runs a hook with the hooked repository in `GIT_DIR`,
 `GIT_INDEX_FILE` and the like. The script removes those variables (`GIT_LOCAL_ENV`, the names `git
-rev-parse --local-env-vars` lists) before any git call, so its git calls read this repository.
+rev-parse --local-env-vars` lists) before any git call, so its git calls read this repository. It
+also removes the ones that change how git reads pathspecs (`GIT_PATHSPEC_ENV`: `GIT_LITERAL_PATHSPECS`,
+`GIT_GLOB_PATHSPECS`, `GIT_NOGLOB_PATHSPECS`, `GIT_ICASE_PATHSPECS`): step 3a's exclusions need git's
+own rules. With literal pathspecs they would name no file, and a part folder's README would end the
+hold again; with case-insensitive ones a part's `readme.md` would not count.
 
 **The add-ons' repositories** carried hooks of this script until ADR 0033 (ADR 0024: their commits
 rebuilt the parts and uploaded). They were removed on 2026-10-30, from the fixes fork, Model

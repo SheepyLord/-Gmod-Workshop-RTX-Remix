@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -32,6 +33,27 @@ def write_package(folder: Path, manifest: dict, files: dict) -> Path:
     (folder / 'native').mkdir(parents=True, exist_ok=True)
     (folder / 'native' / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
     return folder
+
+
+def files_packagers_read() -> list[str]:
+    """The repository files the packagers (and companion_i18n.py) import from tools/ or name
+    (os.path.join(REPO, ...), REPO / ...), as repository paths (review R4)."""
+    read = set()
+    for builder in [*pub.BUILDERS.values(), 'tools/package_workshop.py', 'tools/companion_i18n.py']:
+        text = (REPO / builder).read_text(encoding='utf-8')
+        for module in re.findall(r'^(?:import|from)\s+(\w+)', text, re.M):
+            if (TOOLS / f'{module}.py').is_file():
+                read.add(f'tools/{module}.py')
+        for parts in re.findall(r"os\.path\.join\(REPO((?:,\s*'[^']+')+)", text):
+            read.add('/'.join(re.findall(r"'([^']+)'", parts)))
+        for parts in re.findall(r"REPO((?:\s*/\s*'[^']+')+)", text):
+            read.add('/'.join(re.findall(r"'([^']+)'", parts)))
+    return sorted(rel for rel in read if not rel.startswith('out/') and (REPO / rel).is_file())
+
+
+def part_folder_readme(rel: str) -> bool:
+    """What NOT_IN_PACKAGE leaves out of the comparisons: packages/README.md and packages/<part>/README.md."""
+    return re.fullmatch(r'packages/(?:[^/]+/)?README\.md', rel) is not None
 
 
 class PublisherPreflightTests(unittest.TestCase):
@@ -556,6 +578,57 @@ class ReleaseThenHookTests(GitHubFakes, unittest.TestCase):
         self.assertEqual(self.hook()['result'], 'unchanged-inputs')
         self.assertEqual(len(self.uploads), 2)
 
+    def test_the_release_stays_after_a_commit_of_only_the_part_folders_readmes(self):
+        # ADR 0127: packages/README.md and packages/<part>/README.md are about the parts, not in them, and no
+        # packager reads them. They counted as packaging inputs like every file in packages/, so a commit of
+        # only those ended the hold, and the next commit, merge or push of main uploaded a development build
+        # over the release.
+        self.commit("the parts' notes", {'packages/README.md': 'the parts\n', 'packages/part/README.md': 'about it\n'})
+        self.assertTrue(pub.same_inputs(self.release, self.repo))
+        self.assert_the_release_stays(self.hook())
+        # An uncommitted edit of them stops no hook's run either: it would not go into the item.
+        (self.repo / 'packages' / 'part' / 'README.md').write_text('more about it\n', encoding='utf-8')
+        self.logs.clear()
+        self.assert_the_release_stays(self.hook())
+
+    def test_any_other_change_in_packages_still_ends_the_hold(self):
+        # Only those READMEs: a README.md deeper in a part ships with its add-on, and a part's LICENSE,
+        # licenses/, index and its other files at the top go into the package too.
+        for rel in ('packages/part/lua/README.md', 'packages/part/licenses/README.md', 'packages/part/LICENSE',
+                    'packages/part/files.json', 'packages/part/README.txt'):
+            with self.subTest(rel=rel):
+                self.git('reset', '-q', '--hard', self.release)
+                self.commit(f'{rel} beside the notes', {'packages/part/README.md': 'about it\n', rel: 'shipped\n'})
+                self.assertFalse(pub.same_inputs(self.release, self.repo))
+        result = self.hook()  # the last of them: the development build is uploaded as before
+        self.assertEqual(result['result'], 'uploaded')
+        self.assertEqual(len(self.uploads), 2)
+        self.assertNotIn('source', self.record())
+        # An uncommitted change to a file that ships still stops a hook's run before anything is built.
+        deeper = self.repo / 'packages' / 'part' / 'lua' / 'README.md'
+        deeper.parent.mkdir(parents=True, exist_ok=True)
+        deeper.write_text('changed\n', encoding='utf-8')
+        with self.assertRaisesRegex(pub.PublishError, 'uncommitted changes'):
+            self.hook()
+        self.assertEqual(len(self.uploads), 2)
+
+    def test_git_reads_the_comparisons_pathspecs_by_its_own_rules(self):
+        # NOT_IN_PACKAGE needs git's default pathspec rules, so the script removes the variables that change
+        # them (GIT_PATHSPEC_ENV): with GIT_LITERAL_PATHSPECS the exclusions name no file and a commit of a
+        # part folder's README ends the hold again; with GIT_ICASE_PATHSPECS a part's readme.md, which may
+        # ship, would not count.
+        probe = ('import os, sys, publish_workshop as p; from pathlib import Path; '
+                 'print(p.same_inputs(sys.argv[1], Path(sys.argv[2])), [n for n in p.GIT_PATHSPEC_ENV if n in os.environ])')
+        env = dict(os.environ, PYTHONPATH=str(TOOLS), **{name: '1' for name in pub.GIT_PATHSPEC_ENV})
+        for rel, same in (('packages/part/README.md', True), ('packages/part/readme.md', False)):
+            with self.subTest(rel=rel):
+                self.git('reset', '-q', '--hard', self.release)
+                self.commit(f'{rel} alone', {rel: 'about it\n'})
+                done = subprocess.run([sys.executable, '-c', probe, self.release, str(self.repo)], cwd=self.repo, env=env,
+                                      capture_output=True, text=True, encoding='utf-8')
+                self.assertEqual(done.stdout.strip(), f'{same} []', done.stderr)
+                self.assertIs(pub.same_inputs(self.release, self.repo), same)
+
     def test_only_a_release_record_naming_its_full_commit_and_this_configuration_counts(self):
         # A record from before R19 names the commit only as "<short sha> <subject>".
         record = self.record()
@@ -665,21 +738,35 @@ class HookTests(unittest.TestCase):
         # sets the bytes a checkout gives /LICENSE and the guard (2026-10-31).
         def covered(rel):
             return any(rel == p or rel.startswith(p + '/') for p in pub.REPO_INPUTS)
-        read = set()
-        for builder in [*pub.BUILDERS.values(), 'tools/package_workshop.py', 'tools/companion_i18n.py']:
-            text = (REPO / builder).read_text(encoding='utf-8')
-            for module in re.findall(r'^(?:import|from)\s+(\w+)', text, re.M):
-                if (TOOLS / f'{module}.py').is_file():
-                    read.add(f'tools/{module}.py')
-            for parts in re.findall(r"os\.path\.join\(REPO((?:,\s*'[^']+')+)", text):
-                read.add('/'.join(re.findall(r"'([^']+)'", parts)))
-            for parts in re.findall(r"REPO((?:\s*/\s*'[^']+')+)", text):
-                read.add('/'.join(re.findall(r"'([^']+)'", parts)))
-        files = sorted(rel for rel in read if not rel.startswith('out/') and (REPO / rel).is_file())
+        files = files_packagers_read()
         for rel in ('tools/companion_i18n.py', 'LICENSE', 'third_party/gmod/LICENSE'):
             self.assertIn(rel, files)  # what the review found missing is found by this scan
         self.assertEqual([rel for rel in files if not covered(rel)], [])
         self.assertIn('.gitattributes', pub.REPO_INPUTS)
+
+    def test_no_packager_reads_a_part_folders_readme(self):
+        # ADR 0127: the release hold and the check for uncommitted inputs pass over packages/README.md and
+        # packages/<part>/README.md (NOT_IN_PACKAGE), and over nothing else in this repository. That is
+        # right only while nothing that builds the package reads them: no part's index lists a README.md at
+        # its root (tools/inputs.py keeps the name for the folder, so unpack never writes one to
+        # out/inputs/<part>/), no part in workshop.json names one or a folder that holds one, and no
+        # packager names one.
+        import inputs  # tools/inputs.py
+        self.assertIn('README.md', inputs.PART_DOCS)
+        def listed(*specs):
+            return {rel for rel in pub.git('ls-files', '-z', '--', *specs).split('\0') if rel}
+        left_out = listed(*pub.REPO_INPUTS) - listed(*pub.SHIPPED_INPUTS)
+        self.assertEqual(sorted(left_out), sorted(rel for rel in listed('packages') if part_folder_readme(rel)))
+        self.assertIn('packages/README.md', left_out)
+        self.assertNotIn('packages/fixes/garrysmod/garrysmod/addons/niknaks/README.md', left_out)  # it ships
+        for index in sorted((REPO / 'packages').glob('*/files.json')):
+            self.assertNotIn('README.md', json.loads(index.read_text(encoding='utf-8'))['files'], index)
+        for part in pub.load_config(pub.CONFIG)['parts']:
+            for text in [part.get('package', ''), *part.get('args', [])]:
+                rel = posixpath.normpath(str(text).replace('\\', '/'))
+                self.assertFalse(part_folder_readme(rel) or re.fullmatch(r'packages(?:/[^/]+)?', rel),
+                                 f'part {part.get("name")}: {text}')
+        self.assertEqual([rel for rel in files_packagers_read() if part_folder_readme(rel)], [])
 
     def test_the_package_workflow_starts_only_by_hand(self):
         # ADR 0108: the package workflow (the large .gma and every native binary) runs only when a person
