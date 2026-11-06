@@ -15,6 +15,13 @@ in HUDPaint into a render target, so that layer never reached the screen and the
 Remix's temporal smear. The 2D layer has no depth test; the screen sits in its bezel, and parts of the
 model in front of it (none on the stock toolgun) would be drawn over.
 
+R20-T also sets `$ignorez` on the private material: its opaque UnlitGeneric defaults otherwise write
+depth, so Remix's orthographic-UI test does not recognize it when it is the first HUD draw. The screen
+then enters the lit, temporally reconstructed scene and becomes nearly black at night; an earlier
+ordinary HUD draw or a screen preview can accidentally hide the defect. Disabling depth on this HUD
+material makes the same live texture rasterize after upscaling regardless of hook order. Screen art,
+backlight, colours, and the original model/add-on materials remain the original renderer's choices.
+
 It does not stop animation, edit model materials, change upscaler/frame-generation preferences, write
 Remix categories or modify Steam files. Unsupported models, non-main views and a screen behind the
 camera keep their original rendering. One error disables the redraw until its ConVar is changed or the

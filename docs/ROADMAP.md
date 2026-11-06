@@ -1,5 +1,9 @@
 # Roadmap
 
+R20-T (the toolgun's nearly black display in the night field check) is **in progress** on
+`r20-toolgun`: isolate the live render target, HUD redraw and inspect overlay under fixed noon/night
+lighting in the locked PoC ([brief](handover/R20-T-toolgun-night.md)).
+
 R20 (the user's report of 2026-11-06, items 44-51) is **done** on `r20-int`, with loader **0.15.0**
 ([plan](handover/R20-plan.md), [report](handover/R20-report.md)): particle and decal add-ons such as
 Physics Blood display correctly under RTX (session-only effect categories, runtime patches 0034 and

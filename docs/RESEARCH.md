@@ -5734,3 +5734,29 @@ live draws with eight identities and 300 synthetic draws without budget exhausti
 colored JPEG is in out/r20d/21-preview; entity submaterials never change. Only the representative
 map is now looked up, avoiding unused skins. The remaining multi-material preview approximation
 is documented, rather than altering game shaders or persistent materials.
+
+## R20-T: a toolgun HUD draw can enter the lit scene (2026-11-06)
+
+- `companion/nativeloader/lua/autorun/client/nativeloader_toolgun.lua:9` created an opaque
+  UnlitGeneric material with only `$nocull` (live `$flags=8192`), leaving depth enabled. Calling
+  `surface.DrawPoly` in HUDPaint is not by itself enough to make this the raster HUD. The packaged
+  runtime source, `src/d3d9/d3d9_rtx.cpp:574-583` (R20 build `3cb32fb8`), recognizes orthographic
+  draws as UI only when Z writes are off; its post-injection path at lines 621-636 rasterizes later
+  draws. Thus earlier HUD elements can hide the material's mistake. This predates patch 0034's
+  offscreen-target early return; no runtime change is required for the HUD material to comply.
+- In the locked PoC, loader 0.15.0 and the main package reproduce the nearly black display at
+  **3840x2160**, fixed **21:00**, actual ready **DLSS/DLSS-G 1/1**. The same texture in the
+  add-on's ordinary corner preview is bright. Enabling that preview also immediately makes the
+  companion's toolgun redraw bright/sharp; disabling it returns the dim, temporally smeared screen.
+  Evidence: `out/r20t/depth/loader015-4k/game/shot-03-before_night_inspect.png` through
+  `shot-05-night_disable_mirror.png`. Capture/draw counters continued to advance in both states.
+- Substituting an otherwise identical private material created with `$ignorez=1` fixes the
+  screen without the preview, including with the add-on's 3D inspect overlay disabled:
+  `shot-07-night_hud_ignorez.png` and `shot-08-night_hud_ignorez_no_inspect_overlay.png` beside
+  those captures. The same controlled comparison passes with the actual release loader 0.14.0
+  (`out/r20t/depth/loader014-4k/`). A magenta polygon probe in `out/r20t/before/` independently
+  confirms the projected screen geometry is in the correct place; the RT content is not dark.
+- `$ignorez` is Source's material flag bit 15 (32768), alongside `$nocull` bit 13 (8192):
+  [Valve's IMaterial flags](https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/public/materialsystem/imaterial.h).
+  The fix remains in this private HUD material, preserving the screen renderer's pixels and the
+  existing 2D redraw design. No persistent category, exposure adjustment or native binary changes.

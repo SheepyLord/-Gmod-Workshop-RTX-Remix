@@ -8,6 +8,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **A lit toolgun display at night (R20-T).** The companion's screen material now disables depth,
+  so its redraw always enters the raster HUD, including when it draws before other HUD elements.
+  It keeps the live screen's original colours and backlight instead of receiving world lighting
+  and DLSS smearing. No screen add-on or runtime binary is changed.
+
 - **The user's report of 2026-11-06, items 44-51; loader 0.15.0** ([plan](docs/handover/R20-plan.md),
   [report](docs/handover/R20-report.md)): particle and decal add-ons such as Physics Blood display
   correctly under RTX; a startup hint when upscaling or frame generation is off, from the runtime's live

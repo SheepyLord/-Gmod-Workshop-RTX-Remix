@@ -8,3 +8,8 @@ unsupported views, a screen behind the camera, stale frames, resize, and that on
 reported once and recovers when the ConVar is toggled. The mocked `render` offers no render targets,
 cameras, overrides or depth, so any such call fails the run: the redraw must stay a 2D HUD draw. Writes
 no files, launches no game and sends no network requests. Exit 0/PASS or nonzero/assertion failure.
+
+`hud_first` / `hud_after_ui` model the runtime's orthographic UI injection boundary. Before injection,
+an opaque depth-writing material enters the lit scene; after injection, the same draw accidentally
+rasterizes. Both orders must draw every screen triangle in the raster HUD. This is a CPU contract
+fixture, supplemented by R20-T's actual 4K noon/night and HUD-order captures; it does not simulate a GPU.

@@ -7,8 +7,11 @@ local captured, cached, drawing, failed = nil, nil, false, false
 local stats = {captures = 0, draws = 0}
 local white = "models/debug/debugwhite"
 local screen = CreateMaterial("nativeloader_toolgun_screen", "UnlitGeneric", {
-    ["$basetexture"] = white, ["$nocull"] = "1",
+    ["$basetexture"] = white, ["$nocull"] = "1", ["$ignorez"] = "1",
 })
+-- A HUD material must not write depth. Without ignorez, an opaque first HUD draw still writes Z:
+-- Remix classifies it as scene geometry instead of injecting RTX and rasterizing the HUD. Another
+-- HUD element can hide that mistake by triggering injection first (R20-T's corner preview did).
 
 local function screen_material(name)
     name = string.lower(name):gsub("%.vmt$", "")

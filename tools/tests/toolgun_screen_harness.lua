@@ -3,6 +3,8 @@ local name = scenario
 local hooks, commands, callbacks = {}, {}, {}
 local active, frame, nowWidth, nowHeight = true, 1, 1280, 720
 local calls, polys, warnings = {}, {}, 0
+local currentMaterial, injected = nil, scenario ~= "hud_first"
+local scenePolys, hudPolys = 0, 0
 local function record(name) calls[name] = (calls[name] or 0) + 1 end
 local vector = {}; vector.__index = vector
 function Vector(x,y,z) return setmetatable({x=x,y=y,z=z},vector) end
@@ -24,7 +26,9 @@ local texture = {GetName=function() return "DTScreen_Screen512" end,IsError=func
 local originalWrites = 0
 local original = {GetTexture=function() return texture end,SetTexture=function() originalWrites=originalWrites+1 end}
 function Material() return original end
-function CreateMaterial(name) return {SetTexture=function() record("private_texture") end} end
+function CreateMaterial(name, shader, params)
+    return {shader=shader,params=params,SetTexture=function() record("private_texture") end}
+end
 function CreateClientConVar() return {GetBool=function() return active end} end
 cvars={AddChangeCallback=function(name,fn) callbacks[name]=fn end}
 concommand={Add=function(name,fn) commands[name]=fn end}
@@ -66,10 +70,15 @@ render={
     GetViewSetup=function() return {viewid=0,origin=origin,angles=angles,aspect=16/9,fovviewmodel=90} end,
 }
 surface={
-    SetMaterial=function() record("material") end,
+    SetMaterial=function(material) currentMaterial=material record("material") end,
     SetDrawColor=function() end,
     DrawPoly=function(vertices)
         if scenario=="poly_failure" then error("injected polygon failure") end
+        -- Model the runtime's orthographic UI boundary: a depth-writing opaque draw before the
+        -- first UI draw goes into the scene; once injected, later HUD draws rasterize anyway.
+        -- This caught R20-T even though capture/draw counts and projection tests all passed.
+        if currentMaterial.params["$ignorez"] == "1" then injected=true end
+        if injected then hudPolys=hudPolys+1 else scenePolys=scenePolys+1 end
         assert(#vertices==3,"Triangles only")
         for _, v in ipairs(vertices) do assert(v.x and v.y and v.u and v.v,"Vertex without position or UV") end
         polys[#polys+1]=vertices
@@ -100,6 +109,9 @@ elseif scenario=="poly_failure" then
     assert(#polys==128,"Re-enabling did not draw again")
 else
     assert(#polys==128,"Screen was not drawn once as 2 x 64 projected triangles")
+    if scenario=="hud_first" or scenario=="hud_after_ui" then
+        assert(scenePolys==0 and hudPolys==128,"Screen entered the lit scene instead of the raster HUD")
+    end
     local x, y = expected(1280, 720)
     assert(math.abs(polys[1][1].x-x)<0.001 and math.abs(polys[1][1].y-y)<0.001,"Projection incorrect")
     assert(math.abs(polys[1][1].u-0.2)<0.001 and math.abs(polys[1][1].v-0.3)<0.001,"UV not carried")
