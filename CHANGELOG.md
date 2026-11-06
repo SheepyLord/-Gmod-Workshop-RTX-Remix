@@ -8,6 +8,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Native effect rendering:** offscreen alpha canvases keep their native blend/write operations,
+  premultiplied transmission filters no longer draw opaque black backgrounds, and changing effect
+  alpha avoids static opacity micromaps. Camera tracking distinguishes native 2D, 3D, 3D2D and
+  orthographic scopes ([ADR 0122](docs/decisions/0122-raster-canvases-keep-their-native-draws.md));
+  the rebuilt runtime also corrects the compiled project fallback link.
+
 - **Automatic Source effect categories:** particles, decals and blended effect meshes receive
   session-only Remix tags from their ordinary Lua APIs and already drawn material metadata,
   preserving effect color/opacity without rewriting saved categories

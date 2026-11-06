@@ -5491,3 +5491,29 @@ The verified review is [R19-review.md](handover/R19-review.md); each part's repo
   The fork's `.gitignore` ignores `tests/rtx/unit/*` except a few names: new test sources need `git add -f`.
 - **GitHub Actions storage.** About 1.2 GB of the 2 GB was in use with one package artifact (about 0.84 GB),
   so the package workflow keeps deleting the older package before uploading its own (review F-07).
+
+## R20-D native follow-up and completed canvas/filter measurements (2026-11-06)
+
+The initial camera-family assumption is corrected by native evidence in
+[ADR 0122](decisions/0122-raster-canvases-keep-their-native-draws.md). End and End3D are separate
+C functions sharing the 3D counter; End2D, End3D2D and EndOrthoView have their own counters.
+Generic Start tests the type string's first byte. Native function dossiers, addresses, client.dll
+SHA-256 and limitations are retained in the [report](handover/R20-D-report.md) and its exported
+REA bundle under out/r20d. The guard now uses mode-specific cleanup, including generic 2D starts.
+
+Live DX7 materials report UnlitGeneric_DX6 and individual boolean GetInt queries return nil;
+packed $flags supplies vertex color 16, vertex alpha 32, additive 128, decal 65536 and translucent
+2097152. The observer normalizes the fallback suffix and reads those bits. In 10-comparison,
+legacyEffectTexturesForSession changed from empty to populated without material mutation.
+
+Physics Blood cl_render.lua:126-136 uses the premultiplied transmission pair DST_COLOR /
+ONE_MINUS_SRC_ALPHA. The old InstanceManager translation fell through to blendEnabled=false,
+explaining black rectangular backgrounds despite corrected colors. Patch 0035 selects a private
+legacy blend value 11 and evaluates clamp(alpha - luminance(color), 0, 1) in the shared evaluator.
+The 11-filter capture removes the rectangles. Its float-canvas alpha result is 205, equal to native;
+10-comparison/before returned 255. test_gmod_effects independently compares sixteen coverage /
+transmission combinations to the native destination factor; authored MDL blend values stay 0..10.
+
+The PoC matches its original cached depot manifests exactly: 7,279,873,012 verified bytes and zero
+missing/size/hash/reparse/unverified entries (10-comparison/stock-verification.json). It predates
+the field's current manifests, whose comparison yields 46 differences. No depot file was rewritten.

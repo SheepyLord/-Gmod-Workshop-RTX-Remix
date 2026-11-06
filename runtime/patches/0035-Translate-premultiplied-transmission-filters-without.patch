@@ -1,0 +1,173 @@
+From 1d53ee00f9e2d00ed4d7e40c44a372dc99581aae Mon Sep 17 00:00:00 2001
+From: SheepyLord <37598021+SheepyLord@users.noreply.github.com>
+Date: Fri, 6 Nov 2026 04:47:02 -0700
+Subject: [PATCH] Translate premultiplied transmission filters without opaque
+ backgrounds
+
+Co-Authored-By: Codex (gpt-6.1-sol) <noreply@openai.com>
+---
+ src/dxvk/meson.build                             |  2 ++
+ src/dxvk/rtx_render/rtx_instance_manager.cpp     |  5 +++++
+ .../rtx_render/rtx_opacity_micromap_manager.cpp  |  1 +
+ src/dxvk/rtx_render/rtx_types.cpp                |  3 ++-
+ .../shaders/rtx/concept/surface/surface_shared.h |  3 +++
+ .../opaque_surface_material_blending.slangh      |  5 +++++
+ src/dxvk/shaders/rtx/utility/legacy_blending.h   | 11 +++++++++++
+ tests/rtx/unit/test_gmod_effects.cpp             | 16 ++++++++++++++++
+ 8 files changed, 45 insertions(+), 1 deletion(-)
+ create mode 100644 src/dxvk/shaders/rtx/utility/legacy_blending.h
+
+diff --git a/src/dxvk/meson.build b/src/dxvk/meson.build
+index 3b07badb..762704e5 100644
+--- a/src/dxvk/meson.build
++++ b/src/dxvk/meson.build
+@@ -193,6 +193,7 @@ dxvk_src = files([
+   'rtx_render/rtx_atmosphere.h',
+   'rtx_render/rtx_atmosphere_ui.cpp',
+   'shaders/rtx/utility/adaptive_emission.h',
++  'shaders/rtx/utility/legacy_blending.h',
+   'rtx_render/rtx_auto_exposure.cpp',
+   'rtx_render/rtx_auto_exposure.h',
+   'rtx_render/rtx_bindless_resource_manager.cpp',
+@@ -259,6 +260,7 @@ dxvk_src = files([
+   'rtx_render/rtx_geometry_utils.h',
+   'rtx_render/rtx_global_volumetrics.cpp',
+   'rtx_render/rtx_global_volumetrics.h',
++  'rtx_render/rtx_gmod_effects.h',
+   'rtx_render/rtx_gpu_crash_recorder.cpp',
+   'rtx_render/rtx_gpu_crash_recorder.h',
+   'rtx_render/rtx_gpu_overrides.cpp',
+diff --git a/src/dxvk/rtx_render/rtx_instance_manager.cpp b/src/dxvk/rtx_render/rtx_instance_manager.cpp
+index 987f89e3..ff617396 100644
+--- a/src/dxvk/rtx_render/rtx_instance_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_instance_manager.cpp
+@@ -883,6 +883,11 @@ namespace dxvk {
+           // Emissive Blending
+           blendType = RtxOptions::enableEmissiveBlendModeTranslation() ? BlendType::kEmissive : BlendType::kColor;
+           invertedBlend = false;
++        } else if (srcColorBlendFactor == VkBlendFactor::VK_BLEND_FACTOR_DST_COLOR &&
++                   dstColorBlendFactor == VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA) {
++          // Premultiplied transmission filters are transparent where both color and alpha are zero.
++          blendType = BlendType::kLegacyPremultipliedMultiplicative;
++          invertedBlend = false;
+         } else if (
+           (srcColorBlendFactor == VkBlendFactor::VK_BLEND_FACTOR_DST_COLOR && dstColorBlendFactor == VkBlendFactor::VK_BLEND_FACTOR_ZERO) ||
+           (srcColorBlendFactor == VkBlendFactor::VK_BLEND_FACTOR_ZERO && dstColorBlendFactor == VkBlendFactor::VK_BLEND_FACTOR_SRC_COLOR)
+diff --git a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
+index 952f40b8..a964f19c 100644
+--- a/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
++++ b/src/dxvk/rtx_render/rtx_opacity_micromap_manager.cpp
+@@ -1013,6 +1013,7 @@ namespace dxvk {
+     }
+ 
+     if (instance.testCategoryFlags(InstanceCategories::IgnoreOpacityMicromap) ||
++        instance.surface.alphaState.blendType == BlendType::kLegacyPremultipliedMultiplicative ||
+         instance.testCategoryFlags(InstanceCategories::Terrain) ||
+         instance.testCategoryFlags(InstanceCategories::IgnoreAlphaChannel)) {
+       return false;
+diff --git a/src/dxvk/rtx_render/rtx_types.cpp b/src/dxvk/rtx_render/rtx_types.cpp
+index b235ab57..c37e65e8 100644
+--- a/src/dxvk/rtx_render/rtx_types.cpp
++++ b/src/dxvk/rtx_render/rtx_types.cpp
+@@ -403,7 +403,8 @@ namespace dxvk {
+     setCategory(InstanceCategories::IgnoreLights, sets.ignoreLights.contains(textureHash));
+     setCategory(InstanceCategories::IgnoreAntiCulling, sets.antiCullingTextures.contains(textureHash));
+     setCategory(InstanceCategories::IgnoreMotionBlur, sets.motionBlurMaskOutTextures.contains(textureHash));
+-    setCategory(InstanceCategories::IgnoreOpacityMicromap, sets.opacityMicromapIgnoreTextures.contains(textureHash) || isUsingRaytracedRenderTarget);
++    setCategory(InstanceCategories::IgnoreOpacityMicromap, sets.opacityMicromapIgnoreTextures.contains(textureHash) ||
++      sets.legacyEffectTexturesForSession.contains(textureHash) || isUsingRaytracedRenderTarget);
+     setCategory(InstanceCategories::IgnoreAlphaChannel, sets.ignoreAlphaOnTextures.contains(textureHash));
+ 
+     setCategory(InstanceCategories::Hidden, sets.hideInstanceTextures.contains(textureHash) ||
+diff --git a/src/dxvk/shaders/rtx/concept/surface/surface_shared.h b/src/dxvk/shaders/rtx/concept/surface/surface_shared.h
+index 06e1eb48..b36c2a38 100644
+--- a/src/dxvk/shaders/rtx/concept/surface/surface_shared.h
++++ b/src/dxvk/shaders/rtx/concept/surface/surface_shared.h
+@@ -34,6 +34,9 @@ enum class BlendType : uint8_t {
+   kReverseAlpha = 9,
+   kReverseColor = 10,
+ 
++  // Legacy translation only; the authored MDL/UI range remains 0..10.
++  kLegacyPremultipliedMultiplicative = 11,
++
+   kMinValue = 0, // kAlpha
+   kMaxValue = 10, // kReverseColor
+ };
+diff --git a/src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_blending.slangh b/src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_blending.slangh
+index 614c95af..edd52ed7 100644
+--- a/src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_blending.slangh
++++ b/src/dxvk/shaders/rtx/concept/surface_material/opaque_surface_material_blending.slangh
+@@ -22,6 +22,7 @@
+ #pragma once
+ 
+ #include "rtx/concept/surface/surface_shared.h"
++#include "rtx/utility/legacy_blending.h"
+ 
+ // Double multiplicative colors this close to mid-grey count as fully transparent. Mid-grey is the "no change" color of
+ // modulate 2x textures (decals_mod2x holds Source's blood and bullet hole decals), but 8 bit textures store it as 127 or 128
+@@ -179,6 +180,10 @@ void calcOpaqueSurfaceMaterialOpacity(
+     opacity = float(1.0f) - luminanceOpacity;
+ 
+     break;
++  case uint(BlendType::kLegacyPremultipliedMultiplicative):
++    opacity = legacyPremultipliedFilterOpacity(alphaOpacity, luminanceOpacity);
++    break;
++
+   case uint(BlendType::kDoubleMultiplicative):
+     // Note: Double multiplicative blending is a version of multiplicative where the end result is multiplied by 2.
+     // Approximate that by using a V-shaped function so that luminance = 0.5 means a transparent surface,
+diff --git a/src/dxvk/shaders/rtx/utility/legacy_blending.h b/src/dxvk/shaders/rtx/utility/legacy_blending.h
+new file mode 100644
+index 00000000..f0e999f0
+--- /dev/null
++++ b/src/dxvk/shaders/rtx/utility/legacy_blending.h
+@@ -0,0 +1,11 @@
++/* Copyright (c) 2026 native-loader contributors. SPDX-License-Identifier: MIT */
++#pragma once
++
++// Dst * (premultipliedColor + 1 - alpha) transmits 1 - alpha + luminance(color).
++#ifdef __cplusplus
++constexpr
++#endif
++float legacyPremultipliedFilterOpacity(float alpha, float luminance) {
++  const float opacity = alpha - luminance;
++  return opacity < 0.0f ? 0.0f : (opacity > 1.0f ? 1.0f : opacity);
++}
+diff --git a/tests/rtx/unit/test_gmod_effects.cpp b/tests/rtx/unit/test_gmod_effects.cpp
+index 8f0d93d3..ca71a77b 100644
+--- a/tests/rtx/unit/test_gmod_effects.cpp
++++ b/tests/rtx/unit/test_gmod_effects.cpp
+@@ -1,7 +1,10 @@
+ /* Copyright (c) 2026 native-loader contributors. SPDX-License-Identifier: MIT */
+ #include <cstdlib>
++#include <cmath>
+ #include <iostream>
+ #include "../../../src/dxvk/rtx_render/rtx_gmod_effects.h"
++#include "../../../src/dxvk/shaders/rtx/utility/legacy_blending.h"
++#include "../../../src/dxvk/shaders/rtx/concept/surface/surface_shared.h"
+ 
+ namespace dxvk { Logger Logger::s_instance("test_gmod_effects.log"); }
+ 
+@@ -11,6 +14,19 @@ int main() {
+     if (!value) { std::cerr << message << '\n'; std::exit(1); }
+   };
+   RtxOptionLayer::initializeSystemLayers();
++  require(static_cast<unsigned>(BlendType::kLegacyPremultipliedMultiplicative) <= surfaceBlendTypeMask,
++    "Legacy filter mode must fit the existing GPU record");
++  require(static_cast<unsigned>(BlendType::kMaxValue) == 10, "The authored MDL blend-mode range must stay unchanged");
++  for (float alpha : {0.f, .125f, .5f, 1.f}) {
++    for (float transmission : {0.f, .2f, .8f, 1.f}) {
++      const float premultiplied = alpha * transmission;
++      const float nativeDestinationFactor = premultiplied + 1.f - alpha;
++      require(std::abs(legacyPremultipliedFilterOpacity(alpha, premultiplied) - (1.f - nativeDestinationFactor)) < 1e-6f,
++        "Filter opacity must reproduce the native destination factor, including zero-alpha backgrounds");
++    }
++  }
++  require(legacyPremultipliedFilterOpacity(.5f, 2.f) == 0.f && legacyPremultipliedFilterOpacity(2.f, 0.f) == 1.f,
++    "Legacy filter opacity must stay bounded");
+   const auto* user = RtxOptionLayer::getUserLayer();
+   const auto* derived = RtxOptionLayer::getDerivedLayer();
+   for (auto* option : {&RtxGmodEffects::particleTexturesForSessionObject(),
+-- 
+2.56.0.windows.1
+

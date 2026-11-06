@@ -89,5 +89,12 @@
    "patches/0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch": "30ba4b5cf07de1a73f2a60954f864bd3b509607c908f8f127794ba2496bc8524",
    "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
+ },
+ "pending_patches": {
+  "why": "R20-D built and tested these locally; Claude imports one runtime DLL after merging every R20 runtime patch. The packaged DLL and its provenance remain unchanged.",
+  "files": {
+   "patches/0034-Keep-Source-effect-categories-transient-and-rasteriz.patch": "ea169565c7f83ae5d9ec8af0afd3732e794f37abc14d61031a244cf012fc21b5",
+   "patches/0035-Translate-premultiplied-transmission-filters-without.patch": "b0cabb9483c2c3919f9f40a6d281a86cd59700a85330d60d8d885d6da2c70c6a"
+  }
  }
 }
