@@ -8,6 +8,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: nativeloader/lua/autorun/_nativeloader_effect_categories.lua:184
+#, c-format
+msgid "Effect categories: %d observed materials"
+msgstr "エフェクト分類: 描画を確認したマテリアル %d 個"
+
 #: nativeloader/lua/autorun/nativeloader_sky.lua:668
 msgid "Clear"
 msgstr "快晴"

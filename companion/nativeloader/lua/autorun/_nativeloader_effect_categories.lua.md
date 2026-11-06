@@ -27,3 +27,10 @@ Verification: [effect_categories_harness.lua](../../../tests/effect_categories_h
 through [test_effect_categories.py](../../../tests/test_effect_categories.py.md). Covers all
 three classifications, normal world exclusion, shared textures, malformed/late/changed hashes,
 API forwarding, bounded work, retry backoff, absent native API and inert server/RTX-off starts.
+
+R20-D bounds animated/hash-heavy materials to 64 input hashes each and each published category
+to 4,096 hashes. `hash_budget` checks a 10,000-hash response; no unbounded CSV reaches the API.
+
+Status includes the shared i18n module lazily for its one translated diagnostic label (six catalogs);
+technical option names remain literal. A combined production-file guard replay verifies that tail
+forwarding preserves untrusted shader filtering and source attribution.

@@ -27,6 +27,9 @@ class RenderGuardTests(unittest.TestCase):
     def test_dupe_camera_aliases_virtual_scopes_and_mismatched_closers(self):
         self.run_case("camera_aliases")
 
+    def test_effect_observer_preserves_guard_policy_and_original_caller(self):
+        self.run_case("effect_observer")
+
     def test_local_rtx_start_without_the_early_view_installs_from_the_autorun(self):
         self.run_case("autorun")
 

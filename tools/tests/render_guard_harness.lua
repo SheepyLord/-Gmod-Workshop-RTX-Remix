@@ -464,6 +464,18 @@ elseif scenario=="shaders" then
     denied(function()render.RedownloadAllLightmaps()end) eq(depthCalls,1,"depth getter is legal; rebuild is inert")
     render.SetMaterial(Material("normal")) render.MaterialOverride(nil) render.DrawScreenQuad()
     eq(quadCalls,1)
+elseif scenario=="effect_observer" then
+    util = {}
+    assert(loadfile((source:gsub("_nativeloader_guard%.lua$","_nativeloader_effect_categories.lua"))))()
+    assert(NativeLoaderEffectCategories)
+    _G.r20dBadMaterial=material("screenspace_general")
+    assert(loadstring([[render.SetMaterial(r20dBadMaterial) render.DrawSprite()]],"@lua/ordinary_particles.lua"))()
+    eq(#guard.blocked,2) eq(quadCalls,0)
+    for _,record in ipairs(guard.blocked) do
+        assert(record.source:find("ordinary_particles.lua",1,true),"observer hid the original caller: "..record.source)
+    end
+    render.SetMaterial(material("UnlitGeneric")) eq(render.DrawSprite(),"quad")
+    eq(quadCalls,1) eq(#guard.errors,0)
 elseif scenario=="camera_aliases" then
     hook.Add("PostRender","dupe-icon",function()
         -- Stock icon.lua does 32 cameras per prop per outline pass, plus the final pass.

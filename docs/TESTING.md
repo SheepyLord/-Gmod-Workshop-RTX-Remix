@@ -1,5 +1,22 @@
 # Testing
 
+## R20-D: ordinary Source effects and camera aliases
+
+`tools/tests/test_render_guard.py` includes the stock icon pattern (257 sequential camera pairs),
+all ordinary camera closers, nesting, virtual scopes, composite mismatches and cleanup. It also
+loads the production effect observer above the guard and verifies that an untrusted shader remains
+blocked with its original caller location. `test_companion_effect_categories.py` discovers the ten
+companion LuaJIT scenarios for metadata/API classification, native forwarding, no cold library
+loads, hash changes/readiness, shared texture exclusion, bounded names/hashes, retry backoff and
+inert RTX-off/server starts. Tests run from the normal tools/test.ps1 gate.
+
+Runtime patch 0034 adds test_gmod_effects for NoSave/derived-layer lifetime, translation invalidation
+and category snapshot add/remove behavior. The dedicated runtime suite passes 36/36; generated
+RtxOptions.md includes all three new options. The two-pass Release wrapper verifies the exact
+source/patch/dependency tree before the build. Game evidence is collected under the shared PoC lock
+in this worktree's `out/r20d`, with settings/config/data/add-on/native-loader trees restored after
+each session; the final handover records the accepted runs and their measured limitations.
+
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.

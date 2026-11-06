@@ -3,6 +3,7 @@ local function eq(a,b) assert(a==b,tostring(a).." ~= "..tostring(b)) end
 CLIENT, NativeLoaderRenderGuard = true, {}
 local now, writes, queries, loads = 0, {}, 0, 0
 function RealTime() return now end
+function include() return {L=function(text)return text end} end
 local hooks, metas = {}, {CLuaEmitter={},CLuaParticle={}}
 hook={Add=function(_,id,fn)hooks[id]=fn end}
 function FindMetaTable(name)return metas[name]end
@@ -74,6 +75,13 @@ elseif scenario=='bounded' then
  end
  eq(NativeLoaderEffectCategories.Status(),4096)
  tick(1,10);eq(emitter.args[2],9000)
+elseif scenario=='hash_budget' then
+ data.particle.hashes={}
+ for i=1,10000 do data.particle.hashes[i]=string.format('0x%x',i) end
+ tick(3,30)
+ local _,count=opt('particle'):gsub('0x','')
+ eq(count,64)
+ assert(not opt('particle'):find('0000000000000041',1,true),'material hash cap')
 elseif scenario=='late_hash' then
  data.cold.hashes={'0x123'};Material=function(name)
   name=name:gsub('^!','');return {IsError=function()return false end,GetShader=function()return 'Sprite' end,

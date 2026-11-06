@@ -43,3 +43,7 @@ relying on a guard-created exception to unwind a successful callback.
 R20-D: ordinary camera closers End/End2D/End3D share tracked scopes; Start3D2D requires
 End3D2D. Regression scenario `camera_aliases` checks 257 icon-style pairs, every ordinary
 start/closer combination, nested calls, cross-family refusal, virtual pushes and error cleanup.
+
+R20-D also loads the real effect observer on top of the real guard (`effect_observer`), rejects
+an untrusted screenspace binding and draw with the original virtual caller, then permits a normal
+UnlitGeneric sprite. The observer's renderer forwarding stays in tail position.

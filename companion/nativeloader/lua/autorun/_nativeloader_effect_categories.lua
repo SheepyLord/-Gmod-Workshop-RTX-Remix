@@ -2,6 +2,7 @@
 if not CLIENT or not NativeLoaderRenderGuard then return end
 if NativeLoaderEffectCategories then return end
 local LIMIT, WORK, TTL = 4096, 12, 120
+local HASHES_PER_MATERIAL, PUBLISHED_HASHES = 64, 4096
 local names, list, cursor, bound = {}, {}, 1, nil
 local sent, retry, delay = {}, {}, {}
 local nextScan, nextWrite, cache, cacheIndex = 0, 0, nil, 1
@@ -61,6 +62,7 @@ end
 -- DecalMaterial just to observe them would choose another random variant and advance native RNG.
 if render.SetMaterial then
     local original = render.SetMaterial
+    -- Keep the guard's caller attribution: forwarding must stay in tail position.
     render.SetMaterial = function(material, ...)
         bound = material
         return original(material, ...)
@@ -79,7 +81,9 @@ end
 local function flag(mat, key) return (mat:GetInt(key) or 0) ~= 0 end
 local function hashList(values)
     local hashes = {}
-    for _, hash in ipairs(values or {}) do
+    values = values or {}
+    for i = 1, math.min(#values, HASHES_PER_MATERIAL) do
+        local hash = values[i]
         local digits = type(hash) == "string" and hash:match("^0[xX](%x+)$")
         if digits and #digits <= 16 then
             digits = digits:lower():gsub("^0+", "")
@@ -146,11 +150,18 @@ local function sync()
     end
     if now < nextWrite then return end
     nextWrite = now + 0.25
-    local sets = {particle = {}, decal = {}, color = {}}
+    local sets, counts = {particle = {}, decal = {}, color = {}}, {particle = 0, decal = 0, color = 0}
     for _, state in ipairs(list) do
         if state.hashes then
             for kind, enabled in pairs(state.kinds) do
-                if enabled then for hash in pairs(state.hashes) do sets[kind][hash] = true end end
+                if enabled and counts[kind] < PUBLISHED_HASHES then
+                    for hash in pairs(state.hashes) do
+                        if not sets[kind][hash] then
+                            sets[kind][hash], counts[kind] = true, counts[kind] + 1
+                            if counts[kind] == PUBLISHED_HASHES then break end
+                        end
+                    end
+                end
             end
         end
     end
@@ -170,7 +181,8 @@ local function sync()
     end
 end
 NativeLoaderEffectCategories = {Status = function()
-    print("[nativeloader] Effect categories: " .. #list .. " observed materials")
+    local L = include("nativeloader/i18n.lua").L
+    print("[nativeloader] " .. string.format(L("Effect categories: %d observed materials"), #list))
     for kind, option in pairs(options) do print(option .. "=" .. (sent[kind] or "pending")) end
     return #list
 end}

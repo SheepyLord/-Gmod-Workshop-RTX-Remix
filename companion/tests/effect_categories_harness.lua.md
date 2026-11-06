@@ -6,3 +6,6 @@ normal, off, server, no_api, changes, wrappers, retry, bounded and late_hash. As
 contents, API behavior, no cold material loads, malformed/shared texture exclusion, lookup
 budgets and failed-publication backoff. Prints PASS on success; exits nonzero on assertion.
 No files, game sessions, configs, Steam state or network are changed.
+
+R20-D bounds animated/hash-heavy materials to 64 input hashes each and each published category
+to 4,096 hashes. `hash_budget` checks a 10,000-hash response; no unbounded CSV reaches the API.

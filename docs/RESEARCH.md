@@ -1,5 +1,45 @@
 # Research notes
 
+## R20-D: camera aliases, effect colors and offscreen alpha canvases (2026-11-06)
+
+- Stock dupe icons use 32 `cam.Start(view)`/`cam.End()` pairs per entity per outline pass,
+  then one final camera (`gamemodes/sandbox/entities/weapons/gmod_tool/stools/duplicator/icon.lua:104-213`).
+  In the locked PoC baseline, the two-prop request saved but printed 97 native camera underflows
+  and produced a black icon (`out/r20d/06-before-rtx/game/console.log`, archived dupe JPEG).
+  Ordinary camera closers were distinct Lua function objects in the RTX-off run. The guard now
+  tracks all three closer names once (`_nativeloader_guard.lua:1185`, `:1295-1302`); the LuaJIT
+  regression also covers 257 sequential pairs, virtual pushes and composite-camera mismatches.
+- Physics Blood (3818841829) ships 55 Lua files. `cl_materials.lua:34-82` builds translucent,
+  vertex-colored UnlitGeneric effects alongside native decals; `cl_flowdraw.lua:38-50` uses
+  triangle strips with filter/additive layers. These colors are effects, not map baked lighting.
+  The old runtime kept their vertex color and texture factor only when their hashes were already
+  saved as particle, decal or allowed-baked-lighting textures (`d3d9_rtx.cpp` at 51cf1b8b:295-309,
+  `:1153-1168`). Patch 0034 joins session categories at those boundaries (`:297`, `:1167`).
+- Physics Blood's pool canvas uses 512-square RGBA16F scratch textures and a 2048-square atlas.
+  Its `cl_poolcanvas.lua:1457-1476` tests float alpha as `(204/255 + 204/255) * 128/255`, then
+  reads alpha from the RGBA page. Native returned 205; the old RTX runtime returned 255 in our
+  sessions, with no guard rejection before the dupe (`05-off` and `06-before-rtx`). The runtime
+  rejected alpha-only write masks before deciding a non-primary target should be rasterized
+  (`d3d9_rtx.cpp` at 51cf1b8b:488-490, `:523-530`). Patch 0034 moves offscreen raster preservation
+  ahead of RTX-only filtering and the post-injection skip (`d3d9_rtx.cpp` at a5251896:590-615).
+- The automatic observer reads the native draw cache before resolving a material. The three
+  NoSave options join saved categories without writing them (`rtx_texture_category_sets.h:75-88`,
+  `rtx_types.cpp:416-422`, external submission in `rtx_fork_submit.cpp`). Blended effect meshes
+  get color preservation without billboard reorientation or decal offsets. Twelve discoveries
+  and twelve lookups per frame, 4,096 names, 64 hashes per material and 4,096 published hashes
+  per category bound the work. Existing material/hash APIs need no new native module.
+- [util.DecalMaterial](https://wiki.facepunch.com/gmod/util.DecalMaterial) randomly chooses among
+  variants. Observation therefore leaves named util.Decal untouched and discovers the material
+  that was drawn; calling the resolver merely to observe a decal would consume native RNG.
+- A production-observer/production-guard replay checks that renderer forwarders keep their original
+  untrusted caller attribution and do not inherit the observer's exact bundled-path exemption.
+  The forwarding calls must remain in tail position. This supplements separate observer tests.
+- The dedicated runtime unit build initially lacked `libxess.dll` for the category-plugin test.
+  Staging the unchanged indexed library under its D3D9 output directory resolved LoadLibrary error
+  126. Its RemixCategories plugin was built explicitly. After refreshing generated RtxOptions.md,
+  the complete dedicated suite passes 36/36 (`out/r20d/runtime-unit-pass.log`).
+
+
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 
 Runtime source at `403b2336` (patch 0028); the patch, the A/B and its evidence are in the

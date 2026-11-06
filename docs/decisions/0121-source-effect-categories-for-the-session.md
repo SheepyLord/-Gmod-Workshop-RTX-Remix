@@ -46,3 +46,7 @@ custom shaders, arbitrary destination-dependent blend equations and raster-only 
 remain outside a general path-tracing equivalence guarantee. Color-only meshes retain ordinary
 geometry and therefore do not get the particle renderer's billboard approximation. No global
 alpha cutoff, lighting or reconstruction setting changes.
+
+Implementation bounds (R20-D): at most 64 hashes per observed material and 4,096 hashes per
+published category, including animated materials. Larger sets keep the bounded subset until a
+later observation. These caps bound allocation and native option parsing as well as name lookups.
