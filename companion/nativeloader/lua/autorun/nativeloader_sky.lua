@@ -31,8 +31,8 @@ local HELP = {
     nativeloader_sky_follow_map = "1: the time of day and the sun's direction come from the map's own sun",
     nativeloader_sky_hour = "Time of day in hours, 0-24 (with nativeloader_sky_follow_map 0)",
     nativeloader_sky_direction = "Turns the sun's path around the sky, in degrees (with nativeloader_sky_follow_map 0)",
-    nativeloader_sky_time_passes = "1: the time of day runs on (default on)",
-    nativeloader_sky_day_minutes = "Real minutes for a whole day while the time runs on (default 20)",
+    nativeloader_sky_time_passes = "1: the time of day runs on",
+    nativeloader_sky_day_minutes = "Real minutes for a whole day while the time runs on",
     nativeloader_sky_season = "spring, summer, autumn or winter: how high the sun climbs and how long the day is",
     nativeloader_sky_moon = "Moon phase: new, waxingCrescent, firstQuarter, waxingGibbous, full, waningGibbous, "
         .. "lastQuarter or waningCrescent",

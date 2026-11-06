@@ -668,6 +668,7 @@ msgid "Set %s here"
 msgstr "여기서 %s 설정"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr "시작 시 업스케일링 및 프레임 생성 힌트 표시"
 
@@ -1109,7 +1110,7 @@ msgstr "하늘과 날씨 초기화."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
 msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
-msgstr "물리 하늘은 실제 태양, 구름, 달과 별로 맵을 비춥니다. 기본적으로 맵의 원래 태양 위치에서 시작하여 실제 시간으로 20분마다 하루가 지납니다. 시간대나 태양 방향을 조정하여 원하는 상태를 선택할 수 있습니다. 시간 흐름을 끄면 시계가 멈추고 하루 길이(분)로 속도를 바꿀 수 있습니다. 맵의 태양 따르기를 켠 동안에는 하늘이나 날씨 설정을 바꾸기 전까지 맵의 하늘 애드온이 계속 제어합니다."
+msgstr "물리 하늘은 실제 태양, 구름, 달과 별로 맵을 비춥니다. 기본적으로 맵의 원래 태양 위치에서 시작하여 실제 시간으로 20분마다 하루가 지납니다. 시각이나 태양 방향을 조정하여 원하는 상태를 선택할 수 있습니다. 시간 흐름을 끄면 시계가 멈추고 하루 길이(분)로 속도를 바꿀 수 있습니다. 맵의 태양 따르기를 켠 동안에는 하늘이나 날씨 설정을 바꾸기 전까지 맵의 하늘 애드온이 계속 제어합니다."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."

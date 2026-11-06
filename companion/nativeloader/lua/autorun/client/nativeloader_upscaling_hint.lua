@@ -4,7 +4,7 @@
 -- shipped native module has no live getter: absent/unreadable snapshots deliberately show nothing.
 local L = include("nativeloader/i18n.lua").L
 local enabled = CreateClientConVar("nativeloader_upscaling_hint", "1", true, false,
-    "Show the startup upscaling/frame generation hint when supported features are off")
+    L("Show upscaling and frame generation hint at startup"))
 local MARKER = "nativeloader_companion/upscaling_hint_start.txt"
 local POLL, DELAY, ATTEMPTS = "nativeloader_upscaling_hint", 12, 25
 

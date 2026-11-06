@@ -668,6 +668,7 @@ msgid "Set %s here"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr ""
 

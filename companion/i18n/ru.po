@@ -205,7 +205,7 @@ msgstr "Длина суток (мин)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:733
 msgid "Time passes is on by default. A whole day takes 20 real minutes; untick Time passes to stop the clock."
-msgstr "Течение времени включено по умолчанию. Сутки длятся 20 реальных минут; отключите течение времени, чтобы остановить часы."
+msgstr "«Время идёт» включено по умолчанию. Сутки длятся 20 реальных минут; снимите этот флажок, чтобы остановить часы."
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:734
 msgid "Sky update interval (s)"
@@ -668,6 +668,7 @@ msgid "Set %s here"
 msgstr "Задать «%s» здесь"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr "Подсказка о масштабировании и генерации кадров при запуске"
 
@@ -1089,7 +1090,7 @@ msgstr "Азимут солнца: поворачивает траекторию
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:114
 msgid "Time passes is on by default; a whole day takes 20 real minutes."
-msgstr "По умолчанию время идёт; сутки длятся 20 реальных минут."
+msgstr "«Время идёт» включено по умолчанию; сутки длятся 20 реальных минут."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:115
 msgid "Season, moon phase and eclipse."
@@ -1109,7 +1110,7 @@ msgstr "Сбросить небо и погоду."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
 msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
-msgstr "Физическое небо освещает карту солнцем, облаками, луной и звёздами. По умолчанию сутки начинаются с положения солнца карты, затем время идёт: сутки длятся 20 реальных минут. Задайте своё время суток или направление солнца. Отключите течение времени, чтобы остановить часы; длительность суток в минутах меняет их скорость. Пока включено следование солнцу карты, её аддон неба сохраняет управление до изменения настройки неба или погоды."
+msgstr "Физическое небо освещает карту солнцем, облаками, луной и звёздами. По умолчанию сутки начинаются с положения солнца карты, затем время идёт: сутки длятся 20 реальных минут. Измените «Время суток» или «Азимут солнца» на нужные значения. Снимите флажок «Время идёт», чтобы остановить часы; «Длина суток (мин)» меняет их скорость. Пока включено «Солнце как на карте», её аддон неба сохраняет управление до изменения настройки неба или погоды."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."

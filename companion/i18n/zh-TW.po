@@ -668,6 +668,7 @@ msgid "Set %s here"
 msgstr "在此設定%s"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr "啟動時提示啟用超解析度與影格生成"
 
@@ -1109,7 +1110,7 @@ msgstr "重設天空與天氣。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
 msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
-msgstr "物理天空用真實的太陽、雲、月亮與星空照亮地圖。預設以地圖原有太陽的位置開始一天，然後時間流逝，一天持續現實中的 20 分鐘。調整「時間」或「太陽方向」可自行選擇。取消勾選「時間流逝」即可停止時鐘；「一天時長（分鐘）」可改變速度。勾選「跟隨地圖太陽」時，地圖的天空附加元件會繼續控制天空，直到你變更天空或天氣設定。"
+msgstr "物理天空用真實的太陽、雲、月亮與星空照亮地圖。預設以地圖原有太陽的位置開始一天，然後時間流逝，一天持續現實中的 20 分鐘。調整「時間」或「太陽方向」可自行選擇。取消勾選「時間流逝」即可停止時鐘；「一天時長(分鐘)」可改變速度。勾選「跟隨地圖的太陽」時，地圖的天空附加元件會繼續控制天空，直到你變更天空或天氣設定。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."

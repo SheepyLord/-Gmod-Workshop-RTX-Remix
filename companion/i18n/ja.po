@@ -205,7 +205,7 @@ msgstr "1日の長さ(分)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:733
 msgid "Time passes is on by default. A whole day takes 20 real minutes; untick Time passes to stop the clock."
-msgstr "時間の経過は既定でオンです。1日は実時間の20分です。「時間の経過」をオフにすると時計が止まります。"
+msgstr "「時間が進む」は既定でオンです。1日は実時間の20分です。この項目をオフにすると時計が止まります。"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:734
 msgid "Sky update interval (s)"
@@ -668,6 +668,7 @@ msgid "Set %s here"
 msgstr "ここで「%s」を設定する"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr "起動時にアップスケーリングとフレーム生成のヒントを表示"
 
@@ -1089,7 +1090,7 @@ msgstr "太陽の方角: マップに対する太陽の軌道の向きを変え�
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:114
 msgid "Time passes is on by default; a whole day takes 20 real minutes."
-msgstr "時間の経過は既定でオンです。1日は実時間の20分です。"
+msgstr "「時間が進む」は既定でオンです。1日は実時間の20分です。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:115
 msgid "Season, moon phase and eclipse."
@@ -1109,7 +1110,7 @@ msgstr "空と天気をリセット。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
 msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
-msgstr "物理天空は太陽、雲、月、星によってマップを照らします。既定ではマップ本来の太陽の位置から始まり、実時間の20分で1日が経過します。「時刻」や「太陽の方向」で好みの状態に変えられます。「時間の経過」をオフにすると時計が止まり、「1日の長さ（分）」で進む速さを変えられます。「マップの太陽に追従」がオンの間、マップの天空アドオンは、天空や天候の設定を変更するまで制御を続けます。"
+msgstr "物理天空は太陽、雲、月、星によってマップを照らします。既定ではマップ本来の太陽の位置から始まり、実時間の20分で1日が経過します。「時刻」や「太陽の方角」で好みの状態に変えられます。「時間が進む」をオフにすると時計が止まり、「1日の長さ(分)」で進む速さを変えられます。「マップの太陽に合わせる」がオンの間、マップの天空アドオンは、天空や天候の設定を変更するまで制御を続けます。"
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."

@@ -205,7 +205,7 @@ msgstr "Durée jour (min)"
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:733
 msgid "Time passes is on by default. A whole day takes 20 real minutes; untick Time passes to stop the clock."
-msgstr "L’écoulement du temps est activé par défaut. Une journée dure 20 minutes réelles ; décochez cette option pour arrêter l’horloge."
+msgstr "L’option « Faire avancer le temps » est activée par défaut. Une journée dure 20 minutes réelles ; décochez-la pour arrêter l’horloge."
 
 #: nativeloader/lua/autorun/nativeloader_sky.lua:734
 msgid "Sky update interval (s)"
@@ -668,6 +668,7 @@ msgid "Set %s here"
 msgstr "Régler « %s » ici"
 
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:304
+#: nativeloader/lua/autorun/client/nativeloader_upscaling_hint.lua:7
 msgid "Show upscaling and frame generation hint at startup"
 msgstr "Afficher le conseil de mise à l’échelle et de génération d’images au démarrage"
 
@@ -1089,7 +1090,7 @@ msgstr "Azimut solaire : fait tourner la course du soleil autour de la carte."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:114
 msgid "Time passes is on by default; a whole day takes 20 real minutes."
-msgstr "Le temps s’écoule par défaut ; une journée dure 20 minutes réelles."
+msgstr "« Faire avancer le temps » est activé par défaut ; une journée dure 20 minutes réelles."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:115
 msgid "Season, moon phase and eclipse."
@@ -1109,7 +1110,7 @@ msgstr "Réinitialiser le ciel et la météo."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:119
 msgid "The physical sky lights the map with a real sun, clouds, the moon and the stars. By default the day starts at the map's own sun, then time passes with a whole day taking 20 real minutes. Move Time of day or Sun direction to choose your own. Untick Time passes to stop the clock; Day length (min) changes its speed. A map's sky add-on keeps control while Follow the map's sun is ticked, until you change a sky or weather setting."
-msgstr "Le ciel physique éclaire la carte avec le soleil, les nuages, la lune et les étoiles. Par défaut, la journée commence à la position du soleil de la carte, puis le temps s’écoule : une journée dure 20 minutes réelles. Modifiez l’heure ou la direction du soleil pour les choisir. Décochez l’écoulement du temps pour arrêter l’horloge ; la durée du jour en minutes règle sa vitesse. Tant que le suivi du soleil de la carte est coché, son extension de ciel garde le contrôle jusqu’à ce que vous changiez un réglage du ciel ou de la météo."
+msgstr "Le ciel physique éclaire la carte avec le soleil, les nuages, la lune et les étoiles. Par défaut, la journée commence à la position du soleil de la carte, puis le temps s’écoule : une journée dure 20 minutes réelles. Modifiez « Heure » ou « Azimut solaire » pour les choisir. Décochez « Faire avancer le temps » pour arrêter l’horloge ; « Durée jour (min) » règle sa vitesse. Si « Suivre le soleil de la carte » est coché, l’extension de ciel de la carte garde le contrôle jusqu’à ce que vous changiez un réglage du ciel ou de la météo."
 
 #: nativeloader/lua/nativeloader/guide_pages.lua:120
 msgid "The moon has the real Moon's face and goes through its phases. At night you see a detailed image of the stars, a galaxy and nebulae that turns with the hour and the season."
