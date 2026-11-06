@@ -34,6 +34,7 @@ cd tools; python -m unittest tests.test_publish_workshop
 | the parts a config unpacks | `input_parts()`: the `packages/` parts that `out/inputs/<part>/...` paths name, with either slash, and nothing for paths elsewhere |
 | every repository file a packager reads is a publish input | review R4: the modules the packagers (and `companion_i18n.py`) import from `tools/` and the repository files they name (`os.path.join(REPO, ...)`, `REPO / ...`) are all under `REPO_INPUTS`, including `tools/companion_i18n.py`, `LICENSE` and `third_party/gmod/LICENSE`; `.gitattributes` is an input |
 | the package workflow starts only by hand | ADR 0108: `.github/workflows/package.yml`'s only trigger is `workflow_dispatch` |
+| the loader workflow starts only for a release or by hand | ADR 0114: `.github/workflows/build.yml`'s triggers are a pushed `v*` tag and `workflow_dispatch` (no branch push, no pull request), and only a tag's run makes a release |
 | every artifact expires after two days | ADR 0113: every `actions/upload-artifact` step in `build.yml` and `package.yml` (at least the loader's bundle, `test-evidence`, `rtx-package-report` and `rtx-package`) has `retention-days` equal to `ARTIFACT_DAYS` (2) |
 | a copy still held after a good upload is not an error | review R4: the fallback copy is still open when the retry succeeds, so its folder cannot be removed; `upload()` returns the success and logs the folder left in `out/tmp` |
 | normal publisher success | runs the original executable once, without a compatibility probe or copy |

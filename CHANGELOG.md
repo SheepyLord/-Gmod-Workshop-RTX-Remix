@@ -113,6 +113,10 @@ Versions follow the loader's CMake project version once it ships; until then eve
   Actions storage is 2 GB, and the per-push bundles, kept 90 days, would have filled it in about two
   weeks. `publish_workshop.py --from-ci` now names an expired or deleted package artifact, says to start
   the workflow again, and keeps the last download.
+- **After the release: the loader's workflow runs only for a release or when a person starts it** (the
+  user; [ADR 0114](docs/decisions/0114-the-loader-workflow-runs-only-for-a-release-or-by-hand.md)). No
+  push of a branch and no pull request starts `build.yml` any more. A `v*` tag still runs every check
+  before its release, and pushes of `main` stay gated by `tools\test.ps1` on the developer's machine.
 
 ### R18
 

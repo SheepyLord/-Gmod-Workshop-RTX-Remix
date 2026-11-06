@@ -688,6 +688,15 @@ class HookTests(unittest.TestCase):
         trigger = text.split('\non:', 1)[1].split('\n\n', 1)[0]
         self.assertEqual([line.strip() for line in trigger.strip().splitlines()], ['workflow_dispatch:'])
 
+    def test_the_loader_workflow_starts_only_for_a_release_or_by_hand(self):
+        # ADR 0114 (the user, 2026-11-05): no push of a branch and no pull request starts build.yml; a v*
+        # tag (the release, which its release job makes) or a person does.
+        text = (REPO / '.github' / 'workflows' / 'build.yml').read_text(encoding='utf-8')
+        trigger = text.split('\non:', 1)[1].split('\n\n', 1)[0]
+        self.assertEqual([line.strip() for line in trigger.strip().splitlines()],
+                         ['push:', "tags: ['v*']", 'workflow_dispatch:'])
+        self.assertIn("if: startsWith(github.ref, 'refs/tags/v')", text)  # only a tag's run makes a release
+
     def test_every_artifact_expires_after_two_days(self):
         # ADR 0113 (the user, 2026-11-05): every artifact the workflows upload, the loader's bundle included,
         # expires two days after its run; --from-ci's message names the same number (ARTIFACT_DAYS).

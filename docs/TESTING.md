@@ -1116,7 +1116,7 @@ See [ADR 0042](decisions/0042-legacy-remix-migration.md) for recovery-source lim
 | PoC deployment | The deployer's whole life cycle on the PoC, without starting the game | `tools\poc_deploy_check.ps1`, by hand | M3 |
 | PoC in-game | Launch `GarrysMod_PoC` with the bootstrap, check logs and behaviour | `tools\smoke_test.ps1` | M1 |
 | Field test | The user's real install, with backups and a tested rollback | manual, with the user | M7 |
-| CI | What `tools\test.ps1 -Config Release` runs, on a clean GitHub `windows-2022` runner | `.github/workflows/build.yml`, every push and pull request | ADR 0017 |
+| CI | What `tools\test.ps1 -Config Release` runs, on a clean GitHub `windows-2022` runner | `.github/workflows/build.yml`, for a `v*` tag or when a person starts it | ADR 0017, 0114 |
 
 `tools\test.ps1` runs the first five (the CLI and fault-injection tests are CTests) and must pass
 before any change is finished. CTest runs six tests at a time (`CMakePresets.json`); the longest,

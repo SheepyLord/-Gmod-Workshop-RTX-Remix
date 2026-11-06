@@ -1,15 +1,16 @@
-# Builds winmm.dll (the loader) on every push and pull request, runs every check, and publishes the
-# end-user bundle (winmm.dll, the default native-loader\config.json, a README) as an artifact. A tag
-# v* also creates a GitHub release with the bundle (ADR 0017); the release keeps its zips. Every
-# artifact expires two days after its run (ADR 0113): Actions storage is 2 GB. The Workshop item is
-# updated from the developer's machine by tools/publish_workshop.py, not here: that needs Steam.
+# Builds winmm.dll (the loader), runs every check, and publishes the end-user bundle (winmm.dll, the
+# default native-loader\config.json, a README) as an artifact. It runs only for a release, when a tag v*
+# is pushed, or when a person starts it (Actions > Build winmm.dll > Run workflow): no push of a branch
+# and no pull request starts it (ADR 0114). Pushes of main are checked by tools\test.ps1 on the
+# developer's machine (AGENTS.md rule 5). A tag v* also creates a GitHub release with the bundle
+# (ADR 0017); the release keeps its zips. Every artifact expires two days after its run (ADR 0113):
+# Actions storage is 2 GB. The Workshop item is updated from the developer's machine by
+# tools/publish_workshop.py, not here: that needs Steam.
 name: Build winmm.dll
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 permissions:
