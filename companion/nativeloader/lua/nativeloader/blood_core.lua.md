@@ -34,8 +34,8 @@ engine material (the original shapes' model VMTs are shared by engine subrects a
 Keep the original ITexture reference but rebind its saved name on restore, using the same filename
 binding path as scheme painting. The four-state native PoC probe verifies their draws with master
 off, in blue, and restored after blue; first-use lazy PBR loading needs settling before capture.
-Keep these baselines until master off, rather than restoring/repainting on every palette change.
-An unchanged base texture is never rebound: tint-only changes preserve its binding and avoid
-unnecessary texture/geometry invalidation. A regression checks blue-to-violet without a texture write.
+Palette painting deliberately rebinds the texture even when its filename matches. Live RTX probes
+rejected a setter-skipping optimization: matching Lua names alone did not establish a drawable
+binding. The original R20 binding recipe is retained; palette samples are freshly stamped for QA.
 Off does not unmount packaged materials/PBR or clear existing decals. Impact off/amount zero only
 controls extra impacts; master off disables schemes and the mixer too.
