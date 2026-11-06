@@ -77,6 +77,28 @@ whatever `packages\` holds (AGENTS.md rule 5), so import on a branch, build, and
 3. `python tools\inputs.py verify`, `python tools\build_package.py --compare out\workshop\published.json`
    (it tells whether the content changed), then commit `packages\<part>` with what changed and why.
 
+### This repository's own modules
+
+`fixes\modules\gmsv_nlrtxclient_win64.dll` (from `loader/client` and `nl_core`) and
+`glass\bin\gmcl_nlglass_win64.dll` (from `glass/native` and Jolt) are compiled from this repository, so
+their copies here must be what its sources build now: R20-Q found the client module still the build of
+round R4, rejecting R6's configuration, in every local package since R6. Each one's entry in
+[`tools/ci/pins.json`](../tools/ci/pins.json) `repository_builds` declares its sources and records the
+SHA-256 of the stored copy and of each source when it was built (`packaged`), and
+[`tools/check_repo.py`](../tools/check_repo.py.md) fails while a source differs or `files.json` lists
+another copy ([ADR 0126](../docs/decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)).
+Refresh them with [`tools/ci/repo_builds.py`](../tools/ci/repo_builds.py.md), never `inputs.py import`
+alone:
+
+```powershell
+python tools\ci\repo_builds.py refresh    # build, check what the build read, compare, import if another image, record
+```
+
+It imports (one module per `inputs.py import`) only a build that is another image than the stored copy,
+apart from what every link changes; otherwise it records the sources and adds nothing to Git LFS. A
+whole-part import of `fixes` with `--prune` under `modules` must keep the client module, or the check
+fails.
+
 The one-time move into this folder (2026-10-30) imported every part this way from the sources above;
 the build from here reproduced the published package byte for byte (the same content digest,
 [RESEARCH.md](../docs/RESEARCH.md) section 30).
