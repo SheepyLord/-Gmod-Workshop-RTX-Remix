@@ -459,6 +459,10 @@ WORKFLOW = 'package.yml'
 RUN_APPEARS = 5 * 60
 RUN_FINISHES = 6 * 60 * 60
 RUN_POLL = 60
+# Every artifact expires two days after its run (ADR 0113): the workflows' retention-days, which a test
+# keeps equal to this.
+ARTIFACT_DAYS = 2
+PACKAGE_ARTIFACTS = ('rtx-package-report', 'rtx-package')
 
 
 def gh(*args: str) -> str:
@@ -502,9 +506,26 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def check_artifacts(run_id: int) -> None:
+    """Fails, naming the artifact, when the run no longer has its package or report: artifacts expire
+    ARTIFACT_DAYS days after their run (ADR 0113), and a newer package run deletes the older packages.
+    Asked before anything is downloaded, so the previous download stays."""
+    data = json.loads(gh('api', f'repos/{{owner}}/{{repo}}/actions/runs/{run_id}/artifacts?per_page=100'))
+    found = {artifact.get('name'): artifact for artifact in data.get('artifacts', [])}
+    for name in PACKAGE_ARTIFACTS:
+        artifact = found.get(name)
+        if artifact is None or artifact.get('expired'):
+            why = f"expired {artifact.get('expires_at', '')}".strip() if artifact else 'missing or deleted'
+            raise PublishError(f'run {run_id}: its {name} artifact is gone ({why}). Artifacts are kept {ARTIFACT_DAYS} '
+                               'days (ADR 0113), and a newer package run deletes the older packages: nothing '
+                               'uploaded. Start the package workflow for this commit again (Actions > Build the RTX '
+                               'package > Run workflow), then run this again')
+
+
 def download_package(run_id: int, dest: Path, log) -> tuple[Path, dict, dict]:
     """The run's package and its report (artifacts rtx-package and rtx-package-report), with the .gma
     checked against the report's size and SHA-256."""
+    check_artifacts(run_id)
     shutil.rmtree(dest, ignore_errors=True)  # only the newest download is kept (about 1.8 GB)
     dest.mkdir(parents=True)
     gh('run', 'download', str(run_id), '-n', 'rtx-package-report', '-D', str(dest / 'report'))

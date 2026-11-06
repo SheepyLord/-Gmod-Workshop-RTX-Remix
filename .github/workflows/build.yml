@@ -1,7 +1,8 @@
 # Builds winmm.dll (the loader) on every push and pull request, runs every check, and publishes the
 # end-user bundle (winmm.dll, the default native-loader\config.json, a README) as an artifact. A tag
-# v* also creates a GitHub release with the bundle (ADR 0017). The Workshop item is updated from the
-# developer's machine by tools/publish_workshop.py, not here: that needs Steam.
+# v* also creates a GitHub release with the bundle (ADR 0017); the release keeps its zips. Every
+# artifact expires two days after its run (ADR 0113): Actions storage is 2 GB. The Workshop item is
+# updated from the developer's machine by tools/publish_workshop.py, not here: that needs Steam.
 name: Build winmm.dll
 
 on:
@@ -83,6 +84,7 @@ jobs:
         with:
           name: gmod-native-loader
           path: out/dist/*.zip
+          retention-days: 2
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v6
@@ -93,6 +95,7 @@ jobs:
             out/build/win64-release/Testing/Temporary/LastTest.log
             out/m4-synthetic/
             out/m5-synthetic/
+          retention-days: 2
           if-no-files-found: ignore
 
   release:

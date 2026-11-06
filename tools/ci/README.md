@@ -29,12 +29,14 @@ source copy in `packages/model-hotloader/source` ([ADR 0107](../../docs/decision
    [`tools/build_package.py`](../build_package.py.md) `--built out/ci/built` and
    [`tools/package_report.py`](../package_report.py.md) into the run's summary. `rtx-package-report`
    keeps the report. The older `rtx-package` artifacts are deleted, then the new `.gma` is uploaded as
-   `rtx-package`. The order is deliberate (review R19, F-07): Actions storage (2 GB) cannot hold two
-   packages, so a failed upload leaves none; the last good package stays on the Workshop item and in
-   `out\workshop\ci` on the developer's machine, and a new run builds it again.
+   `rtx-package`. The order is deliberate (review R19, F-07): Actions storage (2 GB) may not hold two
+   packages beside the other artifacts, so a failed upload leaves none; the last good package stays on
+   the Workshop item and in `out\workshop\ci` on the developer's machine, and a new run builds it again.
+   Both artifacts expire two days after the run, like every artifact
+   ([ADR 0113](../../docs/decisions/0113-every-actions-artifact-expires-after-two-days.md)).
 4. On the developer's machine, [`tools/publish_workshop.py`](../publish_workshop.py.md) `--from-ci
-   --commit <sha>` uploads that `.gma` after checking it against the report. Without a successful run of
-   that commit it uploads nothing and exits 1.
+   --commit <sha>` uploads that `.gma` after checking it against the report, within those two days.
+   Without a successful run of that commit, or once its artifacts are gone, it uploads nothing and exits 1.
 
 **Permissions** (review R19, F-04): the workflow's token can only read the repository. Only the
 `package` job, which deletes the older artifacts, may also write to Actions; the `runtime`, `modules`

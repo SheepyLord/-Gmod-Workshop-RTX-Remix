@@ -36,7 +36,7 @@ patched copy of GMod managed by RTXLauncher.
 | `skills/` | Agent skills, each a `SKILL.md` with references and scripts: AI PBR materials for MMD characters (`mmd-remix-pbr`, with the `rpai` tool) and for maps (`remix-map-pbr`), and Workshop content packs with their dependencies (`workshop-content-pack`) ([skills/README.md](skills/README.md)) |
 | `dist/` | What the end-user bundle ships besides `winmm.dll`: the default `native-loader/config.json` and the player README ([ADR 0017](docs/decisions/0017-release-bundle-and-ci.md)) |
 | `glass/` | The glass system (G1, [ADR 0070](docs/decisions/0070-glass-overhaul.md)): `addon/` (the Lua add-on: panes, damage, cracks, fracture, broken-glass manager), `native/` (the Jolt client module for broken glass) |
-| `.github/workflows/` | CI: `build.yml` runs `tools\test.ps1 -Config Release` on every push and pull request and keeps the bundle as an artifact; a `v*` tag releases it. `package.yml`, started only by a person for a release, builds the RTX package on GitHub, every native binary built or fetched there, reports the SHA-256 of the `.gma` and of every file in it, and keeps the newest `.gma` as its one `rtx-package` artifact ([ADR 0106](docs/decisions/0106-the-rtx-package-built-on-github.md), [ADR 0108](docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)) |
+| `.github/workflows/` | CI: `build.yml` runs `tools\test.ps1 -Config Release` on every push and pull request and keeps the bundle as an artifact; a `v*` tag releases it. `package.yml`, started only by a person for a release, builds the RTX package on GitHub, every native binary built or fetched there, reports the SHA-256 of the `.gma` and of every file in it, and keeps the newest `.gma` as its one `rtx-package` artifact ([ADR 0106](docs/decisions/0106-the-rtx-package-built-on-github.md), [ADR 0108](docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)). Every artifact, the loader's bundle included, expires two days after its run ([ADR 0113](docs/decisions/0113-every-actions-artifact-expires-after-two-days.md)) |
 | `docs/` | Architecture, package format, on-disk layout, testing, roadmap, research, decisions |
 | `CHANGELOG.md` | Notable changes, newest first |
 
@@ -89,7 +89,9 @@ patched copy of GMod managed by RTXLauncher.
      a branch first. **Only a person starts GitHub's package workflow** (`package.yml`, every native
      binary built there and a SHA-256 report), for a release; `publish_workshop.py --from-ci` then
      uploads that run's `.gma` ([ADR 0106](docs/decisions/0106-the-rtx-package-built-on-github.md),
-     [ADR 0108](docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)). Never
+     [ADR 0108](docs/decisions/0108-releases-built-on-github-by-hand-development-built-here.md)), within
+     two days, before the run's artifacts expire
+     ([ADR 0113](docs/decisions/0113-every-actions-artifact-expires-after-two-days.md)). Never
      start that workflow yourself. The build checks the package with the **main checkout's** built
      `nlctl.exe`: after a manifest change (a new key or kind), run `tools\build.ps1 -Config Release`
      there before the merge, or the publish fails. Install the hooks once per clone:

@@ -8,12 +8,13 @@
 # The run's summary reports the SHA-256 of the .gma and of every file in it, and where each native binary
 # came from (tools/package_report.py); the artifact rtx-package-report keeps that report. The .gma is the
 # artifact rtx-package, and only the newest one is kept: the older ones are deleted before it is uploaded.
-# That order is deliberate (review R19, F-07): Actions storage is 2 GB, a package takes about 0.84 GB and
-# the per-push bundles more, so two packages at once would fail the upload. A failed upload therefore
+# That order is deliberate (review R19, F-07): Actions storage is 2 GB and a package takes about 0.84 GB,
+# so two packages beside the other artifacts could fail the upload. A failed upload therefore
 # leaves no package artifact; the last good package stays on the Workshop item and in the developer's
 # out/workshop/ci, and a new run builds it again. tools/publish_workshop.py --from-ci, on the developer's
 # machine (it needs Steam), uploads exactly that .gma to the Workshop after checking its SHA-256 against
-# the report.
+# the report. Both artifacts expire two days after the run, like every artifact (ADR 0113): run
+# --from-ci within that time, or start this workflow again.
 #
 # Only a person starts it (Actions > Build the RTX package > Run workflow), when releasing (ADR 0108):
 # no push, pull request, tag or schedule does. During development the Workshop item gets packages built
@@ -325,7 +326,7 @@ jobs:
         with:
           name: rtx-package-report
           path: out/report/
-          retention-days: 90
+          retention-days: 2
           if-no-files-found: error
 
       # Before this run's package is uploaded, deliberately (review R19, F-07): Actions storage cannot hold
@@ -347,7 +348,7 @@ jobs:
         with:
           name: rtx-package
           path: out/dist/*.gma
-          retention-days: 90
+          retention-days: 2
           compression-level: 6
           if-no-files-found: error
 

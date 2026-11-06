@@ -347,6 +347,8 @@ class GitHubFakes:
                        'binaries': 54, 'compiled': 9, 'fetched': 41, 'from_packages': 4}
         self.runs = [{'id': 77, 'run_number': 5, 'status': 'completed', 'conclusion': 'success',
                       'html_url': 'https://github.com/o/r/actions/runs/77'}]
+        self.artifacts = [{'name': name, 'expired': False, 'expires_at': '2026-11-08T00:00:00Z'}
+                          for name in pub.PACKAGE_ARTIFACTS]
         self.calls, self.uploads = [], []
         self.patches = [mock.patch.object(pub, 'STATE', self.root / 'state'),
                         mock.patch.object(pub, 'gh', side_effect=self.fake_gh),
@@ -362,6 +364,8 @@ class GitHubFakes:
 
     def fake_gh(self, *args):
         self.calls.append(args)
+        if args[0] == 'api' and '/artifacts' in args[1]:
+            return json.dumps({'artifacts': self.artifacts})
         if args[0] == 'api':
             return json.dumps({'workflow_runs': self.runs})
         dest = Path(args[args.index('-D') + 1])
@@ -443,6 +447,24 @@ class FromCiTests(GitHubFakes, unittest.TestCase):
         self.assertEqual(result['result'], 'dry-run')
         self.assertEqual(self.uploads, [])
         self.assertTrue(any(call[:2] == ('run', 'download') for call in self.calls))
+
+    def test_an_expired_or_deleted_package_is_named_and_the_last_download_kept(self):
+        # ADR 0113: artifacts expire two days after their run, and a newer run deletes the older packages.
+        # --from-ci then says which artifact is gone and how to get it again, instead of gh's own error, and
+        # asks before it clears out/workshop/ci, which holds the last package it downloaded.
+        previous = pub.STATE / 'ci' / 'package' / 'p-0.gma'
+        previous.parent.mkdir(parents=True)
+        previous.write_bytes(b'GMAD the last release')
+        self.artifacts[1]['expired'] = True
+        with self.assertRaisesRegex(pub.PublishError, r'rtx-package artifact is gone \(expired 2026-11-08.*Run workflow'):
+            self.publish()
+        self.artifacts = self.artifacts[:1]  # deleted: no longer listed at all
+        with self.assertRaisesRegex(pub.PublishError, r'rtx-package artifact is gone \(missing or deleted\)'):
+            self.publish()
+        self.assertFalse(any(call[:2] == ('run', 'download') for call in self.calls))
+        self.assertEqual(previous.read_bytes(), b'GMAD the last release')
+        self.assertEqual(self.uploads, [])
+        self.assertFalse((pub.STATE / 'published.json').exists())
 
 
 class ReleaseThenHookTests(GitHubFakes, unittest.TestCase):
@@ -665,6 +687,29 @@ class HookTests(unittest.TestCase):
         text = (REPO / '.github' / 'workflows' / 'package.yml').read_text(encoding='utf-8')
         trigger = text.split('\non:', 1)[1].split('\n\n', 1)[0]
         self.assertEqual([line.strip() for line in trigger.strip().splitlines()], ['workflow_dispatch:'])
+
+    def test_every_artifact_expires_after_two_days(self):
+        # ADR 0113 (the user, 2026-11-05): every artifact the workflows upload, the loader's bundle included,
+        # expires two days after its run; --from-ci's message names the same number (ARTIFACT_DAYS).
+        found = {}
+        for workflow in ('build.yml', 'package.yml'):
+            lines = (REPO / '.github' / 'workflows' / workflow).read_text(encoding='utf-8').splitlines()
+            for at, line in enumerate(lines):
+                if 'uses: actions/upload-artifact@' not in line:
+                    continue
+                start = next(i for i in range(at, -1, -1) if lines[i].lstrip().startswith('- '))
+                indent = len(lines[start]) - len(lines[start].lstrip())
+                step = []
+                for following in lines[start + 1:]:
+                    if following.strip() and len(following) - len(following.lstrip()) <= indent:
+                        break
+                    step.append(following.strip())
+                name = next(item.split(':', 1)[1].strip() for item in step if item.startswith('name:'))
+                found[f'{workflow} {name}'] = [item.split(':', 1)[1].strip() for item in step
+                                               if item.startswith('retention-days:')]
+        self.assertLessEqual({'build.yml gmod-native-loader', 'build.yml test-evidence',
+                              'package.yml rtx-package-report', 'package.yml rtx-package'}, set(found))
+        self.assertEqual({key: days for key, days in found.items() if days != [str(pub.ARTIFACT_DAYS)]}, {})
 
     def test_the_parts_a_config_unpacks(self):
         config = {'parts': [{'name': 'a', 'build': 'package_runtime', 'args': ['--runtime', 'out/inputs/runtime/files']},

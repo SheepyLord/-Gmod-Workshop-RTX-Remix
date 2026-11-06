@@ -147,4 +147,6 @@ away from the sun and toward the horizon is where grazing rays take the most pro
 - **One compressed lump.** A single compressed glass map lump is still decoded in one call, so a crafted map
   can hold shutdown for an estimated 1-2 s (R19-G).
 - **Actions storage.** The per-push build bundles fill the 2 GB in about two weeks at the current pace.
-  R19-T proposes `retention-days: 7`; that is the user's call.
+  R19-T proposes `retention-days: 7`; that is the user's call. After the release the user chose two
+  days for every artifact, the loader's bundle included
+  ([ADR 0113](../decisions/0113-every-actions-artifact-expires-after-two-days.md)).

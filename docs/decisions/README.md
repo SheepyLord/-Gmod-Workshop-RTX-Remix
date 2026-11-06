@@ -146,3 +146,4 @@ Each with the reason it lost.
 - [0110: Thin decks close; the middle deck has a cover of its own; sun dogs; a milky haze; a longer twilight](0110-thin-decks-a-middle-deck-of-its-own-ice-arcs-a-milky-haze-and-twilight.md) (R18, the user's request to address R17's limits; runtime patch 0032).
 - [0111: Content packages come only from subscribed Workshop items](0111-content-packages-only-from-subscribed-items.md) (R19 H2, the pre-release review; amends decision 1 of 0027).
 - [0112: The RTX fixes' Lua functions keep paths in the game, and ToPBR follows the player's settings](0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md) (R19 H3, the pre-release review).
+- [0113: Every Actions artifact expires after two days](0113-every-actions-artifact-expires-after-two-days.md) (after R19, the user; amends decision 1 of 0017 and decisions 3 and 4 of 0106).

@@ -108,6 +108,11 @@ Versions follow the loader's CMake project version once it ships; until then eve
 - **Released as v0.14.0.** The GitHub release has loader 0.14.0's bundle and its symbols. The RTX package
   that GitHub's workflow built for it (run 42130241622, `.gma` SHA-256 `12c404dc...`) is on Workshop item
   3829070317 as 0.0.0-dev.20261106004558+ad5cf8e8.
+- **After the release: every Actions artifact expires two days after its run**, the loader's bundle
+  included (the user; [ADR 0113](docs/decisions/0113-every-actions-artifact-expires-after-two-days.md)).
+  Actions storage is 2 GB, and the per-push bundles, kept 90 days, would have filled it in about two
+  weeks. `publish_workshop.py --from-ci` now names an expired or deleted package artifact, says to start
+  the workflow again, and keeps the last download.
 
 ### R18
 

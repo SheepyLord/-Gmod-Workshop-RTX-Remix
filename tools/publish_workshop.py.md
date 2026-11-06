@@ -74,8 +74,13 @@ A person has started the package workflow on GitHub for the commit (no push star
    started the workflow (ADR 0106).
 2. **Lock and record.** The same lock and `out\workshop` state as below. If `published.json` already
    names that run, it stops (`unchanged`).
-3. **Download and check.** `gh run download` of the artifacts `rtx-package-report` and `rtx-package`
-   into `out\workshop\ci` (the folder is emptied first: only the newest download is kept). The `.gma`'s
+3. **Download and check.** First `gh api .../actions/runs/<id>/artifacts`: the run must still have both
+   artifacts. Every artifact expires two days after its run (`ARTIFACT_DAYS`,
+   [ADR 0113](../docs/decisions/0113-every-actions-artifact-expires-after-two-days.md)), and a newer
+   package run deletes the older packages. An expired or missing one is an error (exit 1) that names it
+   and says to start the workflow again; nothing is downloaded, and `out\workshop\ci` keeps the last
+   download. Then `gh run download` of the artifacts `rtx-package-report` and `rtx-package` into
+   `out\workshop\ci` (the folder is emptied first: only the newest download is kept). The `.gma`'s
    name, size and SHA-256 must be the report's, or it stops before uploading.
 4. **Upload.** `gmpublish update` with that file; the change note names the version, the commit, the
    run's URL and the `.gma`'s SHA-256. `--dry-run` stops before this step.
