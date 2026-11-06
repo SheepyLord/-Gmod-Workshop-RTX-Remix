@@ -29,7 +29,7 @@
   function version(value) {
     if (typeof value !== 'string' || value.length > 128) return null;
     var match = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(value);
-    if (!match) return null;
+    if (!match || match[0].length !== value.length) return null;
     var core = match.slice(1, 4), pre = match[4] ? match[4].split('.') : [];
     if (core.some(function (n) { return decimal(n, '18446744073709551615') > 0; }) ||
         pre.some(function (n) { return /^[0-9]+$/.test(n) && n.length > 1 && n[0] === '0'; })) return null;
@@ -74,7 +74,10 @@
   }
   function navigate(target) {
     allowedRoute = target;
-    root.$evalAsync(function () { location.url(target); });
+    function fallback() { failed = true; window.location.hash = '#' + target; }
+    try {
+      root.$evalAsync(function () { try { location.url(target); } catch (_) { fallback(); } });
+    } catch (_) { fallback(); }
   }
   function failOpen() {
     failed = true; close();
@@ -143,8 +146,10 @@
   // Registering in install() would be too late on the real stock page.
   try {
     if (typeof App !== 'undefined' && App.run) App.run(['$rootScope', '$location', function (r, loc) {
+        if (!r || typeof r.$on !== 'function' || !loc || typeof loc.url !== 'function' || typeof loc.path !== 'function') return;
         root = r; location = loc;
         r.$on('$locationChangeStart', function (event) {
+          try {
           var target = loc.url();
           if (!/^\/servers(?:\/|$)/i.test(loc.path())) { if (pending) { pending = null; close(); } return; }
           if (failed || !window.lua || !window.lua.Run || state && state.multiplayer_dismissed) return;
@@ -152,6 +157,7 @@
           // Do not cancel a route until the modal has actually been built successfully.
           multiplayer(target);
           if (modal && pending) event.preventDefault();
+          } catch (_) { failOpen(); }
         });
     }]);
   } catch (_) { failOpen(); }
@@ -159,7 +165,6 @@
     if (!requested && attempts++ < 120 && window.lua && window.lua.Run && window.NativeLoaderMenuChoices && data.session_token) {
       try { run(window.NativeLoaderMenuChoices, data.session_token); requested = true; } catch (_) { failOpen(); }
     }
-    if (!state) state = null;
     reminder();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);

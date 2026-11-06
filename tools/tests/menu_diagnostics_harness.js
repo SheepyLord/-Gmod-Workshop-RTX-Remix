@@ -225,7 +225,8 @@ console.log('PASS menu diagnostics');
 
 // The real RTX modal and Angular route listener, including navigation by code and a pause menu.
 function menuCase(options = {}) {
-  const doc = makeDocument(), requests = [], intervals = [], handlers = {};
+  const doc = makeDocument(), requests = [], intervals = [], handlers = {}, ready = [];
+  if (options.loading) { doc.readyState = 'loading'; doc.addEventListener = (_, fn) => ready.push(fn); }
   const scope = {Language: options.language || 'en', InGame: !!options.inGame};
   let route = options.route || '/', proposed = route;
   const loc = {path: () => decodeURIComponent(proposed.split('?')[0]),
@@ -237,7 +238,7 @@ function menuCase(options = {}) {
       if (!cancelled) route = value;
       proposed = route;
     }};
-  const r = {$on(name, fn) { handlers[name] = fn; }, $evalAsync(fn) { fn(); }};
+  const r = {$on(name, fn) { handlers[name] = fn; }, $evalAsync: options.noDigest ? undefined : function (fn) { fn(); }};
   const released = options.release === undefined ? '0.16.0' : options.release;
   const diagnostic = {...data, rtx_active: options.active !== false, session_token: 'start-123',
     loader: {...data.loader, version: options.current || '0.15.0'},
@@ -253,6 +254,7 @@ function menuCase(options = {}) {
   const ctx = {window: win, document: doc, gScope: scope, App: {run(parts) { parts[parts.length - 1](r, loc); }}};
   vm.runInNewContext(source, ctx);
   const view = {doc, win, requests, scope, loc, ctx, tick: () => intervals.forEach(fn => fn()), route: () => route,
+    ready: () => ready.forEach(fn => fn()), hasRouteHandler: () => !!handlers.$locationChangeStart,
     receive(value = {}) { win.NativeLoaderReceiveMenuState({session_token: 'start-123', ...value}); },
     modal: () => doc.getElementById('native-loader-modal'),
     click(key) {
@@ -279,7 +281,7 @@ for (const [running, latest, expected] of [
   ['1.0.0-alpha', '1.0.0-alpha.1', true], ['1.0.0-9', '1.0.0-alpha', true],
   ['1.0.0-a', '1.0.0-b', true], ['1.0.0', '01.1.0', false], ['1.0.0', '1.0.1-01', false],
   ['1.0.0', '1.0.1+build', false], ['1.0.0', '1.0.1-a..b', false],
-  ['1.0.0', '18446744073709551616.0.0', false]
+  ['1.0.0', '18446744073709551616.0.0', false], ['1.0.0', '1.0.1\n', false]
 ]) {
   const view = menuCase({current: running, release: latest}); view.receive();
   assert.equal(!!view.modal(), expected, running + ' versus ' + latest);
@@ -303,6 +305,9 @@ const wrongToken = menuCase(); wrongToken.receive({session_token: 'another-start
 const away = menuCase({route: '/addons/'}); away.receive(); assert(!away.modal());
 away.loc.url('/'); away.tick(); assert(away.modal(), 'wait for home before consuming reminder');
 const pause = menuCase({inGame: true}); pause.receive(); assert(!pause.modal(), 'no menu update reminder during gameplay');
+const loading = menuCase({loading: true, release: null});
+assert(loading.hasRouteHandler(), 'register App.run before DOM-ready Angular bootstrap');
+loading.ready(); loading.receive(); loading.loc.url('/servers/'); assert(loading.modal());
 for (const inGame of [false, true]) {
   for (const target of ['/servers/', '/servers', '/servers/history?sort=ping', '/%73ervers/']) {
     const view = menuCase({inGame, release: null}); view.receive();
@@ -340,4 +345,10 @@ all(earlyClick.modal()).find(n => n.tag === 'input').checked = true;
 earlyClick.click('multiplayer_continue'); assert.equal(earlyClick.route(), '/servers/');
 const lateState = menuCase({release: null}); lateState.loc.url('/servers/'); lateState.receive({multiplayer_dismissed: true});
 assert(!lateState.modal()); assert.equal(lateState.route(), '/servers/');
+for (const noDigest of [false, true]) {
+  const view = menuCase({release: null, noDigest}); view.receive(); view.loc.url('/servers/');
+  if (!noDigest) view.loc.url = function () { throw Error('location API changed'); };
+  view.click('multiplayer_continue');
+  assert(!view.modal()); assert.equal(view.win.location.hash, '#/servers/', 'direct hash fallback when Angular navigation fails');
+}
 console.log('PASS loader reminders and multiplayer routes');
