@@ -28,8 +28,8 @@
   }
  },
  "packaged": {
-  "d3d9.dll": "34287de8edcbffea4607171cf5f1f8ca0252360af258a767905f42e64853bea0",
-  "built_from": "HEAD -> claude/r19-review-fixes 51cf1b8b (with what the rest of this record names); the stored d3d9.dll was built from 248fa6ee, the same tree before its author was corrected to the fork's git identity, and reports remix-main+248fa6ee",
+  "d3d9.dll": "00124bf6009ee6acb2b2ffbc64d8a724aeb0ed700fa88b0dc4dbb7a8720b05a1",
+  "built_from": "HEAD -> claude/r20-int 3cb32fb8 (with what the rest of this record names)",
   "commit": "c6b48ed1a40f3451546137766d759dc13815f3a6",
   "submodules": {
    "submodules/nvapi": {
@@ -87,15 +87,10 @@
    "patches/0031-Atmosphere-cloud-genera-per-weather-a-sun-disc-and-a.patch": "0e6446b23200865cc36d85b153c0b397f07a4f266733ab63ccfec02cd91fe424",
    "patches/0032-Atmosphere-thin-decks-a-middle-deck-of-its-own-sun-d.patch": "57ac7bda0469eecd08fb79bff7651299beb373b9702d1a14dbd72e4f65999513",
    "patches/0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch": "30ba4b5cf07de1a73f2a60954f864bd3b509607c908f8f127794ba2496bc8524",
-   "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
-  }
- },
- "pending_patches": {
-  "why": "R20-D (0034, 0035) and R20-E (0040) built and tested these locally; Claude imports one runtime DLL with every R20 runtime patch after the merge. The packaged DLL and its provenance remain unchanged.",
-  "files": {
    "patches/0034-Keep-Source-effect-categories-transient-and-rasteriz.patch": "ea169565c7f83ae5d9ec8af0afd3732e794f37abc14d61031a244cf012fc21b5",
    "patches/0035-Translate-premultiplied-transmission-filters-without.patch": "b0cabb9483c2c3919f9f40a6d281a86cd59700a85330d60d8d885d6da2c70c6a",
-   "patches/0040-Publish-live-upscaling-state-for-startup-advice.patch": "1b44ea9bce85fd4da91597ae6aa0d5191d015833e39deb762a5a35f390ade2a5"
+   "patches/0040-Publish-live-upscaling-state-for-startup-advice.patch": "1b44ea9bce85fd4da91597ae6aa0d5191d015833e39deb762a5a35f390ade2a5",
+   "submodules/rtxdi.patch": "006d534a48637125dcb1e4a5fcca9eabb8bd96f7a8935b5eb1ec49a64b0e1be5"
   }
  }
 }
