@@ -2,6 +2,12 @@
 
 ## R20-A: loader release reminders and multiplayer entry
 
+Local completion: **27 Release CTests and 682 Python tests pass** (two existing skips). Real menu
+captures pass in English/Simplified Chinese at 1600x900 and 3840x2160; the client fallback and map
+change pass in RTX at 900, with its 4K layout isolated under vanilla rendering. The 4K RTX map
+device losses and depot-manifest verification differences are documented with restoration evidence
+in [R20-A-report.md](handover/R20-A-report.md).
+
 `test_presentation_ui.py` runs the actual menu JS and the Lua choice/companion reminder harnesses:
 strict release URLs, release/prerelease ordering, equal/newer loaders, Later, per-version ignore,
 once-per-start across map/page reloads, all seven menu languages, 900/2160 companion scaling,

@@ -1,5 +1,10 @@
 # Roadmap
 
+R20-A implementation is **complete locally** on `r20-menu` (loader 0.15.0), with translated update
+reminders and multiplayer entry warnings. Menu QA passes in English/Chinese at 900 and 2160;
+4K RTX map stability and the PoC's depot-manifest differences remain integration follow-ups.
+See [R20-A-report.md](handover/R20-A-report.md); the earlier start note below is retained as history.
+
 R20-A (items 46 and 50) is in progress on `r20-menu`: loader 0.15.0's published-release reminder,
 the older-loader companion fallback and the multiplayer entry warning. The release record stays
 at 0.14.0 until the next GitHub release exists. The R20 integration/release remains with the lead;

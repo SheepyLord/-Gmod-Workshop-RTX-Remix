@@ -1,5 +1,8 @@
 # Handovers
 
+R20-A's local implementation and QA are recorded in [R20-A-report.md](R20-A-report.md), including
+the real menu engine fixes, release procedure and the 4K RTX map/depot-fixture acceptance limits.
+
 R20-A implements the loader update reminder and multiplayer warning on `r20-menu`; its brief is
 [R20-A-loader-menu.md](R20-A-loader-menu.md), under [R20-plan.md](R20-plan.md).
 
