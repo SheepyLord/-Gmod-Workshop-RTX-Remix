@@ -201,6 +201,7 @@ std::string decorate_main_menu(std::string_view original, std::string_view diagn
   return std::string(original) + ascii_javascript("\nwindow.NativeLoaderClientBootstrap = " + std::string(client_bootstrap ? "true" : "false") +
     ";\nwindow.NativeLoaderDiagnostics = " + std::string(diagnostics_json) +
     ";\nwindow.NativeLoaderReadNotices = " + json::quote(kDiagnosticsNotices) +
+    ";\nwindow.NativeLoaderMenuChoices = " + json::quote(kMenuChoices) +
     ";\nwindow.NativeLoaderDiagnosticLabels = " + std::string(kDiagnosticsLabels) + ";\n" + std::string(kDiagnosticsScript));
 }
 

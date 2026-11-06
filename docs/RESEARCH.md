@@ -1,5 +1,21 @@
 # Research notes
 
+## R20-A: menu routes and physical release records (2026-11-06)
+
+- Stock PoC `html/js/menu/control.Menu.js:18` declares MenuController; `html/js/menu/common.js:71`
+  sets Angular's hash prefix to empty. `/servers` is therefore the route behind `#/servers/`.
+  Register an App.run location listener at script evaluation, before Angular's DOM-ready bootstrap;
+  adding a run block from a later DOMContentLoaded listener does not execute it in that injector.
+- GMod's [file search paths](https://wiki.facepunch.com/gmod/File_Search_Paths) distinguish physical
+  BASE_PATH (installation root) and MOD (garrysmod only) from GAME (all mounted add-ons). The
+  companion uses BASE_PATH to read the journal and exact release resource, so a mounted copy cannot
+  replace it. [file.Open](https://wiki.facepunch.com/gmod/file.Open) permits these JSON files; its
+  blocked filenames concern server/config cfg files and dump/database extensions.
+- The existing manifest SemVer implementation in `loader/core/src/manifest.cpp:188` parses uint64
+  core components and compares numeric prerelease identifiers by decimal length/text. The menu and
+  companion use the same bounds and ordering without double-precision conversion. The separate
+  published-release record accepts no build metadata and its exact URL is derived only for validation.
+
 ## R13-F: when a texture loaded during a frame's draws reaches that frame (2026-11-03, Claude)
 
 Runtime source at `403b2336` (patch 0028); the patch, the A/B and its evidence are in the

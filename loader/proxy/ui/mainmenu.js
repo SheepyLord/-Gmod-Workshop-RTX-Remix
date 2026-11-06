@@ -16,6 +16,155 @@
   }
   request();
 })();
+
+// RTX notices use the stock menu Lua bridge, and Angular's navigation event in both menu modes.
+(function () {
+  'use strict';
+  var data = window.NativeLoaderDiagnostics, catalogs = window.NativeLoaderDiagnosticLabels;
+  if (!data || !data.rtx_active || !catalogs || window.NativeLoaderMenuNoticesInstalled) return;
+  window.NativeLoaderMenuNoticesInstalled = true;
+  var state, modal, pending, root, location, allowedRoute, shown = false, failed = false;
+  var requested = false, attempts = 0;
+  function decimal(a, b) { return a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0; }
+  function version(value) {
+    if (typeof value !== 'string' || value.length > 128) return null;
+    var match = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(value);
+    if (!match) return null;
+    var core = match.slice(1, 4), pre = match[4] ? match[4].split('.') : [];
+    if (core.some(function (n) { return decimal(n, '18446744073709551615') > 0; }) ||
+        pre.some(function (n) { return /^[0-9]+$/.test(n) && n.length > 1 && n[0] === '0'; })) return null;
+    return {core: core, pre: pre};
+  }
+  function compare(a, b) {
+    for (var i = 0; i < 3; i++) { var c = decimal(a.core[i], b.core[i]); if (c) return c; }
+    if (!a.pre.length || !b.pre.length) return a.pre.length ? -1 : b.pre.length ? 1 : 0;
+    for (var j = 0; j < Math.min(a.pre.length, b.pre.length); j++) {
+      var x = a.pre[j], y = b.pre[j], xn = /^[0-9]+$/.test(x), yn = /^[0-9]+$/.test(y);
+      var order = xn && yn ? decimal(x, y) : xn !== yn ? (xn ? -1 : 1) : x < y ? -1 : x > y ? 1 : 0;
+      if (order) return order;
+    }
+    return a.pre.length - b.pre.length;
+  }
+  var release = data.released_loader, current = version(data.loader && data.loader.version);
+  if (!release || Object.keys(release).sort().join(',') !== 'url,version' || !version(release.version) ||
+      release.url !== 'https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v' + release.version ||
+      !current || compare(version(release.version), current) <= 0) release = null;
+  function labels() {
+    var code = String(typeof gScope !== 'undefined' && gScope && gScope.Language || 'en').toLowerCase();
+    return catalogs[code === 'zh' || code === 'zh-cn' ? 'zh-CN' : code === 'zh-tw' ? 'zh-TW' : code] || catalogs.en;
+  }
+  function run() {
+    if (!window.lua || typeof window.lua.Run !== 'function') throw Error('menu bridge unavailable');
+    return window.lua.Run.apply(window.lua, arguments);
+  }
+  function close() { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); modal = null; }
+  function node(tag, parent, text) {
+    var child = document.createElement(tag); if (text) child.textContent = text; parent.appendChild(child); return child;
+  }
+  function dialog(title) {
+    close();
+    modal = node('div', document.body); modal.id = 'native-loader-modal';
+    var card = node('section', modal); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true');
+    var heading = node('h2', card, title); heading.id = 'native-loader-modal-title';
+    card.setAttribute('aria-labelledby', heading.id);
+    return card;
+  }
+  function button(parent, text, action) {
+    var item = node('button', parent, text); item.type = 'button'; item.onclick = action; return item;
+  }
+  function navigate(target) {
+    allowedRoute = target;
+    root.$evalAsync(function () { location.url(target); });
+  }
+  function failOpen() {
+    failed = true; close();
+    if (pending) { var target = pending; pending = null; navigate(target); }
+  }
+  function multiplayer(target) {
+    try {
+      pending = target;
+      var l = labels(), card = dialog(l.multiplayer_title);
+      node('p', card, l.multiplayer_rules); node('p', card, l.multiplayer_performance); node('p', card, l.multiplayer_risk);
+      var checkLabel = node('label', card), check = node('input', checkLabel); check.type = 'checkbox';
+      node('span', checkLabel, l.multiplayer_remember);
+      var actions = node('div', card);
+      button(actions, l.multiplayer_continue, function () {
+        if (check.checked) {
+          if (!state) state = {};
+          state.multiplayer_dismissed = true;
+          try { run('file.CreateDir("native-loader") file.Write("native-loader/multiplayer-warning-dismissed.txt", "1")'); } catch (_) { }
+        }
+        var next = pending; pending = null; close(); navigate(next);
+      }).focus();
+      button(actions, l.multiplayer_back, function () { pending = null; close(); navigate('/'); });
+    } catch (_) { failOpen(); }
+  }
+  function reminder() {
+    if (!release || !state || shown || state.update_seen || state.ignored_version === release.version || modal || failed) return;
+    var scope = typeof gScope !== 'undefined' ? gScope : null;
+    if (!scope || scope.InGame || location && location.path() !== '/' ||
+        !location && window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#') return;
+    try {
+      var l = labels(), card = dialog(l.update_title);
+      node('p', card, l.update_versions.replace('{current}', data.loader.version).replace('{latest}', release.version));
+      node('p', card, l.update_instructions);
+      var actions = node('div', card);
+      button(actions, l.update_open, function () { try { run('gui.OpenURL( %s )', release.url); } catch (_) { } close(); });
+      button(actions, l.update_later, close).focus();
+      button(actions, l.update_ignore.replace('{version}', release.version), function () {
+        try { run('file.CreateDir("native-loader") file.Write("native-loader/loader-update-ignored.txt", %s)', release.version); } catch (_) { }
+        close();
+      });
+      shown = true;
+      run('_G.NativeLoaderUpdateSession = %s', data.session_token);
+    } catch (_) { close(); }
+  }
+  window.NativeLoaderReceiveMenuState = function (value) {
+    if (!value || value.session_token !== data.session_token) return;
+    state = {update_seen: value.update_seen === true, ignored_version: value.ignored_version,
+      multiplayer_dismissed: value.multiplayer_dismissed === true};
+    if (pending && state.multiplayer_dismissed) { var target = pending; pending = null; close(); navigate(target); }
+    reminder();
+  };
+  function install() {
+    if (!document.body) return;
+    if (!document.getElementById('native-loader-modal-style')) {
+      var style = node('style', document.head); style.id = 'native-loader-modal-style';
+      style.textContent = '#native-loader-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.76);font:clamp(16px,1.65vh,36px)/1.55 Arial,sans-serif;color:#edf4ff}' +
+        '#native-loader-modal section{box-sizing:border-box;width:44em;max-width:90vw;max-height:90vh;overflow:auto;background:#162333;border:2px solid #468ed0;border-radius:8px;padding:1.6em;box-shadow:0 8px 50px #000}' +
+        '#native-loader-modal h2{font-size:1.35em;margin:0 0 .8em}#native-loader-modal p{margin:.8em 0;white-space:pre-line}' +
+        '#native-loader-modal button{font:inherit;padding:.5em .8em;margin:.8em .6em 0 0;background:#264867;color:white;border:1px solid #8ab1d7;border-radius:4px;cursor:pointer}' +
+        '#native-loader-modal label{display:flex;align-items:center;gap:.6em;margin-top:1em;cursor:pointer}#native-loader-modal input{width:1.1em;height:1.1em}';
+    }
+    poll();
+    if (window.setInterval) window.setInterval(poll, 500);
+  }
+  // Register while scripts are loading, before Angular's DOM-ready bootstrap consumes run blocks.
+  // Registering in install() would be too late on the real stock page.
+  try {
+    if (typeof App !== 'undefined' && App.run) App.run(['$rootScope', '$location', function (r, loc) {
+        root = r; location = loc;
+        r.$on('$locationChangeStart', function (event) {
+          var target = loc.url();
+          if (!/^\/servers(?:\/|$)/i.test(loc.path())) { if (pending) { pending = null; close(); } return; }
+          if (failed || !window.lua || !window.lua.Run || state && state.multiplayer_dismissed) return;
+          if (allowedRoute === target) { allowedRoute = null; return; }
+          // Do not cancel a route until the modal has actually been built successfully.
+          multiplayer(target);
+          if (modal && pending) event.preventDefault();
+        });
+    }]);
+  } catch (_) { failOpen(); }
+  function poll() {
+    if (!requested && attempts++ < 120 && window.lua && window.lua.Run && window.NativeLoaderMenuChoices && data.session_token) {
+      try { run(window.NativeLoaderMenuChoices, data.session_token); requested = true; } catch (_) { failOpen(); }
+    }
+    if (!state) state = null;
+    reminder();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+})();
 (function () {
   'use strict';
   var data = window.NativeLoaderDiagnostics;

@@ -1,5 +1,8 @@
 # test_presentation_ui.py
 
+R20-A adds the Lua companion update and menu-choice harnesses and the published-release record's
+version/URL/build-version invariant. The Node harness also covers the real route guard and modals.
+
 R7-B rejects replacement question marks and U+FFFD in every catalog value, catching lossy
 Windows shell encodings before apparently complete translated catalogs reach the embedded DLL.
 

@@ -20,6 +20,9 @@ journals, disabled policy and an active renderer that is not the package's deplo
 Only package gmod-rtx-remix is accepted. Local and development sources must match their own
 allowlist entries; Workshop loading is limited to distribution item 3829070317.
 
+R20-A exposes the same `allowed_runtime_source` check to the loader release-record reader, so menu
+announcements cannot obtain a broader native source policy than the client bootstrap.
+
 Catalog keys identify an add-on and virtual Lua path. Callback reads are exact map lookups into an
 immutable verified snapshot, not arbitrary filesystem reads. Source is limited to 2 MiB per file
 and 64 MiB total, with NUL text and case-colliding keys refused. Generic developer automation

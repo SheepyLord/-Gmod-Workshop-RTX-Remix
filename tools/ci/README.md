@@ -1,5 +1,13 @@
 # tools/ci
 
+R20-A release announcement: after a GitHub loader release exists, its maintainer edits
+`companion/nativeloader/resource/loader-release.json` to that released version and the exact
+`https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v<version>` page, runs the
+Release gate, commits and pushes main. The Workshop package then carries the reminder. Keep this
+hand-edited record at 0.14.0 during 0.15.0 development; CMake is not its source. Publishing a new
+bootstrap and updating this record are separate release steps. The record adds no manifest key
+or minimum loader requirement ([ADR 0115](../../docs/decisions/0115-released-loader-record-and-reminders.md)).
+
 What GitHub's package workflow ([`.github/workflows/package.yml`](../../.github/workflows/package.yml))
 builds the RTX package's native binaries from, and the scripts it runs (R16,
 [ADR 0106](../../docs/decisions/0106-the-rtx-package-built-on-github.md)). Every native binary in the

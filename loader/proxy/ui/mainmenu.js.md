@@ -1,6 +1,6 @@
 # mainmenu.js
 
-Two independent parts, appended to the stock control.Menu.js by the loader's exact read redirect.
+Independent parts, appended to the stock control.Menu.js by the loader's exact read redirect.
 
 **The verified RTX multiplayer bootstrap trigger** (ADR 0052). When the loader sets
 `window.NativeLoaderClientBootstrap` (the committed generation holds the `gmsv_nlrtxclient` helper),
@@ -43,3 +43,21 @@ not repeat it. It disappears when leaving home; language changes translate a sti
 No warning is consumed while hidden or shown after a map. Local read retries are bounded to 120 at
 most once per second. Missing/stale/other-process data quietly gives no memory warning. These reads
 and the acknowledgement perform no network actions or filesystem writes.
+
+## R20-A update and multiplayer modals
+
+Only `rtx_active` menu data enables these notices. The C++ release reader verifies the active native
+runtime owner's exact journaled record; JS rechecks its two fields, version grammar/precedence and
+exact version-specific project URL before offering it. Home shows the update once per process,
+with the installed/latest versions and DLL replacement/restart instructions. Open calls gui.OpenURL
+with only that URL; Later is this start; Ignore writes just that version to DATA. No HTTP check.
+
+`menu_choices.lua` reads bounded preferences and the menu Lua realm's process-token acknowledgement.
+Fixed button snippets write only `native-loader/loader-update-ignored.txt` and
+`native-loader/multiplayer-warning-dismissed.txt` under DATA. No cloud or loader settings writes.
+The latter is saved only when Continue has its checkbox checked. Angular's location-change listener
+intercepts every `/servers` entry, including descendants, query strings and code/history navigation
+in main/pause menus. Continue permits the pending destination once; Back navigates home. Missing
+bridge, changed controller or failed dialog creation leaves the browser available. The bootstrap
+trigger remains independent. Text nodes, seven catalogs, viewport-scaled font/layout, keyboard
+focus and a labeled dialog keep these modals readable. Harness: `menu_diagnostics_harness.js`.

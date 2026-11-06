@@ -73,8 +73,27 @@ game itself (a long stay in the main menu) shows its own report as stale.
     lines stay English).
   - A timer (`nativeloader_updates`, every 600 seconds) checks again, because Steam may download an
     update while the game runs.
-- No file writes and no hooks. It runs on the client only (`lua/autorun/client`, plus a `CLIENT`
-  guard). There is no exit code.
+- It runs on the client only (`lua/autorun/client`, plus a `CLIENT` guard). There is no exit code.
 
 Checked outside the game under LuaJIT 2.1 with the GMod functions it uses mocked (missing, fresh,
 stale and invalid files, odd field types, `utc` dates around leap days and month ends).
+
+## R20-A bootstrap update reminder
+
+After InitPostEntity and four seconds, loaders older than 0.15.0 get a scaled Derma reminder when
+the package's published release record is newer. Version comparison handles SemVer prereleases and
+large numeric identifiers without floating-point ordering. Loaders from 0.15.0 use the main menu.
+The JSON record is at `addons/nativeloader/resource/loader-release.json`; it is read physically via
+BASE_PATH, at most 1 KiB, never through GAME mounting. Exactly version/url, a canonical ASCII JSON
+record and the fixed version-specific project URL are required. The active runtime must be
+gmod-rtx-remix and match native discovery's package/source. The committed journal (BASE_PATH,
+`native-loader/state.json`, at most 16 MiB) must have no pending transaction, exactly one runtime
+owner, and exactly one unchanged size/SHA-256 entry for the record. Missing/invalid/foreign data is
+silent. No Steam request is made for this reminder.
+
+The three buttons open only the validated release URL, defer for this process, or ignore that version.
+DATA `native-loader/loader-update-seen.txt` stores the status process token (PID/UTC for older
+reports) to survive map changes; `loader-update-ignored.txt` stores the ignored version and is shared
+with the menu. Both are bounded to 128 bytes on read. No loader/cloud/Remix settings are changed.
+Title/body/buttons use the six catalogs, with fonts, frame and controls scaled by ScrH()/1080 and
+bounded to the viewport. Errors are contained by pcall. Harness: `tools/tests/loader_update_harness.lua`.

@@ -1,5 +1,29 @@
 # Testing
 
+## R20-A: loader release reminders and multiplayer entry
+
+`test_presentation_ui.py` runs the actual menu JS and the Lua choice/companion reminder harnesses:
+strict release URLs, release/prerelease ordering, equal/newer loaders, Later, per-version ignore,
+once-per-start across map/page reloads, all seven menu languages, 900/2160 companion scaling,
+server-route interception in main/pause menus, Continue/Back, saved dismissal and fail-open paths.
+`loader/proxy/tests/test_loader_release.cpp` tests bounded strict JSON and journal/native-owner,
+source-allowlist and unchanged-byte boundaries. Run `tools\test.ps1 -Config Release`.
+
+Live acceptance uses the shared PoC lock and snapshots the bootstrap/config/package state first.
+Use an allowlisted local runtime package with a synthetic 0.16.0 release record; the repository's
+record stays at the actual published 0.14.0. Capture English/Simplified Chinese at 1600x900 and
+3840x2160 windowed, the home update notice and both multiplayer choices, saved dismissal after a
+restart, and the companion with simulated older-loader status. Restore the PoC and settings before
+releasing the lock. Evidence belongs under the R20-A worktree's `out/r20a/`.
+
+**Release step:** CMake's version is the build version, not the announcement. Only after GitHub's
+`v<version>` release exists, edit `companion/nativeloader/resource/loader-release.json` to its version
+and exact `https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v<version>` URL, run
+the Release checks, commit and push main. Its Workshop build carries the new reminder. Do not
+derive the record from CMake or bump it before publication; do not raise `requires_loader` for it.
+See [ADR 0115](decisions/0115-released-loader-record-and-reminders.md) and
+[ADR 0116](decisions/0116-multiplayer-entry-warning.md).
+
 R12-A: `tools/tests/test_mmd_reimport.py` executes production Lua for delete/reimport of a retained
 mounted carrier whose metadata was removed, changed fits, NPC/ragdoll/player/arms readiness,
 model-only NPC conversion, failed writes/mounts and live entities across cache withdrawal.

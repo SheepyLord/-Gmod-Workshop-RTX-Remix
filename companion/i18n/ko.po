@@ -281,64 +281,90 @@ msgstr "하늘과 날씨"
 msgid "RTX package %s was updated: restart Garry's Mod to use it"
 msgstr "RTX 패키지 %s이(가) 업데이트되었습니다. 사용하려면 Garry's Mod를 재시작하세요."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:397
+#: nativeloader/lua/autorun/client/nativeloader.lua:360
+msgid "A loader update is available"
+msgstr "로더 업데이트가 있습니다"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:366
+#, c-format
+msgid "You are running loader %s. The latest release is %s."
+msgstr "현재 로더는 %s이며, 최신 릴리스는 %s입니다."
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:367
+msgid "Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."
+msgstr "릴리스 페이지에서 winmm.dll을 다운로드하여 게임 폴더의 bin\\win64\\winmm.dll을 교체한 후 Garry's Mod를 다시 시작하세요. 창작마당 패키지는 자동으로 업데이트되며, 이 파일만 수동으로 업데이트하면 됩니다."
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:385
+msgid "Open the download page"
+msgstr "다운로드 페이지 열기"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:386
+msgid "Later"
+msgstr "나중에"
+
+#: nativeloader/lua/autorun/client/nativeloader.lua:387
+#, c-format
+msgid "Don't remind me about %s"
+msgstr "%s 업데이트 알림 끄기"
+
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:329
 msgid "Choose eye-white materials"
 msgstr "눈 흰자 머티리얼 선택"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:401
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:408
 msgid "Choose a spawned character here, or look at one before you open this window. Your choices are saved for this character and apply to all its copies at once, without respawning. Steady eye whites for imported characters and Eye-white brightness still apply."
 msgstr "생성된 캐릭터를 여기서 선택하거나 캐릭터를 바라본 뒤 이 창을 여세요. 선택은 이 캐릭터에 저장되며 같은 캐릭터의 모든 개체에 즉시 적용됩니다. 다시 생성할 필요가 없습니다. '가져온 캐릭터의 흰자 밝기 안정화'와 '흰자 밝기'도 계속 적용됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:404
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
 msgid "Choose a spawned character"
 msgstr "생성된 캐릭터 선택"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:407
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:414
 msgid "Spawn an imported character first, from External Models. Only the materials of imported characters can be chosen."
 msgstr "먼저 외부 모델에서 가져온 캐릭터를 생성하세요. 가져온 캐릭터의 머티리얼만 선택할 수 있습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:411
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:418
 msgid "Previous materials"
 msgstr "이전 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:412
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:419
 msgid "Next materials"
 msgstr "다음 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:424
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:431
 msgid "Ticked materials are eye whites. Use automatic detection removes your choice for that material. When the eyes share a texture with the face, the picture shows the face too; only the material you tick changes."
 msgstr "체크한 머티리얼을 눈 흰자로 처리합니다. 자동 감지 사용을 누르면 해당 머티리얼의 수동 선택이 해제됩니다. 눈과 얼굴이 텍스처를 공유하면 미리보기에 얼굴도 보이지만 체크한 머티리얼만 바뀝니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:475
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:482
 msgid "Eye white"
 msgstr "눈 흰자"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:477
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:484
 msgid "Use automatic detection"
 msgstr "자동 감지 사용"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: eye white"
 msgstr "수동: 눈 흰자"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:487
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:494
 msgid "Chosen: ordinary material"
 msgstr "수동: 일반 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: eye white"
 msgstr "자동: 눈 흰자"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:489
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
 msgid "Automatic: ordinary material"
 msgstr "자동: 일반 머티리얼"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:491
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:498
 msgid "Texture not available"
 msgstr "텍스처를 사용할 수 없음"
 
-#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:496
+#: nativeloader/lua/autorun/client/nativeloader_eye_whites.lua:503
 msgid "Your choice could not be saved: the character may have been removed, or the file of saved choices was changed or cannot be read. No file was overwritten."
 msgstr "선택을 저장할 수 없습니다. 캐릭터가 제거되었거나, 선택을 저장한 파일이 변경되었거나 읽을 수 없는 상태일 수 있습니다. 어떤 파일도 덮어쓰지 않았습니다."
 

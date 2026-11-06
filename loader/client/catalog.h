@@ -25,6 +25,9 @@ struct Catalog {
 Catalog prepare(const std::filesystem::path& root, const config::Config& config,
                 const journal::Generation& generation);
 bool native_bootstrap_present(const journal::Generation& generation);
+// Exact distribution item or an explicitly allowlisted local/development source (ADR 0052).
+bool allowed_runtime_source(const std::filesystem::path& root, const config::Config& config,
+                            const journal::Package& package);
 bool secure_render_patch_set(std::string_view owner, const manifest::PatchSet& set);
 // Why an activating plan must fall back to vanilla, or empty. With patch_sets.allow_rtx_render_patches
 // false and the general gate closed (require_insecure, no -insecure in `command_line` nor in the

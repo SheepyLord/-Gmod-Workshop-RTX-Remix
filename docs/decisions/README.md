@@ -1,5 +1,10 @@
 # Decision records
 
+- [0115: Published loader record and reminders](0115-released-loader-record-and-reminders.md)
+  (R20-A, item 46; accepted 2026-11-06).
+- [0116: Multiplayer entry warning](0116-multiplayer-entry-warning.md)
+  (R20-A, item 50; accepted 2026-11-06).
+
 One file per decision, numbered in order: `NNNN-short-title.md`. An accepted record is never
 rewritten; a later record supersedes it and both say so. Add one whenever a choice would surprise
 someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules change.

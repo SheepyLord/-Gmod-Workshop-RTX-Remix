@@ -8,6 +8,14 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- **Loader 0.15.0: update reminders and a multiplayer entry warning** (R20-A, items 46 and 50).
+  The RTX package records the newest published loader separately from development builds. The menu
+  reminds once per start, with download instructions and a per-version ignore; older loaders get
+  the companion's scaled in-game reminder. Only the runtime owner's journal-verified record counts.
+  The server browser first explains server rules/kick or ban risks, PBR map resources, uncertain
+  performance/stability and the player's responsibility; Continue/Back and permanent dismissal work
+  in the main and pause menus. Release record remains 0.14.0 until 0.15.0 is published.
+
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main
   menu's project link, the Workshop page and the package indexes' origins points at the new name

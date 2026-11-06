@@ -14,6 +14,16 @@ Archives are built with [`tools/gmapack`](../tools/gmapack/gmapack.py.md); conta
 
 ## Layout
 
+R20-A's combined RTX package also carries
+`native/root/garrysmod/addons/nativeloader/resource/loader-release.json` as an ordinary companion
+root file, covered by `files` and the existing add-on `replace-owned` policy. It contains only
+`version` (MAJOR.MINOR.PATCH, optional SemVer prerelease) and `url` (the exact project release page
+for that version), at most 1 KiB. This is the latest **published** loader release, hand-edited after
+publication, not the package's `requires_loader` or development CMake version. No schema/key change:
+old loaders still accept the package. Only the active allowlisted runtime owner's journaled,
+unchanged record can produce an update reminder; mounted content aliases cannot. See
+[ADR 0115](decisions/0115-released-loader-record-and-reminders.md).
+
 ```
 native/manifest.json        what the package is and how to activate it (below), at most 1 MiB
 native/payload/**           extracted to native-loader\packages\<id>\<version>_<generation>\  (runtime DLLs, configs)

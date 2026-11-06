@@ -87,6 +87,8 @@ std::string serialize(const System& system, std::string_view version, std::strin
   }
   out += "],\"performance_tier\":" + (system.performance_tier ? performance::serialize(*system.performance_tier) : "null");
   out += ",\"client_bootstrap\":" + std::string(client::native_bootstrap_present(generation) ? "true" : "false");
+  out += ",\"rtx_active\":" + std::string(system.rtx_active ? "true" : "false");
+  out += ",\"released_loader\":" + loader_release::serialize(system.released_loader);
   out += ",\"process_id\":" + std::to_string(system.process_id) + ",\"session_token\":" + json::quote(system.session_token);
   return out + '}';
 }
@@ -106,15 +108,21 @@ std::string collect(const std::filesystem::path& root, const journal::Generation
   std::string hash;
   try { system = query_system(); } catch (...) { }
   try {
-    if (effective) set_performance_tier(system, *effective, GetCommandLineW());
+    const auto config = config::load(root);
+    const auto set_session = [&](const activate::Plan& plan) {
+      set_performance_tier(system, plan, GetCommandLineW());
+      system.rtx_active = plan.activate && client::render_recipes_refusal(plan, GetCommandLineW()).empty();
+      if (system.rtx_active) system.released_loader = loader_release::read(root, config, generation, plan.runtime_id);
+    };
+    if (effective) set_session(*effective);
     else {
       // Read-only preview for callers without an applied session; never consume next_start or
       // read a stale previous status.json. The render-recipe gate matches activation (ADR 0056).
       std::vector<performance::Adapter> adapters;
       for (const auto& gpu : system.graphics) adapters.push_back({gpu.vendor, gpu.name, gpu.memory});
-      const auto preview = activate::plan(generation, config::load(root), activate::environment_value, GetCommandLineW(),
+      const auto preview = activate::plan(generation, config, activate::environment_value, GetCommandLineW(),
                                           [] { return activate::Display{}; }, [&] { return adapters; });
-      set_performance_tier(system, preview, GetCommandLineW());
+      set_session(preview);
     }
   } catch (...) { }
   try {

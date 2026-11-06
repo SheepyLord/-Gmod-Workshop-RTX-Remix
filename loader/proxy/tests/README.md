@@ -8,6 +8,7 @@ wide Win32 file handling. A host marker records its FILETIME and whether the log
 
 | File | Purpose |
 |---|---|
+| `test_loader_release.cpp` | R20-A release JSON/URL/SemVer bounds, active runtime and allowlist ownership, content impostors, journal ambiguity and changed/missing bytes |
 | `test_exit_report.cpp` | Quiet switch, language precedence/aliases, localized advice for all six reasons and known exception-code labels in all seven catalogs |
 | `observer_integration.py` | Real System32 rundll32 observer against generated synthetic hosts: process waiting, chosen exit statuses, all evidence sources, quiet reports, clean silence, manual invocation rejection, loader off switches and non-game/Chromium gates; R19: a forwarded export called in rundll32 reaches System32's winmm (proxy F-06) ([usage](observer_integration.py.md)) |
 | `telemetry_integration.py` | R6 real worker in a copied synthetic host: flushed ten-second samples, default/on/off/disabled policy, old CSV archived before new sampling and `nlctl status` text/JSON ([usage](telemetry_integration.py.md)) |

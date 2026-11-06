@@ -5,7 +5,7 @@ add_test(NAME nl_backend_tests COMMAND nl_backend_tests)
 
 add_executable(nl_proxy_tests
   ../../tests/test_main.cpp test_activation.cpp test_proxy.cpp test_presentation.cpp test_presentation_hooks.cpp
-  test_runtime.cpp test_exit_report.cpp ../runtime.cpp ../modules.cpp)
+  test_runtime.cpp test_exit_report.cpp test_loader_release.cpp ../runtime.cpp ../modules.cpp)
 target_include_directories(nl_proxy_tests PRIVATE ../../tests)
 target_link_libraries(nl_proxy_tests PRIVATE nl_proxy_logic nl_proxy_presentation nl_build_options)
 target_compile_definitions(nl_proxy_tests PRIVATE

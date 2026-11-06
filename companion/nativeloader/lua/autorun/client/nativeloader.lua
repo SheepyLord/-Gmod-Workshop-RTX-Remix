@@ -2,7 +2,7 @@
 -- the client starts and again on the console command nativeloader_status. It reads
 -- garrysmod/data/native-loader/status.json and session.json, which the loader's bootstrap
 -- (bin/win64/winmm.dll) writes, and (M6) says when a Workshop package has a newer version that the
--- next start deploys (steamworks.FileInfo, every ten minutes). No file writes, no game hooks.
+-- next start deploys (steamworks.FileInfo, every ten minutes). Also reminds older loaders to update.
 -- Documented in nativeloader.lua.md beside this file.
 
 if not CLIENT then return end
@@ -253,4 +253,147 @@ hook.Add("InitPostEntity", "nativeloader_api", function() timer.Simple(3, report
 timer.Create("nativeloader_updates", 600, 0, function()
     local status = read_json(STATUS_FILE)
     if status then pcall(check_updates, status) end
+end)
+
+-- R20: old loaders cannot update their compiled-in main menu. Read physical files, never an add-on's
+-- mounted alias. The journal identifies the runtime owner and the exact bytes it deployed.
+local RELEASE_PATH = "garrysmod/addons/nativeloader/resource/loader-release.json"
+local RELEASE_URL = "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v"
+local function bounded(path, realm, maximum)
+    local f = file.Open(path, "rb", realm)
+    if not f then return end
+    local size = f:Size()
+    if size < 0 or size > maximum then f:Close() return end
+    local bytes = f:Read(size)
+    f:Close()
+    if type(bytes) == "string" and #bytes == size then return bytes end
+end
+local function decimal(a, b)
+    if #a ~= #b then return #a < #b and -1 or 1 end
+    return a == b and 0 or a < b and -1 or 1
+end
+local function version(value)
+    if type(value) ~= "string" or #value > 128 then return end
+    local core, pre = value:match("^([0-9]+%.[0-9]+%.[0-9]+)%-([0-9A-Za-z%.%-]+)$")
+    core = core or value:match("^([0-9]+%.[0-9]+%.[0-9]+)$")
+    if not core then return end
+    local result = {core = {}, pre = {}}
+    for n in core:gmatch("[^%.]+") do
+        if #n > 1 and n:sub(1, 1) == "0" or decimal(n, "18446744073709551615") > 0 then return end
+        result.core[#result.core + 1] = n
+    end
+    if pre then
+        if pre:sub(1, 1) == "." or pre:sub(-1) == "." or pre:find("..", 1, true) then return end
+        for n in pre:gmatch("[^%.]+") do
+            if n:match("^%d+$") and #n > 1 and n:sub(1, 1) == "0" then return end
+            result.pre[#result.pre + 1] = n
+        end
+    end
+    return result
+end
+local function compare(a, b)
+    for i = 1, 3 do local c = decimal(a.core[i], b.core[i]) if c ~= 0 then return c end end
+    if #a.pre == 0 or #b.pre == 0 then return #a.pre == #b.pre and 0 or #a.pre == 0 and 1 or -1 end
+    for i = 1, math.min(#a.pre, #b.pre) do
+        local x, y = a.pre[i], b.pre[i]
+        local xn, yn = x:match("^%d+$") ~= nil, y:match("^%d+$") ~= nil
+        local c = xn and yn and decimal(x, y) or xn ~= yn and (xn and -1 or 1) or (x == y and 0 or x < y and -1 or 1)
+        if c ~= 0 then return c end
+    end
+    return #a.pre == #b.pre and 0 or #a.pre < #b.pre and -1 or 1
+end
+local function trusted_release(status)
+    if field(status, "activation", "outcome") ~= "active" or field(status, "activation", "runtime", "id") ~= "gmod-rtx-remix" then return end
+    local bytes = bounded(RELEASE_PATH, "BASE_PATH", 1024)
+    if not bytes then return end
+    -- This deliberately small ASCII record has exactly two unescaped string fields. Unlike
+    -- JSONToTable alone, this also rejects duplicate keys and extra JSON values.
+    local a, av, b, bv = bytes:match('^%s*{%s*"([a-z]+)"%s*:%s*"([^"\\%c]*)"%s*,%s*"([a-z]+)"%s*:%s*"([^"\\%c]*)"%s*}%s*$')
+    if not a or a == b then return end
+    local record = util.JSONToTable(bytes)
+    if not record or not ((a == "version" and b == "url") or (a == "url" and b == "version")) or
+       not version(record.version) or record.url ~= RELEASE_URL .. record.version then return end
+    local journalBytes = bounded("native-loader/state.json", "BASE_PATH", 16 * 1024 * 1024)
+    local journal = journalBytes and util.JSONToTable(journalBytes)
+    if type(journal) ~= "table" or journal.schema ~= 1 or journal.pending ~= nil or type(journal.current) ~= "table" then return end
+    local owner
+    for _, package in ipairs(list(journal.current.packages)) do
+        if package.id == "gmod-rtx-remix" then
+            if owner or type(package.remix) ~= "table" then return end
+            owner = package
+        end
+    end
+    if not owner then return end
+    -- status.packages comes from native discovery, which only labels native packages after their
+    -- configured allowlist check. Content subscriptions cannot acquire a remix entry in the journal.
+    local allowed = false
+    for _, package in ipairs(list(status.packages)) do
+        if package.id == owner.id and package.version == owner.version and package.source == owner.source and
+           (package.source == "local" or package.source == "dev_folder" or
+            package.source == "workshop" and package.label == "3829070317") then allowed = true end
+    end
+    if not allowed then return end
+    local recorded
+    for _, item in ipairs(list(journal.current.files)) do
+        if type(item.path) == "string" and item.path:lower() == RELEASE_PATH then
+            if recorded or item.package ~= owner.id or item.path ~= RELEASE_PATH or item.size ~= #bytes or
+               item.sha256 ~= util.SHA256(bytes) then return end
+            recorded = item
+        end
+    end
+    if recorded then return record end
+end
+local function loader_reminder()
+    local status = read_json(STATUS_FILE)
+    local current = status and status.schema == 1 and version(status.loader_version)
+    if not current or compare(current, version("0.15.0")) >= 0 then return end
+    local release = trusted_release(status)
+    if not release or compare(current, version(release.version)) >= 0 then return end
+    local token = type(status.session_token) == "string" and status.session_token or
+        tostring(status.process_id) .. ":" .. tostring(status.utc)
+    if bounded("native-loader/loader-update-seen.txt", "DATA", 128) == token or
+       bounded("native-loader/loader-update-ignored.txt", "DATA", 128) == release.version then return end
+    local scale = math.max(0.65, ScrH() / 1080)
+    local function px(n) return math.floor(n * scale) end
+    surface.CreateFont("NativeLoaderUpdate", {font = "Arial", size = px(21), weight = 400})
+    local frame = vgui.Create("DFrame")
+    frame:SetTitle(L("A loader update is available"))
+    frame:SetSize(math.min(px(740), ScrW() - px(40)), math.min(px(480), ScrH() - px(40)))
+    frame:Center()
+    frame:MakePopup()
+    local body = vgui.Create("DLabel", frame)
+    body:SetFont("NativeLoaderUpdate")
+    body:SetText(string.format(L("You are running loader %s. The latest release is %s."), status.loader_version, release.version) .. "\n\n" ..
+        L("Download winmm.dll from the release page, replace bin\\win64\\winmm.dll in your game folder, then restart Garry's Mod. The Workshop package updates automatically; only this file needs a manual update."))
+    body:Dock(TOP)
+    body:DockMargin(px(16), px(18), px(16), px(12))
+    body:SetWrap(true)
+    body:SetAutoStretchVertical(true)
+    local actions = vgui.Create("DPanel", frame)
+    actions:Dock(BOTTOM)
+    actions:SetTall(px(154))
+    actions:SetPaintBackground(false)
+    local function button(label, action)
+        local item = vgui.Create("DButton", actions)
+        item:Dock(TOP)
+        item:DockMargin(px(16), px(5), px(16), 0)
+        item:SetTall(px(42))
+        item:SetFont("NativeLoaderUpdate")
+        item:SetText(label)
+        item.DoClick = function() action() frame:Close() end
+    end
+    button(L("Open the download page"), function() gui.OpenURL(release.url) end)
+    button(L("Later"), function() end)
+    button(string.format(L("Don't remind me about %s"), release.version), function()
+        file.CreateDir("native-loader")
+        file.Write("native-loader/loader-update-ignored.txt", release.version)
+    end)
+    file.CreateDir("native-loader")
+    file.Write("native-loader/loader-update-seen.txt", token)
+end
+hook.Add("InitPostEntity", "nativeloader_loader_update", function()
+    timer.Simple(4, function()
+        local ok, err = pcall(loader_reminder)
+        if not ok then say("loader update reminder unavailable: " .. tostring(err)) end
+    end)
 end)
