@@ -97,6 +97,8 @@ until the runtime is rebuilt.
 All four run at once from `r20-int`. Claude reviews each branch, merges them on `r20-int`, tests the
 whole in the PoC and the field, then: push `main` (the hooks publish the local build to the Workshop),
 tag the loader release, and update the Workshop again from the GitHub package build when it finishes.
+The user approved, on 2026-11-06 ("Yes, both"), tagging **v0.15.0** and starting the package workflow
+(`package.yml`) once for it when R20 is ready; that approval covers this release only.
 
 ## Rules for every task
 
