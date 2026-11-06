@@ -1,5 +1,13 @@
 # r20_blood_harness.lua
 
+An independent reference flight check requires at least half of the configured droplets to clear
+a 12-unit body radius and fall 48 units within their lifetime. Engine motion is measured separately
+in the PoC; the reference model is a conservative transport check, not an engine-equivalence claim.
+
+Ragdoll scenarios preserve native forwarding and previous Lua effects, retain source blood colour,
+infer flesh/alien surfaces, reject metal/bloodless bodies, handle client-only rays and deduplicate
+cross-name events while retaining pellets. A world-landing case uses HitWorld with an invalid entity.
+
 LuaJIT harness for the real R20-C bootstrap, core, impact and menu files. Invoked by
 `test_r20_blood.py <repo> <scenario>`: rolling budgets, exact stock forwarding, palette/quality
 choices, cone directions, collision storms/map cap/toggle resistance, menu relocation and duplicate

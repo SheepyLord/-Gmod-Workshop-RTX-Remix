@@ -2,8 +2,25 @@
 
 ## R20-C: owned blood assets and the stock dispatch (2026-11-06)
 
+- The first locked sessions (`out/r20c/on-clean`, `off-clean`) confirmed NPC red/antlion/zombie
+  events and remote NPC dispatch. Engine amounts included 35 (pistol), 15/60 (other hits), and 50
+  for the NPC shooter's scripted bullet. Server ragdolls instead dispatched `Impact`, damage 2 or
+  536870914, surface property 39 (flesh), unit scale and a zero Normal; Start/Origin provide direction.
+  GetBloodColor may be nil. The adapter preserves native effects and infers ragdoll colour only
+  where needed. A missed pistol ray was corrected in the fixture by aiming at a chest bone closer up.
+- A material/particle sampler measured the original drops moving 20–110 units in .3 seconds and
+  hitting the floor. Missing landing stains were a world-validation bug: the PoC reports
+  `IsValid(game.GetWorld()) == false`. Using HitWorld fixed it: `integration-ragdolls` recorded
+  2,447 collisions, no trace misses and a strict 384-stain first epoch; explicit clearing then
+  admitted 200 more stains. The particle budget stayed at 512 live. Vanilla HUD diagnostics show
+  the procedural texture is a valid grey alpha bead and normal particle tints are red.
+- The early D runtime `ee3d239c...` rendered these particles as black silhouettes despite correct
+  texture dimensions/tint and an active generic observer. The separate Sprite comparison also
+  exposed opaque quads at its default mode. Final acceptance therefore runs without diagnostic
+  shaders (shared hashes affect runtime classification), against D's later runtime candidate.
+
 - The blood project's `tools/shapes.py` identifies eighteen `CODEX_UNITS` patterns separately from
-  `bo_blood*`, `bo_yblood*`, flesh and stains. `tools/publish.py:197-203` makes the old droplet from
+  `bo_blood*`, `bo_yblood*`, flesh and stains. `tools/publish.py:185-192` makes the old droplet from
   `work/maps/bo_blood8/neutral.png`, so even the nominal companion output contains a derivative that
   cannot ship here. `tools/prepare_blood.py` selects 109 source files and excludes 270 output files;
   the committed audit retains paths/hashes. The new index has 36 pattern VTFs, 72 DDSs, two original

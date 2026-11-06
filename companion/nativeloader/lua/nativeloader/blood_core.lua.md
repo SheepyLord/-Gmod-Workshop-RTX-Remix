@@ -16,6 +16,8 @@ sample splats at the crosshair; normal impacts have their own hard stain budget.
 The existing droplet-recolour setting also redirects another Lua add-on's `CLuaEmitter:Add` calls
 with these exact blood/yblood material names to the new owned droplet and current palette. Other
 particle materials and disabled settings pass through. External add-ons keep their own budgets.
+Recolouring uses the returned particle's standard SetMaterial method, so generic observers see the
+actual replacement even when their Add wrapper surrounds the mixer.
 
 Reads client settings and included shape/scheme tables; writes only in-memory material variables.
 No networking, game files, native options or exit code. Errors are ordinary GMod Lua errors.

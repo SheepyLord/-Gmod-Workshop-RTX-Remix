@@ -5,7 +5,7 @@ local enabled = CreateClientConVar("nativeloader_blood_impacts", "1", true, fals
 local amount = CreateClientConVar("nativeloader_blood_amount", "1", true, false, "Blood impact amount", 0, 2)
 local particles, stains, events = Budget.New(640, 512), Budget.New(48, 384), Budget.New(80, 80)
 local active, materials = {}, {}
-local stats = { impacts = 0, stock = 0, culled = 0, particles = 0, stains = 0, denied = 0 }
+local stats = { impacts = 0, stock = 0, culled = 0, particles = 0, stains = 0, denied = 0, landings = 0, trace_misses = 0 }
 BO.ImpactStats = stats
 BO.ImpactBudgets = { particles = particles, stains = stains, events = events }
 
@@ -79,11 +79,14 @@ local function stamp(code, index, size, position, normal)
     stains:Prune(CurTime())
     if #stains.recent >= stains.rate or stains.total >= stains.maximum then return end
     local tr = util.TraceLine({ start = position + normal * 2, endpos = position - normal * 3, mask = MASK_SOLID })
-    if not tr.Hit or tr.HitSky or tr.StartSolid or not IsValid(tr.Entity) then return end
+    if not tr.Hit or tr.HitSky or tr.StartSolid or (not tr.HitWorld and not IsValid(tr.Entity)) then
+        stats.trace_misses = stats.trace_misses + 1
+        return
+    end
     local mat = BO.Pattern(code, index)
     if not mat or not stains:Take(CurTime(), math.huge) then return end
     local scale = size * finite(BO.ConVars.size:GetFloat(), 1, 0.25, 3) / BO.Shapes[index].units
-    util.DecalEx(mat, tr.Entity, tr.HitPos, tr.HitNormal, color_white, scale, scale)
+    util.DecalEx(mat, tr.HitWorld and game.GetWorld() or tr.Entity, tr.HitPos, tr.HitNormal, color_white, scale, scale)
     stats.stains = stats.stains + 1
 end
 
@@ -113,8 +116,8 @@ function EFFECT:Init(data)
     for i = #active, 1, -1 do if active[i].expires <= now then table.remove(active, i) end end
     for i = 1, count do
         local mist = i % 5 == 0
-        local forward = i % 3 ~= 0
-        local lifetime = mist and math.Rand(0.10, 0.22) or math.Rand(0.5, 1.35)
+        local forward = not mist and i % 3 ~= 0
+        local lifetime = mist and math.Rand(0.10, 0.22) or math.Rand(0.75, 1.8)
         if not particles:Take(now, lifetime) then stats.denied = stats.denied + 1 break end
         local index = BO.ConVars.variety:GetBool() and math.random(#BO.Shapes) or 1
         local particle = emitter:Add(material(code, index, mist), origin + direction * (forward and 1.5 or -1.5))
@@ -130,7 +133,8 @@ function EFFECT:Init(data)
             particle:SetRoll(math.Rand(0, 360)) particle:SetRollDelta(math.Rand(-1, 1))
             particle:SetColor(255, 255, 255)
             particle:SetLighting(true)
-            particle:SetAirResistance(mist and 160 or (size < 0.3 and 75 or 25))
+            -- Larger drops retain more momentum; fine mist dissipates near the entrance.
+            particle:SetAirResistance(mist and 20 or (size < 0.3 and 3.5 or 0.9))
             particle:SetGravity(Vector(0, 0, mist and -80 or -600))
             particle:SetCollide(not mist) particle:SetBounce(0)
             if not mist then
@@ -138,6 +142,7 @@ function EFFECT:Init(data)
                 particle:SetCollideCallback(function(p, pos, normal)
                     if landed then return end
                     landed = true
+                    stats.landings = stats.landings + 1
                     p:SetDieTime(0)
                     stamp(code, index, math.Clamp(size * math.Rand(3, 6), 0.5, 5), pos, normal)
                 end)
@@ -151,3 +156,82 @@ end
 function EFFECT:Think() return false end
 function EFFECT:Render() end
 effects.Register(EFFECT, "BloodImpact")
+
+-- Server ragdolls send Impact rather than BloodImpact. Client ragdolls can instead be intersected
+-- by a world Impact/RagdollImpact ray. Observe those existing dispatches, keeping native physics,
+-- sounds, decals and any previously registered Lua effect. There is no new server hook or message.
+local ragdoll_colours, ragdolls = setmetatable({}, {__mode = "k"}), setmetatable({}, {__mode = "k"})
+local ragdoll_checks, recent_hits = Budget.New(160, 160), {}
+local function is_ragdoll(ent)
+    return IsValid(ent) and ((ent.IsRagdoll and ent:IsRagdoll()) or ent:GetClass() == "prop_ragdoll")
+end
+local function remember(ent)
+    if is_ragdoll(ent) then ragdolls[ent] = true end
+end
+hook.Add("OnEntityCreated", "nativeloader_blood_ragdolls", function(ent) timer.Simple(0, function() remember(ent) end) end)
+hook.Add("InitPostEntity", "nativeloader_blood_ragdolls", function() for _, ent in ipairs(ents.GetAll()) do remember(ent) end end)
+hook.Add("CreateClientsideRagdoll", "nativeloader_blood_ragdolls", function(source, ragdoll)
+    remember(ragdoll)
+    if IsValid(source) and source.GetBloodColor then ragdoll_colours[ragdoll] = source:GetBloodColor() end
+end)
+local SURFACE_COLOUR = { [70] = 0, [66] = 0, [72] = 1, [65] = 4 } -- MAT_FLESH/BLOODYFLESH/ALIENFLESH/ANTLION
+local function ragdoll_impact(name, data)
+    if not enabled:GetBool() or not BO.ConVars.enable:GetBool() or amount:GetFloat() <= 0 then return end
+    if bit.band(data:GetDamageType(), 536870914) == 0 then return end -- DMG_BULLET | DMG_BUCKSHOT
+    local ent, pos, start = data:GetEntity(), data:GetOrigin(), data:GetStart()
+    local direct = is_ragdoll(ent)
+    if not direct and IsValid(ent) and not ent:IsWorld() then return end -- living NPC/player has BloodImpact already
+    if not direct and not next(ragdolls) then return end
+    if not ragdoll_checks:Take(CurTime(), 0) then return end
+    local direction = (pos - start):GetNormalized()
+    if direction:LengthSqr() < 0.1 then return end
+    local surface = util.GetSurfaceData(data:GetSurfaceProp())
+    local kind = surface and surface.material
+    if not direct then
+        -- Ignore living actors along the engine's ragdoll-only ray, including its shooter.
+        local tr = util.TraceLine({ start = start, endpos = pos + direction * 4, mask = MASK_SHOT,
+            hitclientonly = true, filter = function(e) return not e:IsPlayer() and not e:IsNPC() end })
+        if not tr.Hit or not is_ragdoll(tr.Entity) then return end
+        ent, pos, kind = tr.Entity, tr.HitPos, tr.MatType
+    end
+    local code = ragdoll_colours[ent]
+    if code == nil and ent.GetBloodColor then code = ent:GetBloodColor() end
+    if code == nil then code = SURFACE_COLOUR[kind] end
+    if not BO.Family(code) then return end -- metal, mechanical and explicitly bloodless bodies stay dry
+    local now = CurTime()
+    for i = #recent_hits, 1, -1 do
+        local old = recent_hits[i]
+        if old.time < now - 0.05 then table.remove(recent_hits, i)
+        elseif old.entity == ent and old.name ~= name and (old.pos - pos):LengthSqr() < 4 then return end
+    end
+    if #recent_hits >= 64 then table.remove(recent_hits, 1) end
+    recent_hits[#recent_hits + 1] = { entity = ent, pos = pos, time = now, name = name }
+    local fluid = EffectData()
+    fluid:SetOrigin(pos) fluid:SetNormal(direction) fluid:SetColor(code)
+    -- Impact has no blood amount: retain a useful explicit scale, otherwise use a modest default.
+    fluid:SetScale(data:GetScale() > 1 and data:GetScale() or 12)
+    stats.ragdoll_impacts = (stats.ragdoll_impacts or 0) + 1
+    EFFECT.Init({}, fluid)
+end
+for _, name in ipairs({ "Impact", "Impact_GMOD", "RagdollImpact" }) do
+    local effect_name = name
+    local previous = effects.Create and effects.Create(name)
+    if previous and previous.NativeLoaderBloodAdapter then previous = previous.NativeLoaderBloodPrevious end
+    effects.Register({
+        NativeLoaderBloodAdapter = true, NativeLoaderBloodPrevious = previous,
+        Init = function(self, data)
+            if previous then
+                for key, value in pairs(previous) do
+                    if key ~= "Init" and key ~= "Think" and key ~= "Render" then self[key] = value end
+                end
+                if previous.Init then previous.Init(self, data) end
+            else
+                util.Effect(effect_name, data, false)
+            end
+            ragdoll_impact(effect_name, data)
+        end,
+        Think = function(self) return previous and previous.Think and previous.Think(self) or false end,
+        Render = function(self) if previous and previous.Render then return previous.Render(self) end end,
+    }, name)
+end
+BO.RagdollImpacts = true

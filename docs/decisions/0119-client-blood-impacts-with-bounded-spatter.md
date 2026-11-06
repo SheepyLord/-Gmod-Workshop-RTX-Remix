@@ -37,3 +37,11 @@ Design references (behaviour studied, no images or source code copied):
   a forensic simulation.
 - [Forward-spatter modelling](https://nij.ojp.gov/library/publications/theoretical-and-experimental-investigation-forward-spatter-blood-gunshot)
   accounts for gravity, drag and droplet-size distributions. The effect uses a bounded approximation.
+
+Implementation evidence from the R20-C PoC: ordinary server ragdolls dispatch `Impact`, with bullet
+damage flags, source/impact positions, entity and flesh surface property, and no blood amount. The
+implementation observes Impact/Impact_GMOD/RagdollImpact too, always preserving their native or
+previous Lua effect. Known ragdolls add the same bounded fluid; client-only ragdolls use a bounded
+ray check, source colour when available and surface-type inference otherwise. No new server hook
+or message is needed. Up to 160 checks per second and 64 recent cross-name deduplication entries
+bound this observation. Flesh world collision traces use HitWorld even if their entity is invalid.

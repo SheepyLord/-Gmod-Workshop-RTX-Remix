@@ -2,7 +2,7 @@
 
 ## R20-C: screen, owned blood PBR and client impacts
 
-`tools/tests/test_r20_blood.py` runs nine production-Lua scenarios through LuaJIT: rolling budgets,
+`tools/tests/test_r20_blood.py` runs twelve production-Lua scenarios through LuaJIT: rolling budgets,
 screen startup idempotence, standalone/packaged precedence, server-preloaded legacy cleanup, absent
 parts, moved panels, stock forwarding/colours/LOD, sustained particle/stain saturation and the blood
 panel. It also checks the final owned-only VTF/DDS inventory/72 hashes, original procedural texture

@@ -99,7 +99,11 @@ if emitter_meta and emitter_meta.Add then
         local entry = name and incoming[string.lower(name)]
         if entry and cv.enable:GetBool() and cv.droplets:GetBool() and BO.ParticleMaterial then
             local index = cv.variety:GetBool() and math.random(#BO.Shapes) or 1
-            mat = BO.ParticleMaterial(entry[1], index, false)
+            local particle = original_add(self, mat, pos, ...)
+            -- Standard SetMaterial also lets generic observers see the final material when they
+            -- wrap Add outside this mixer. No per-add-on RTX registration is needed.
+            if particle then particle:SetMaterial(BO.ParticleMaterial(entry[1], index, false)) end
+            return particle
         end
         return original_add(self, mat, pos, ...)
     end

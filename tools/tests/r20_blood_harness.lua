@@ -60,7 +60,8 @@ function Material(name)
     mats[name]=mat return mat
 end
 CreateMaterial = function(name,shader,fields) local m=Material(name) for k,v in pairs(fields) do m[k]=v end return m end
-local emitter_meta = {Add=function(self,mat,pos,...) return {mat=mat,pos=pos,extra={...}} end}
+local emitter_meta = {Add=function(self,mat,pos,...) return {mat=mat,pos=pos,extra={...},
+    SetMaterial=function(s,m) s.mat=m s.material_changed=true end} end}
 function FindMetaTable(name) if name=='CLuaEmitter' then return emitter_meta end end
 util = {
     DecalEx=function(...) calls.decals=calls.decals or {} table.insert(calls.decals,{...}) end,
@@ -79,8 +80,11 @@ function ParticleEmitter()
         Finish=function() end,
     }
 end
-local registered
-effects = {Register=function(t,name) assert(name=='BloodImpact') registered=t end}
+local registered, registrations = nil, {}
+effects = {Register=function(t,name) registrations[name]=t if name=='BloodImpact' then registered=t end end,
+    Create=function() return nil end}
+bit = require('bit')
+game = {GetWorld=function() return false end}
 file = {Exists=function() return false end}
 include = function(path)
     if path=='nativeloader/i18n.lua' then return {L=function(s) return s end,N=function(s) return s end,PreparePanel=function() end} end
@@ -169,12 +173,70 @@ elseif scenario=='menu' then
     assert(#calls.panels==3 and calls.panels[3][1]=='Utilities')
 else
     BloodOverhaul={Packaged=true,Shapes=include('nlblood/shapes.lua')}
+    if scenario=='previous_impact' then
+        effects.Create=function(name) if name=='Impact' then return {
+            Init=function(self,data) calls.previous_data=data self.started=true end,
+            Think=function(self) return self.started end,Render=function(self) self.rendered=true end,
+            helper=17,
+        } end end
+    end
     include('nlblood/schemes.lua') include('nativeloader/blood_core.lua') include('nativeloader/blood_impacts.lua')
     local BO=BloodOverhaul
     local data={GetColor=function() return 0 end,GetOrigin=function() return Vector() end,
                 GetNormal=function() return Vector(1,0,0) end,GetScale=function() return 2 end}
     local function hit() registered:Init(data) end
-    if scenario=='impacts' then
+    if scenario=='ragdolls' or scenario=='previous_impact' then
+        function EffectData()
+            local d={}
+            for _,key in ipairs({'Origin','Normal','Color','Scale'}) do
+                d['Set'..key]=function(self,v) self[key]=v end
+                d['Get'..key]=function(self) return self[key] end
+            end
+            return d
+        end
+        local rag={IsRagdoll=function() return true end,GetClass=function() return 'prop_ragdoll' end,
+                   GetBloodColor=function() return nil end,IsWorld=function() return false end}
+        local victim=rag
+        local surface=70
+        util.GetSurfaceData=function() return {material=surface} end
+        data.GetEntity=function() return victim end
+        data.GetStart=function() return Vector(-100,0,0) end
+        data.GetDamageType=function() return 2 end
+        data.GetSurfaceProp=function() return 39 end
+        data.GetScale=function() return 1 end
+        if scenario=='previous_impact' then
+            victim={IsRagdoll=function() return false end,GetClass=function() return 'prop_physics' end,IsWorld=function() return false end}
+            local self={}
+            registrations.Impact.Init(self,data)
+            assert(calls.previous_data==data and self.helper==17 and #added==0)
+            assert(registrations.Impact.Think(self)) registrations.Impact.Render(self) assert(self.rendered)
+        else
+            registrations.Impact.Init({},data)
+            assert(BO.ImpactStats.ragdoll_impacts==1 and #added>0 and BO.ImpactStats.last_colour==0)
+            assert(calls.effects[#calls.effects][1]=='Impact' and calls.effects[#calls.effects][2]==data and calls.effects[#calls.effects][3]==false)
+            local n=#added
+            registrations.Impact_GMOD.Init({},data) assert(#added==n,'cross-name duplicate')
+            registrations.Impact.Init({},data) assert(#added>n,'separate pellet')
+            n=#added surface=77 clock=.1 registrations.Impact.Init({},data) assert(#added==n,'metal stays dry')
+            surface=70 rag.GetBloodColor=function() return -1 end
+            registrations.Impact.Init({},data) assert(#added==n,'explicitly bloodless stays dry')
+            rag.GetBloodColor=function() return nil end
+            hook.Run('CreateClientsideRagdoll',{GetBloodColor=function() return 6 end},rag)
+            registrations.Impact.Init({},data) assert(BO.ImpactStats.last_colour==6,'source blood colour retained')
+            victim=false
+            util.TraceLine=function(t) assert(t.hitclientonly) return {Hit=true,Entity=rag,HitPos=Vector(8,0,0),MatType=70} end
+            clock=.2 registrations.Impact.Init({},data) assert(BO.ImpactStats.last_colour==6)
+            n=#added RunConsoleCommand('nativeloader_blood_impacts','0')
+            registrations.Impact.Init({},data) assert(#added==n and calls.effects[#calls.effects][3]==false)
+        end
+    elseif scenario=='world_landing' then
+        util.TraceLine=function(t) return {Hit=true,HitWorld=true,Entity=false,HitPos=t.start,HitNormal=Vector(0,0,1)} end
+        hit()
+        for _,p in ipairs(added) do
+            if p.props.SetCollideCallback then p.props.SetCollideCallback[1](p,Vector(),Vector(0,0,1)) break end
+        end
+        assert(BO.ImpactStats.landings==1 and BO.ImpactStats.stains==1 and BO.ImpactStats.trace_misses==0)
+    elseif scenario=='impacts' then
         assert(registered:Think()==false)
         for _,name in ipairs({'nativeloader_blood_impacts','bloodoverhaul_enable','nativeloader_blood_amount'}) do
             RunConsoleCommand(name,'0') hit()
@@ -185,12 +247,27 @@ else
         data.GetColor=function() return 0 end
         calls.fail_emitter=true hit() assert(#added==0) calls.fail_emitter=false
         hit() assert(#added>0)
-        local back,forward,mist=0,0,0
+        local back,forward,mist,escaped,grounded=0,0,0,0,0
         for _,p in ipairs(added) do
             if p.props.SetVelocity[1].x<0 then back=back+1 else forward=forward+1 end
             if p.props.SetDieTime[1]<.25 then mist=mist+1 end
+            if p.props.SetCollideCallback then
+                -- Independent linear-drag flight check: droplets must leave the body and some
+                -- must reach ground 48 units below it before their configured lifetime ends.
+                local velocity=p.props.SetVelocity[1]
+                local vx,vz,x,z=velocity.x,velocity.z,0,0
+                local dt,drag=1/120,p.props.SetAirResistance[1]
+                for t=dt,p.props.SetDieTime[1],dt do
+                    vx=vx*math.max(0,1-drag*dt)
+                    vz=(vz+p.props.SetGravity[1].z*dt)*math.max(0,1-drag*dt)
+                    x,z=x+vx*dt,z+vz*dt
+                end
+                if math.abs(x)>12 then escaped=escaped+1 end
+                if z< -48 then grounded=grounded+1 end
+            end
         end
         assert(back>0 and forward>back and mist>0)
+        assert(escaped>=(#added-mist)/2 and grounded>=(#added-mist)/2,'blood must travel out of the body and land')
         local n=BO.ImpactPlan(2,100,1)
         assert(BO.ImpactPlan(2,2000,1)<n and BO.ImpactPlan(2,5000,1)==0)
         assert(BO.ImpactPlan(8,100,2)<=42 and BO.ImpactPlan(2,100,0)==0)
@@ -204,7 +281,7 @@ else
         end
         assert(not BO.Colour(3) and not BO.Pattern(3,1))
         local external=emitter_meta.Add({},'decals/blood1',Vector(),99)
-        assert(external.mat:GetName():find('nlfluid_',1,true) and external.extra[1]==99)
+        assert(external.mat:GetName():find('nlfluid_',1,true) and external.extra[1]==99 and external.material_changed)
         RunConsoleCommand('bloodoverhaul_droplets','0')
         external=emitter_meta.Add({},'decals/blood1',Vector(),99)
         assert(external.mat=='decals/blood1' and external.extra[1]==99)
