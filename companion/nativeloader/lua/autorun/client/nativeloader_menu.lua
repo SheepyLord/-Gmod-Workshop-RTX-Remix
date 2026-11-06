@@ -20,7 +20,7 @@ local MOVED = {
     ["Glass Rewrite Remixed"] = N("Water and glass"),
 }
 local CATEGORIES = { N("Start here"), N("Remix settings"), N("Sky and weather"), N("Rendering"), N("Lights"),
-    N("Water and glass") }
+    N("Water and glass"), N("Blood") }
 
 local function remix_ready()
     return istable(RemixConfig) and isfunction(RemixConfig.SetConfigVariable)
@@ -169,6 +169,12 @@ local function readable_panel(build)
     end
 end
 function spawnmenu.AddToolMenuOption(tab, category, id, label, command, config, build, ...)
+    -- R20-C: retain the actual tracking tool, with its full thirteen-language settings panel.
+    -- Its extra Utilities shortcut would be a second panel; the tool itself is moved instead.
+    if NativeLoaderBundledDTS and id == "dts_settings" then return end
+    if NativeLoaderBundledDTS and id == "dynamic_toolgun_screen" then
+        return add_tool_menu_option(TAB, N("Rendering"), id, L("Dynamic toolgun screen"), command, config, readable_panel(build), ...)
+    end
     if tab == "Utilities" and MOVED[category] then
         return add_tool_menu_option(TAB, MOVED[category], id, label, command, config, readable_panel(build), ...)
     end

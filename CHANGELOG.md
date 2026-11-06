@@ -8,6 +8,15 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R20
 
+- Bundle Dynamic Toolgun Screen (all thirteen languages) and the owned Blood Overhaul RTX patterns,
+  colour schemes and wet PBR maps; settings live in the RTX tab and coexist with standalone copies.
+  Crunchy's original/derived textures are excluded; the new patterns disclose AI generation.
+- Add directional blood impacts with brief mist, ballistic droplets and small collision stains,
+  stock blood colours/custom schemes, amount controls and hard particle/stain budgets. Off restores
+  the engine's original impact. No new networking, shared particle overrides or native trust changes.
+
+### R20
+
 - **The repository is now https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix** (renamed by the user
   from `-Gmod-Workshop-RTX-Remix`, now public): every link in the docs, the startup messages, the main
   menu's project link, the Workshop page and the package indexes' origins points at the new name

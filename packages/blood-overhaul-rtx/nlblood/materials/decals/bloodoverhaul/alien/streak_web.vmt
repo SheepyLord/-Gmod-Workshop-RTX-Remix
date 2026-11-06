@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/streak_web_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.054688"
+    "$color" "[0.780 0.700 0.240]"
+    "$modelmaterial" "decals/bloodoverhaul/alien/streak_web_model"
+}

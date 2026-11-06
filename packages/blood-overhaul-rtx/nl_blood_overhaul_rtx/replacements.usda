@@ -1,0 +1,2027 @@
+#usda 1.0
+(
+    doc = "Only the eighteen owned AI-generated Blood Overhaul RTX patterns."
+    upAxis = "Z"
+)
+over "RootNode"
+{
+    over "Looks"
+    {
+        over "mat_006B732830704716"
+        {
+            # decals/bloodoverhaul/tex/heavy_splash (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/heavy_splash.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/heavy_splash.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/heavy_splash.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_00C70BF0DBCCBE94"
+        {
+            # decals/bloodoverhaul/tex/ring_spatter (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/ring_spatter.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/ring_spatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/ring_spatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_017D304B5C472160"
+        {
+            # decals/bloodoverhaul/tex/ring_spatter (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/ring_spatter.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/ring_spatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/ring_spatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_07E0BEB14E5393C5"
+        {
+            # decals/bloodoverhaul/tex/ring_spatter_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/ring_spatter_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/ring_spatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/ring_spatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_0E944307423A716B"
+        {
+            # decals/bloodoverhaul/tex/torn_blotches (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/torn_blotches.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/torn_blotches.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/torn_blotches.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_129B230384FEA4E3"
+        {
+            # decals/bloodoverhaul/tex/long_swipe (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/long_swipe.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/long_swipe.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/long_swipe.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_14D9E6442A5367E0"
+        {
+            # decals/bloodoverhaul/tex/mist_cloud_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/mist_cloud_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/mist_cloud.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/mist_cloud.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_17EBC1F2347C01C3"
+        {
+            # decals/bloodoverhaul/tex/pooled_smear_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/pooled_smear_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/pooled_smear.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/pooled_smear.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_1A420A5A3EBEF1E4"
+        {
+            # decals/bloodoverhaul/tex/pooled_smear_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/pooled_smear_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/pooled_smear.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/pooled_smear.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_1EE598C371D4F2A2"
+        {
+            # decals/bloodoverhaul/tex/drops_scatter_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drops_scatter_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drops_scatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drops_scatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_1F23561656C96A18"
+        {
+            # decals/bloodoverhaul/tex/double_impact (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/double_impact.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/double_impact.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/double_impact.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_1FF3FB7673886008"
+        {
+            # decals/bloodoverhaul/tex/drip_runs_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drip_runs_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drip_runs.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drip_runs.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_299DFC7A25560FF6"
+        {
+            # decals/bloodoverhaul/tex/impact_dense_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/impact_dense_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/impact_dense.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/impact_dense.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_2C45C0CDF8A56280"
+        {
+            # decals/bloodoverhaul/tex/arterial_trail_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/arterial_trail_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/arterial_trail.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/arterial_trail.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_30327CA30E9CFF21"
+        {
+            # decals/bloodoverhaul/tex/long_swipe (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/long_swipe.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/long_swipe.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/long_swipe.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_342337146D5BC069"
+        {
+            # decals/bloodoverhaul/tex/dark_core_halo (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/dark_core_halo.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/dark_core_halo.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/dark_core_halo.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_36094862BB9CB83B"
+        {
+            # decals/bloodoverhaul/tex/castoff_sweep (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/castoff_sweep.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/castoff_sweep.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/castoff_sweep.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_37CE66FCC805583C"
+        {
+            # decals/bloodoverhaul/tex/castoff_sweep (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/castoff_sweep.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/castoff_sweep.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/castoff_sweep.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_3C6E8CD3D4866A98"
+        {
+            # decals/bloodoverhaul/tex/torn_blotches (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/torn_blotches.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/torn_blotches.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/torn_blotches.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_3F93312EF362DD3C"
+        {
+            # decals/bloodoverhaul/tex/shotgun_clusters_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/shotgun_clusters_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/shotgun_clusters.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/shotgun_clusters.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_403CEDA65F8230F7"
+        {
+            # decals/bloodoverhaul/tex/double_impact_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/double_impact_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/double_impact.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/double_impact.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_40BF83C3409BAD01"
+        {
+            # decals/bloodoverhaul/tex/double_impact (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/double_impact.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/double_impact.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/double_impact.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_4C3784319F0D4A1F"
+        {
+            # decals/bloodoverhaul/tex/shotgun_clusters_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/shotgun_clusters_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/shotgun_clusters.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/shotgun_clusters.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_50EC32B6A8268114"
+        {
+            # decals/bloodoverhaul/tex/drip_runs (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drip_runs.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drip_runs.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drip_runs.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_51A5BA42B29E4F79"
+        {
+            # decals/bloodoverhaul/tex/streak_web_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/streak_web_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/streak_web.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/streak_web.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_54F7287E69EB717B"
+        {
+            # decals/bloodoverhaul/tex/mist_cloud_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/mist_cloud_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/mist_cloud.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/mist_cloud.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_589C7407C0AD9B08"
+        {
+            # decals/bloodoverhaul/tex/arterial_trail_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/arterial_trail_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/arterial_trail.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/arterial_trail.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_58FD7642D894CA99"
+        {
+            # decals/bloodoverhaul/tex/torn_blotches_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/torn_blotches_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/torn_blotches.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/torn_blotches.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_5C0B100C499CFD1F"
+        {
+            # decals/bloodoverhaul/tex/shotgun_clusters (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/shotgun_clusters.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/shotgun_clusters.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/shotgun_clusters.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_5C930F511154FC0D"
+        {
+            # decals/bloodoverhaul/tex/mist_cloud (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/mist_cloud.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/mist_cloud.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/mist_cloud.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_62EB4B1A925BBFD0"
+        {
+            # decals/bloodoverhaul/tex/arterial_trail (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/arterial_trail.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/arterial_trail.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/arterial_trail.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_68A5BA240CD4D9AD"
+        {
+            # decals/bloodoverhaul/tex/drops_scatter (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drops_scatter.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drops_scatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drops_scatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_6CBCABE23DFE8050"
+        {
+            # decals/bloodoverhaul/tex/streak_web (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/streak_web.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/streak_web.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/streak_web.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_6D616CDE0E228F04"
+        {
+            # decals/bloodoverhaul/tex/drops_scatter (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drops_scatter.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drops_scatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drops_scatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_6F3D2DA48467C4E7"
+        {
+            # decals/bloodoverhaul/tex/spray_fan (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/spray_fan.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/spray_fan.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/spray_fan.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_70D4DFCD1112391D"
+        {
+            # decals/bloodoverhaul/tex/directional_spray_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/directional_spray_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/directional_spray.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/directional_spray.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_7256405B03011578"
+        {
+            # decals/bloodoverhaul/tex/spray_fan_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/spray_fan_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/spray_fan.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/spray_fan.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_788A2B1742290CB1"
+        {
+            # decals/bloodoverhaul/tex/impact_dense_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/impact_dense_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/impact_dense.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/impact_dense.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_7FFF188A9E8F8CDA"
+        {
+            # decals/bloodoverhaul/tex/castoff_sweep_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/castoff_sweep_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/castoff_sweep.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/castoff_sweep.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_883ABCF3EFC64BD6"
+        {
+            # decals/bloodoverhaul/tex/castoff_sweep_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/castoff_sweep_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/castoff_sweep.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/castoff_sweep.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_8895AD810968EB3A"
+        {
+            # decals/bloodoverhaul/tex/streak_web_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/streak_web_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/streak_web.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/streak_web.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_89D24AF06C2FF111"
+        {
+            # decals/bloodoverhaul/tex/drip_runs (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drip_runs.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drip_runs.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drip_runs.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_8D4AE3A4B50E144B"
+        {
+            # decals/bloodoverhaul/tex/heavy_splash_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/heavy_splash_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/heavy_splash.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/heavy_splash.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_8D729584C95513CC"
+        {
+            # decals/bloodoverhaul/tex/long_swipe_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/long_swipe_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/long_swipe.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/long_swipe.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_8D9E3EACDBA047D5"
+        {
+            # decals/bloodoverhaul/tex/impact_dense (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/impact_dense.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/impact_dense.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/impact_dense.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_99CD71139A54D2B4"
+        {
+            # decals/bloodoverhaul/tex/pooled_smear (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/pooled_smear.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/pooled_smear.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/pooled_smear.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_A435AF0E1E8EBB5F"
+        {
+            # decals/bloodoverhaul/tex/impact_dense (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/impact_dense.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/impact_dense.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/impact_dense.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_AB88EB142A28D6F3"
+        {
+            # decals/bloodoverhaul/tex/drip_runs_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drip_runs_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drip_runs.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drip_runs.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_AFB15F938F8847FC"
+        {
+            # decals/bloodoverhaul/tex/heavy_splash (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/heavy_splash.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/heavy_splash.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/heavy_splash.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_B6B779AA294F368D"
+        {
+            # decals/bloodoverhaul/tex/torn_blotches_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/torn_blotches_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/torn_blotches.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/torn_blotches.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_B6DD220EF3E53DC3"
+        {
+            # decals/bloodoverhaul/tex/mist_cloud (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/mist_cloud.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/mist_cloud.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/mist_cloud.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_B77D2FC6BF89AA9F"
+        {
+            # decals/bloodoverhaul/tex/spray_fan_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/spray_fan_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/spray_fan.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/spray_fan.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_B81EC8F83AE64315"
+        {
+            # decals/bloodoverhaul/tex/dark_core_halo_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/dark_core_halo_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/dark_core_halo.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/dark_core_halo.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_B9D8FCD9ABB867C7"
+        {
+            # decals/bloodoverhaul/tex/heavy_splash_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/heavy_splash_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/heavy_splash.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/heavy_splash.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_C15CD6B67AE01F28"
+        {
+            # decals/bloodoverhaul/tex/sparse_mist_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/sparse_mist_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/sparse_mist.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/sparse_mist.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_C3CA92EB88FE1952"
+        {
+            # decals/bloodoverhaul/tex/drops_scatter_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/drops_scatter_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/drops_scatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/drops_scatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_C3E063D0B8E1E8E2"
+        {
+            # decals/bloodoverhaul/tex/sparse_mist (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/sparse_mist.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/sparse_mist.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/sparse_mist.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_CA0C192D6B413E75"
+        {
+            # decals/bloodoverhaul/tex/arterial_trail (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/arterial_trail.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/arterial_trail.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/arterial_trail.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_CB53F4865323D2D3"
+        {
+            # decals/bloodoverhaul/tex/dark_core_halo_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/dark_core_halo_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/dark_core_halo.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/dark_core_halo.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_D87E2033E6FDF4B9"
+        {
+            # decals/bloodoverhaul/tex/directional_spray_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/directional_spray_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/directional_spray.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/directional_spray.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_D89268197DF25B16"
+        {
+            # decals/bloodoverhaul/tex/long_swipe_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/long_swipe_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/long_swipe.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/long_swipe.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_DFC083344481C8F0"
+        {
+            # decals/bloodoverhaul/tex/directional_spray (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/directional_spray.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/directional_spray.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/directional_spray.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_E284414A9D4BD183"
+        {
+            # decals/bloodoverhaul/tex/directional_spray (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/directional_spray.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/directional_spray.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/directional_spray.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_E80472589BEB2E1E"
+        {
+            # decals/bloodoverhaul/tex/pooled_smear (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/pooled_smear.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/pooled_smear.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/pooled_smear.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_E8A5C4433CE3D0E6"
+        {
+            # decals/bloodoverhaul/tex/sparse_mist_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/sparse_mist_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/sparse_mist.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/sparse_mist.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_E980F3FC62A39A83"
+        {
+            # decals/bloodoverhaul/tex/sparse_mist (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/sparse_mist.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/sparse_mist.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/sparse_mist.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_F37508689A75767D"
+        {
+            # decals/bloodoverhaul/tex/shotgun_clusters (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/shotgun_clusters.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/shotgun_clusters.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/shotgun_clusters.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_F3B5AEEAF93924AC"
+        {
+            # decals/bloodoverhaul/tex/streak_web (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/streak_web.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/streak_web.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/streak_web.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_F5AF77B2E7CE078A"
+        {
+            # decals/bloodoverhaul/tex/double_impact_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/double_impact_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/double_impact.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/double_impact.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_F7638F7B789A3C2B"
+        {
+            # decals/bloodoverhaul/tex/ring_spatter_n (neutral)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/ring_spatter_n.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/ring_spatter.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/ring_spatter.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_FD8A2CAFD0A1B54F"
+        {
+            # decals/bloodoverhaul/tex/spray_fan (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/spray_fan.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/spray_fan.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/spray_fan.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+        over "mat_FFB4BF0FC350F623"
+        {
+            # decals/bloodoverhaul/tex/dark_core_halo (natural)
+            over "Shader"
+            {
+                uniform asset info:mdl:sourceAsset = @AperturePBR_Opacity.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "AperturePBR_Opacity"
+                bool inputs:preload_textures = 0
+                asset inputs:diffuse_texture = @./textures/dark_core_halo.a.rtex.dds@ (
+                    colorSpace = "auto"
+                )
+                asset inputs:normalmap_texture = @./textures/dark_core_halo.n.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                int inputs:encoding = 0
+                asset inputs:reflectionroughness_texture = @./textures/dark_core_halo.r.rtex.dds@ (
+                    colorSpace = "raw"
+                )
+                float inputs:metallic_constant = 0
+                bool inputs:enable_emission = 0
+                float inputs:opacity_constant = 1
+                bool inputs:use_legacy_alpha_state = 0
+                bool inputs:blend_enabled = 1
+                int inputs:blend_type = 0
+                bool inputs:inverted_blend = 0
+                int inputs:alpha_test_type = 7
+            }
+        }
+    }
+}

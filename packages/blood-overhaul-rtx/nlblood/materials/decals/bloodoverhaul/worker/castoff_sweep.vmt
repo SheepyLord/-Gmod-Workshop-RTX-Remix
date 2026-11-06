@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/castoff_sweep_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.052734"
+    "$color" "[0.670 0.820 0.140]"
+    "$modelmaterial" "decals/bloodoverhaul/worker/castoff_sweep_model"
+}

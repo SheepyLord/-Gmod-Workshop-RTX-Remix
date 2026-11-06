@@ -459,7 +459,7 @@ msgid "Distant"
 msgstr "远距离"
 
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1017
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:456
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:465
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:382
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:111
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:126
@@ -471,7 +471,7 @@ msgid "Volumetrics Scale"
 msgstr "体积光倍率"
 
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1047
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:455
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:464
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:53
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:383
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:112
@@ -493,7 +493,7 @@ msgid "Cone Angle (deg)"
 msgstr "光锥角度（度）"
 
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/entities/remix_rt_light/cl_init.lua:1072
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:458
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:467
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:401
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:132
 msgid "Cone Softness"
@@ -1111,26 +1111,26 @@ msgstr "粒子 | 自发光"
 msgid "DECAL | EMISSIVE"
 msgstr "贴花 | 自发光"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:451
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:460
 msgid "Flashlight"
 msgstr "手电筒"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:454
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:463
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:381
 msgid "Light Properties"
 msgstr "光源属性"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:457
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:466
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:400
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_sphere.lua:131
 msgid "Cone Angle"
 msgstr "光锥角度"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:459
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:468
 msgid "Volumetric Scale"
 msgstr "体积光倍率"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:461
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:470
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_bonemerge.lua:388
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_cylinder.lua:117
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/weapons/gmod_tool/stools/remix_rt_light_disk.lua:126
@@ -1140,23 +1140,23 @@ msgstr "体积光倍率"
 msgid "Color"
 msgstr "颜色"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:483
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:492
 msgid "Position Offset"
 msgstr "位置偏移"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:484
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:493
 msgid "Forward Offset"
 msgstr "前向偏移"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:485
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:494
 msgid "Right Offset"
 msgstr "右向偏移"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:486
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:495
 msgid "Up Offset"
 msgstr "向上偏移"
 
-#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:488
+#: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/cl_remix_flashlight.lua:497
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:29
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:43
 #: packages/fixes/garrysmod/garrysmod/addons/remixbinary/lua/remixlua/cl/remixapi/wrappers/cl_remix_api_map_lights_menu.lua:58
@@ -1786,108 +1786,108 @@ msgstr "重新构建此地图的水面"
 msgid "RTX Water"
 msgstr "RTX Water"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:233
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:236
 msgid "Procedural Bodygroup Destruction — performance"
 msgstr "程序化身体组破坏 — 性能"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:235
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:238
 #, c-format
 msgid "hit #%s | CPU %.2f ms | wall %.2f ms | %s"
 msgstr "命中 #%s | CPU %.2f ms | 总耗时 %.2f ms | %s"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:254
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:257
 #, c-format
 msgid "Recent hits: %d%s | slowest stage overall: %s"
 msgstr "最近命中：%d%s | 总计最耗时阶段：%s"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:256
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:263
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:259
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:266
 msgid "<none>"
 msgstr "<无>"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:262
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:265
 #, c-format
 msgid "continuous hottest: %s%s"
 msgstr "持续运行中最耗时阶段：%s%s"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:264
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:267
 #, c-format
 msgid " (avg %.3f ms, max %.3f ms)"
 msgstr "（平均 %.3f ms，最大 %.3f ms）"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Affected UV selection"
 msgstr "选择受影响的 UV"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Bodygroup eligibility"
 msgstr "检查身体组是否可损坏"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Debug capture + bundle I/O"
 msgstr "调试捕获与数据包读写"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Debug console output"
 msgstr "调试控制台输出"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Frame: 3D hit overlay"
 msgstr "每帧：3D 命中叠加层"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Frame: last-hit HUD"
 msgstr "每帧：最近命中 HUD"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Frame: texture inspector"
 msgstr "每帧：纹理检查器"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Impact trace + hit setup"
 msgstr "弹道追踪与命中初始化"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Material apply overhead"
 msgstr "材质应用开销"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Material queue dispatch"
 msgstr "材质队列调度"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Mesh cache lookup/build"
 msgstr "查找或构建网格缓存"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Pose snapshot"
 msgstr "姿态快照"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Prewarm: RTX memory cleanup"
 msgstr "预热：清理 RTX 内存"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Prewarm: bodygroup eligibility"
 msgstr "预热：检查身体组"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Prewarm: mesh cache"
 msgstr "预热：网格缓存"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Prewarm: persistent cache hydrate"
 msgstr "预热：载入持久缓存"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Removal-hull mesh query"
 msgstr "查询移除区域内的网格"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "Skin transform setup"
 msgstr "初始化蒙皮变换"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:287
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_25_profiler.lua:290
 msgid "UV result bookkeeping"
 msgstr "记录 UV 处理结果"
 
@@ -1971,71 +1971,71 @@ msgstr "移除区域查询失败： "
 msgid "retained %d / received %d"
 msgstr "保留 %d / 收到 %d"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6635
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6639
 msgid "UV damage: waiting for mesh analysis"
 msgstr "UV 损伤：等待网格分析"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6636
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6640
 msgid "UV damage: "
 msgstr "UV 损伤： "
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6638
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6642
 #, c-format
 msgid "UV damage: %d meshes / %d materials / %d UVs | paint queue %d"
 msgstr "UV 损伤：%d 个网格 / %d 个材质 / %d 个 UV | 绘制队列 %d"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6643
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6647
 #, c-format
 msgid "UV damage: %d material override(s) applied from %d triangles"
 msgstr "UV 损伤：已应用 %d 个材质覆盖，源自 %d 个三角形"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6649
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6653
 #, c-format
 msgid "UV damage: no eligible bodygroup touch; nearest %s mesh is %.3f units away"
 msgstr "UV 损伤：未接触可损坏的身体组；最近的 %s 网格距离为 %.3f 单位"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6652
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6656
 msgid "UV damage: removal hull did not touch a proven eligible-bodygroup mesh"
 msgstr "UV 损伤：移除区域未接触已确认可损坏的身体组网格"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6655
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6659
 msgid "UV damage: broad-phase mesh candidates had no exact irregular-hole coverage"
 msgstr "UV 损伤：初步筛选的候选网格未与实际不规则孔洞区域重叠"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6659
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6663
 msgid "UV damage: affected materials could not be mapped to submaterial slots"
 msgstr "UV 损伤：无法将受影响的材质映射到子材质槽"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6661
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6665
 msgid "UV damage: material application failed"
 msgstr "UV 损伤：应用材质失败"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6662
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6666
 #, c-format
 msgid "UV damage: %d meshes / %d materials / %d unique UVs (%s)"
 msgstr "UV 损伤：%d 个网格 / %d 个材质 / %d 个不同 UV (%s)"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6773
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6777
 msgid "Original RGB"
 msgstr "原始 RGB"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6774
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6778
 msgid "Edited + alpha"
 msgstr "编辑后（含透明度）"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6775
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6779
 msgid "Edited RGB only"
 msgstr "编辑后（仅 RGB）"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6776
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6780
 msgid "Last hit coverage"
 msgstr "最近命中的覆盖范围"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6797
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6801
 #, c-format
 msgid "%s | %d source / %d projected tris | %d UVs | expand=%.1f feather=%.1f passes=%d seams=%d"
 msgstr "%s | 原始 %d / 投影 %d 个三角形 | %d 个 UV | 扩展=%.1f 羽化=%.1f 遍数=%d 接缝=%d"
 
-#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6805
+#: packages/procedural-bodygroup-destruction/!gmod_bullet_break_simulator/lua/bullet_break_simulator/cl_40_damage.lua:6809
 msgid "dump: data/"
 msgstr "转储：data/"

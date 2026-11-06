@@ -1,0 +1,14 @@
+# nativeloader_blood_menu.lua
+
+R20-C Blood and impacts panel in RTX Remix / Blood. Uses the companion's six gettext catalogs;
+without the complete companion a separately built blood part has an English fallback and creates
+the tab/category itself. The early bootstrap must have found the owned-pattern part.
+
+Controls the preserved `bloodoverhaul_*` settings, twelve schemes, RGB pickers, size, variation and
+droplet recolouring; adds `nativeloader_blood_impacts` and amount (0–2). Describes budgets, stock
+fallback, optional Crunchy subscription and AI provenance. Buttons test two splats, explicitly clear
+all decals/reset the stain epoch, and reset settings. The legacy menu module is skipped, so only this
+panel registers, even with the standalone copy. No settings are written by opening it.
+
+Inputs: included BO table and client ConVars. Outputs: Derma controls, explicit user console
+commands. No disk/network writes or exit code. The screen's own translated controls stay with it.

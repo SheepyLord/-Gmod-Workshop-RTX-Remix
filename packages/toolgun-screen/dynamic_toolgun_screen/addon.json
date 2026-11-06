@@ -1,0 +1,7 @@
+{
+	"title": "Dynamic Toolgun Screen (Tools / Utility)",
+	"description": "Have you notice that the screen of the tool gun is just a dummy image? It shows an operating system interface but does not update at all. Well that's no longer the case, here we introduce \"Dynamic Toolgun Screen\" to make it looks alive.\n\nThe settings are available under [u]Spawn Menu -> Tools -> Render -> Dynamic Toolgun Screen[/u]\nAlso accessable at [u] Utilities > Dynamic Toolgun Screen > Settings [/u]\n\nYoung in limbs, in judgment old,\nYour answer had not been inscrolled\n--- William Shakespeare\n\nAlso compatible to [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2806571951] Advanced Toolgun [/url]\n\n[h2]Multiplayer[/h2]\nThis addon is client sided. \n\nThe screen being rendered in front of the paper note is a feature, not a bug. It can be corrected using \"dts_inspect_on_top 0\"\n\n[h2]Console commands[/h2]\n[b]dts_tool_back[/b], [b]dts_tool_next[/b], [b]dts_tool_prev[/b], [b]dts_layout_next[/b], [b]dts_theme_next[/b], [b]dts_track[/b], [b]dts_untrack[/b], [b]dts_notify[/b], [b]dts_export[/b], [b]dts_import[/b], [b]dts_reset[/b], [b]dts_language_reload[/b], [b]dts_debug[/b]\n\n[u]Credits:[/u]\nDynamic Toolgun Screen by: SheepyLord",
+	"type": "tool",
+	"tags": [ "fun", "realism" ],
+	"ignore": [ "*.md", "*.psd", ".git*", "tools/*", "*.py" ]
+}

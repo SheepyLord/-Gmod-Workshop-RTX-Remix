@@ -132,6 +132,8 @@ local PAGES = {
             N("ToPBR: makes PBR maps from the game's own materials. It uses a lot of VRAM and needs a map reload."),
             N("Auto-Categorization: sorts textures into Remix's categories automatically."),
             N("Toolgun screen: keeps the toolgun's screen text sharp.") },
+        { "p", N("Dynamic toolgun screen, beside Toolgun screen in Rendering, customizes the live display, its layouts and language. The same panel selects its entity-tracking tool.") },
+        { "p", N("Blood > Blood and impacts sets the blood patterns, colours and bullet spray. Turn Realistic bullet impacts off, or set Impact amount to zero, for the engine's original impact. Clear all decals removes existing stains and starts a fresh stain budget. Crunchy's add-on is optional.") },
         { "image", "nativeloader/guide/base_options.jpg",
             N("Pseudoplayer Enabled: lets you see your own shadow and reflection."),
             N("Pseudoweapon Enabled: the same for the weapon you hold."),

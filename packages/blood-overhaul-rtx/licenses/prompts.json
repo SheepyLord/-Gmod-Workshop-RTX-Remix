@@ -1,0 +1,24 @@
+{
+  "lead": "Use your image generation tool exactly once, then reply with only the word done. Do not run shell commands and do not edit files. The attached images are blood decal textures from a game, shown on a white background. Create ONE NEW image in exactly their visual style. The new pattern: ",
+  "suffix": " Match the attached references closely in colour (a very dark, desaturated brownish maroon that looks almost black-red where thick, no bright or saturated red anywhere), in texture (a chaotic, gritty forensic look: crisp droplets of many sizes, dense clusters of tiny specks and fine mist, ragged irregular blotches, and some faint translucent grey-brown smudges and washes) and in scale (the pattern spreads over most of the square image, roughly 80 to 90 percent of its width, but nothing touches or is cut off by the image edges). Pure white (#FFFFFF) background, flat even lighting, seen straight from above, no glossy highlights, no shadows, no paper texture, no text, no watermark. Do not copy the layout of any reference: it must be a clearly different pattern. Square 1:1 image.",
+  "patterns": {
+    "mist_cloud": {"refs": [1, 5], "text": "a broad cloud of fine mist and tiny specks with a few denser clusters and some medium-sized droplets."},
+    "impact_dense": {"refs": [7, 4], "text": "a dense central impact spatter: merged ragged blotches in the middle, radiating streaks and droplets all around it."},
+    "directional_spray": {"refs": [5, 3], "text": "spatter sprayed diagonally from the lower left towards the upper right: streaks and elongated drops all pointing the same way, densest near where it starts."},
+    "castoff_sweep": {"refs": [3, 6], "text": "a sweeping curved arc of elongated drops and streaks crossing the image, with spray and mist along the arc."},
+    "arterial_trail": {"refs": [6, 8], "text": "a zig-zag arterial spurt trail of heavy connected blobs and drops crossing the image, with spray along both sides."},
+    "pooled_smear": {"refs": [6, 4], "text": "a large smeared pool with streaky wipe marks, faint translucent smudges along its edges and scattered droplets around it."},
+    "drops_scatter": {"refs": [2, 8], "text": "many separate round and oval drops of mixed sizes scattered over the area with tiny satellite specks, and only a few larger blotches."},
+    "streak_web": {"refs": [3, 1], "text": "a tangle of thin flung streaks and lines crossing each other, with small drops at their ends and fine spray between them."},
+    "double_impact": {"refs": [4, 5], "text": "two overlapping impact spatters of different sizes with a band of mist between them."},
+    "heavy_splash": {"refs": [7, 6], "text": "a heavy splash: one big irregular blotch with long jagged fingers, thick streaks and lots of droplets thrown around it."},
+    "drip_runs": {"refs": [4, 3], "text": "a splatter with several thin runs dripping straight down from it, as on a wall, each ending in a small bead, with spray above."},
+    "sparse_mist": {"refs": [1, 2], "text": "a light, sparse spatter: mostly fine mist and small specks with a few medium drops and one small smudge."},
+    "shotgun_clusters": {"refs": [2, 8], "text": "five or six small impact clusters spread over the area, each a tight burst of droplets and mist."},
+    "long_swipe": {"refs": [6, 4], "text": "a long diagonal wipe with a dragged, streaky texture that fades out towards one end, with drops and spatter where it starts."},
+    "ring_spatter": {"refs": [8, 5], "text": "a ring of droplets and short streaks around a mostly empty centre that holds one small blotch."},
+    "dark_core_halo": {"refs": [7, 1], "text": "a dense dark core of merged blotches surrounded by a very wide halo of fine mist and small droplets."},
+    "spray_fan": {"refs": [5, 3], "text": "a fan-shaped spray widening from a narrow dense origin at the bottom towards the top, made of streaks, droplets and mist."},
+    "torn_blotches": {"refs": [8, 7], "text": "a cluster of five or six torn, irregular blotches of different sizes close together, with spatter and specks between them."}
+  }
+}

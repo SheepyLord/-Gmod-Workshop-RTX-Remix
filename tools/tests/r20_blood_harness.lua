@@ -1,0 +1,212 @@
+-- Execute the real R20-C controllers against deterministic, small GMod API doubles.
+local root, scenario = arg[1], arg[2]
+local function source(path) return root .. "/companion/nativeloader/lua/" .. path end
+local clock, calls, cvs, callbacks, hooks, commands = 0, {}, {}, {}, {}, {}
+CLIENT, SERVER = true, false
+function CurTime() return clock end
+math.Clamp = function(v, a, b) return math.max(a, math.min(v, b)) end
+math.Rand = function(a, b) return (a + b) / 2 end
+local V = {} V.__index = V
+function Vector(x, y, z) return setmetatable({x=x or 0,y=y or 0,z=z or 0}, V) end
+function V.__add(a,b) return Vector(a.x+b.x,a.y+b.y,a.z+b.z) end
+function V.__sub(a,b) return Vector(a.x-b.x,a.y-b.y,a.z-b.z) end
+function V.__mul(a,b) return Vector(a.x*b,a.y*b,a.z*b) end
+function V:LengthSqr() return self.x^2+self.y^2+self.z^2 end
+function V:Distance(b) return math.sqrt((self-b):LengthSqr()) end
+function V:GetNormalized() local n=math.sqrt(self:LengthSqr()) return n>0 and self*(1/n) or Vector() end
+function V:Cross(b) return Vector(self.y*b.z-self.z*b.y,self.z*b.x-self.x*b.z,self.x*b.y-self.y*b.x) end
+function VectorRand() return Vector(0,.2,.1) end
+function EyePos() return Vector(-100,0,0) end
+function Color(r,g,b,a) return {r=r,g=g,b=b,a=a or 255} end
+function IsColor(c) return type(c)=='table' and c.r ~= nil end
+function HSVToColor(h,s,v) return Color(h % 255, s*255, v*255) end
+color_white = Color(255,255,255)
+isfunction = function(v) return type(v)=='function' end
+istable = function(v) return type(v)=='table' end
+function IsValid(v) return v ~= nil and v ~= false end
+function CreateClientConVar(name, default)
+    if cvs[name] then return cvs[name] end
+    local cv = {value=tostring(default), default=tostring(default)}
+    function cv:GetString() return self.value end
+    function cv:GetFloat() return tonumber(self.value) or 0 end
+    function cv:GetInt() return math.floor(self:GetFloat()) end
+    function cv:GetBool() return self:GetFloat() ~= 0 end
+    function cv:GetName() return name end
+    function cv:GetDefault() return self.default end
+    cvs[name]=cv return cv
+end
+GetConVar = function(name) return cvs[name] end
+cvars = {AddChangeCallback=function(name,fn,id) callbacks[name]=callbacks[name] or {} callbacks[name][id]=fn end}
+function RunConsoleCommand(name, value)
+    if cvs[name] then
+        local old=cvs[name].value cvs[name].value=tostring(value)
+        for _,fn in pairs(callbacks[name] or {}) do fn(name,old,tostring(value)) end
+    end
+end
+hook = {
+    Add=function(event,id,fn) hooks[event]=hooks[event] or {} hooks[event][id]=fn end,
+    Run=function(event,...) for _,fn in pairs(hooks[event] or {}) do fn(...) end end,
+}
+concommand = {Add=function(name,fn) commands[name]=fn end}
+local mats = {}
+function Material(name)
+    if mats[name] then return mats[name] end
+    local mat={name=name}
+    function mat:GetName() return self.name end
+    function mat:IsError() return false end
+    function mat:SetTexture(key,value) self[key]=value end
+    function mat:SetVector(key,value) self[key]=value end
+    mats[name]=mat return mat
+end
+CreateMaterial = function(name,shader,fields) local m=Material(name) for k,v in pairs(fields) do m[k]=v end return m end
+util = {
+    DecalEx=function(...) calls.decals=calls.decals or {} table.insert(calls.decals,{...}) end,
+    Effect=function(...) calls.effects=calls.effects or {} table.insert(calls.effects,{...}) end,
+    TraceLine=function(t) return {Hit=true,Entity={},HitPos=t.start,HitNormal=Vector(0,0,1)} end,
+}
+local added = {}
+function ParticleEmitter()
+    if calls.fail_emitter then return end
+    return {
+        Add=function(self,mat,pos)
+            local p={material=mat,position=pos,props={}}
+            setmetatable(p,{__index=function(_,key) return function(s,...) s.props[key]={...} end end})
+            added[#added+1]=p return p
+        end,
+        Finish=function() end,
+    }
+end
+local registered
+effects = {Register=function(t,name) assert(name=='BloodImpact') registered=t end}
+file = {Exists=function() return false end}
+include = function(path)
+    if path=='nativeloader/i18n.lua' then return {L=function(s) return s end,N=function(s) return s end,PreparePanel=function() end} end
+    if path=='nlblood/shapes.lua' then return dofile(root..'/packages/blood-overhaul-rtx/nlblood/lua/nlblood/shapes.lua') end
+    if path=='nlblood/schemes.lua' then return dofile(root..'/packages/blood-overhaul-rtx/nlblood/lua/nlblood/schemes.lua') end
+    return dofile(source(path))
+end
+timer = {Simple=function(_,fn) end}
+spawnmenu = {AddToolMenuOption=function(...) calls.panels=calls.panels or {} table.insert(calls.panels,{...}) end,
+    AddToolTab=function() end,AddToolCategory=function() end}
+
+if scenario=='budget' then
+    local Budget=include('nativeloader/blood_budget.lua')
+    local b=Budget.New(3,2)
+    assert(b:Take(0,2) and b:Take(.1,2) and not b:Take(.2,2))
+    assert(not b:Take(1.5,2), 'live cap survives second rollover')
+    assert(b:Take(2,2) and b:Take(2.1,2) and not b:Take(2.2,2))
+    local rate=Budget.New(3,10)
+    assert(rate:Take(0,.01) and rate:Take(.2,.01) and rate:Take(.9,.01))
+    assert(not rate:Take(.99,.01),'rolling-second cap, not calendar buckets')
+    assert(rate:Take(1,.01) and not rate:Take(1.01,.01))
+    local map=Budget.New(2,3)
+    assert(map:Take(0,math.huge) and map:Take(.1,math.huge))
+    assert(map:Take(10,math.huge) and not map:Take(1000,math.huge))
+    map:Reset() assert(map:Take(1000,math.huge))
+elseif scenario=='coexist' or scenario=='absent' then
+    local loaded={}
+    file.Exists=function(path) return scenario=='coexist' and (path=='nlblood/shapes.lua' or path=='dynamic_toolgun_screen/nl_package.lua') end
+    include=function(path)
+        loaded[path]=(loaded[path] or 0)+1
+        if path=='nlblood/shapes.lua' then return {} end
+    end
+    local before=include
+    dofile(source('autorun/!nativeloader_blood.lua'))
+    if scenario=='absent' then assert(include==before and not BloodOverhaul) else
+        assert(BloodOverhaul.Packaged and NativeLoaderBundledDTS)
+        -- Either standalone or package virtual source can be selected; both use these old paths.
+        for _=1,2 do
+            for _,p in ipairs({'sh_shapes','cl_schemes','cl_core','cl_menu'}) do include('bloodoverhaul/'..p..'.lua') end
+            include('dynamic_toolgun_screen/cl_core.lua')
+        end
+        assert(not loaded['bloodoverhaul/cl_core.lua'])
+        assert(loaded['dynamic_toolgun_screen/cl_core.lua']==1)
+        include('dynamic_toolgun_screen/lang/fr.lua') include('dynamic_toolgun_screen/lang/fr.lua')
+        assert(loaded['dynamic_toolgun_screen/lang/fr.lua']==2,'language reload must work')
+        include('other/addon.lua') include('other/addon.lua') assert(loaded['other/addon.lua']==2)
+        local guarded=include dofile(source('autorun/!nativeloader_blood.lua')) assert(guarded==include)
+        assert(loaded['nativeloader/blood_core.lua']==1 and loaded['nativeloader/blood_impacts.lua']==1)
+    end
+elseif scenario=='menu' then
+    NativeLoaderBundledDTS=true
+    dofile(source('autorun/client/nativeloader_menu.lua'))
+    spawnmenu.AddToolMenuOption('Utilities','dts.menu.category','dts_settings','#dts.menu.settings','','',function() end)
+    spawnmenu.AddToolMenuOption('Main','Render','dynamic_toolgun_screen','#tool.dynamic_toolgun_screen.name','gmod_tool dynamic_toolgun_screen','',function() end)
+    spawnmenu.AddToolMenuOption('Utilities','Other','other','Other','','',function() end)
+    assert(#calls.panels==2)
+    local moved=calls.panels[1]
+    assert(moved[1]=='RTX Remix' and moved[2]=='Rendering' and moved[3]=='dynamic_toolgun_screen')
+    assert(moved[4]=='Dynamic toolgun screen' and moved[5]=='gmod_tool dynamic_toolgun_screen')
+    assert(calls.panels[2][1]=='Utilities')
+    NativeLoaderBundledDTS=false
+    spawnmenu.AddToolMenuOption('Utilities','dts.menu.category','dts_settings','Settings','','',function() end)
+    assert(#calls.panels==3 and calls.panels[3][1]=='Utilities')
+else
+    BloodOverhaul={Packaged=true,Shapes=include('nlblood/shapes.lua')}
+    include('nlblood/schemes.lua') include('nativeloader/blood_core.lua') include('nativeloader/blood_impacts.lua')
+    local BO=BloodOverhaul
+    local data={GetColor=function() return 0 end,GetOrigin=function() return Vector() end,
+                GetNormal=function() return Vector(1,0,0) end,GetScale=function() return 2 end}
+    local function hit() registered:Init(data) end
+    if scenario=='impacts' then
+        assert(registered:Think()==false)
+        for _,name in ipairs({'nativeloader_blood_impacts','bloodoverhaul_enable','nativeloader_blood_amount'}) do
+            RunConsoleCommand(name,'0') hit()
+            assert(calls.effects[#calls.effects][1]=='BloodImpact' and calls.effects[#calls.effects][2]==data and calls.effects[#calls.effects][3]==false)
+            RunConsoleCommand(name,'1')
+        end
+        data.GetColor=function() return 3 end hit() assert(#added==0)
+        data.GetColor=function() return 0 end
+        calls.fail_emitter=true hit() assert(#added==0) calls.fail_emitter=false
+        hit() assert(#added>0)
+        local back,forward,mist=0,0,0
+        for _,p in ipairs(added) do
+            if p.props.SetVelocity[1].x<0 then back=back+1 else forward=forward+1 end
+            if p.props.SetDieTime[1]<.25 then mist=mist+1 end
+        end
+        assert(back>0 and forward>back and mist>0)
+        local n=BO.ImpactPlan(2,100,1)
+        assert(BO.ImpactPlan(2,2000,1)<n and BO.ImpactPlan(2,5000,1)==0)
+        assert(BO.ImpactPlan(8,100,2)<=42 and BO.ImpactPlan(2,100,0)==0)
+        assert(BO.ImpactPlan(0/0,0,1)>0 and BO.ImpactPlan(math.huge,0,1)>0)
+        local pale=BO.Colour(1) local green=BO.Colour(2) assert(pale.g~=green.g)
+        for _,scheme in ipairs(BO.Schemes) do
+            RunConsoleCommand('bloodoverhaul_scheme',scheme.id)
+            for _,code in ipairs({0,1,2,4,5,6}) do assert(IsColor(BO.Colour(code,2))) assert(BO.Pattern(code,1)) end
+        end
+        assert(not BO.Colour(3) and not BO.Pattern(3,1))
+        local original=Material('decals/blood1')
+        RunConsoleCommand('bloodoverhaul_enable','0')
+        util.DecalEx(original,'ent','pos','normal','colour',.7,.9)
+        local dec=calls.decals[#calls.decals]
+        assert(dec[1]==original and dec[2]=='ent' and dec[3]=='pos' and dec[4]=='normal' and dec[5]=='colour' and dec[6]==.7 and dec[7]==.9)
+    elseif scenario=='saturation' then
+        for i=1,200 do hit() end
+        assert(#added<=512 and #BO.ImpactBudgets.particles.recent<=640)
+        assert(BO.ImpactStats.culled>0 and BO.ImpactStats.denied>0)
+        local function land(first)
+            for j=first,#added do
+                local p=added[j] local cb=p.props.SetCollideCallback
+                if cb then cb[1](p,Vector(),Vector(0,0,1)) cb[1](p,Vector(),Vector(0,0,1)) end
+            end
+        end
+        land(1) assert(#calls.decals==48,'collision storms are rate limited and one-shot')
+        for batch=1,12 do
+            clock=batch*2 local first=#added+1
+            for j=1,30 do hit() end
+            land(first)
+            assert(#BO.ImpactBudgets.particles.recent<=640 and #BO.ImpactBudgets.particles.live<=512)
+        end
+        assert(#calls.decals==384 and BO.ImpactBudgets.stains.total==384)
+        RunConsoleCommand('nativeloader_blood_impacts','0') RunConsoleCommand('nativeloader_blood_impacts','1')
+        assert(BO.ImpactBudgets.stains.total==384,'toggles cannot evade map cap')
+        commands.bloodoverhaul_clear() assert(BO.ImpactBudgets.stains.total==0)
+        clock=clock+2 local first=#added+1 hit() land(first) assert(#calls.decals>384)
+    elseif scenario=='blood_menu' then
+        dofile(source('autorun/client/nativeloader_blood_menu.lua'))
+        hook.Run('PopulateToolMenu')
+        assert(#calls.panels==1 and calls.panels[1][1]=='RTX Remix' and calls.panels[1][2]=='Blood')
+        assert(calls.panels[1][3]=='bloodoverhaul_settings')
+    else error('unknown scenario '..scenario) end
+end
+print('PASS '..scenario)

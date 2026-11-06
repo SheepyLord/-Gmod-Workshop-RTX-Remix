@@ -1,5 +1,11 @@
 # nativeloader_menu.lua
 
+R20-C adds Blood as a category for the translated Blood and impacts panel. With the packaged screen
+marker present, the Dynamic Toolgun Screen tracking tool and full settings move from Main / Render
+to RTX Remix / Rendering, beside Toolgun screen. The additional `dts_settings` Utilities shortcut is
+suppressed. The tool command, preview and thirteen-language controls are preserved. Other tools and
+a standalone-only screen installation keep their existing locations. No duplicated panel is added.
+
 R15 adds two checkboxes at the end of Model outlines, after **Choose eye-white materials** (so the
 guide's picture of the panel's top stays right): **Hide painted shadows**
 (`nativeloader_hide_painted_shadows`, default on) and **Solid hair** (`nativeloader_solid_hair`, default

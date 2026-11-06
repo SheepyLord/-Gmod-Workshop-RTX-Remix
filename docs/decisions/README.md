@@ -148,3 +148,5 @@ Each with the reason it lost.
 - [0112: The RTX fixes' Lua functions keep paths in the game, and ToPBR follows the player's settings](0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md) (R19 H3, the pre-release review).
 - [0113: Every Actions artifact expires after two days](0113-every-actions-artifact-expires-after-two-days.md) (after R19, the user; amends decision 1 of 0017 and decisions 3 and 4 of 0106).
 - [0114: The loader's workflow runs only for a release or when a person starts it](0114-the-loader-workflow-runs-only-for-a-release-or-by-hand.md) (after R19, the user; amends decision 1 of 0017: no push or pull request starts `build.yml`).
+- [0118: Bundle the user's screen and owned blood patterns](0118-bundled-toolgun-screen-and-owned-blood-patterns.md) (R20-C, item 48; provenance boundaries and coexistence).
+- [0119: Client blood impacts with bounded spatter](0119-client-blood-impacts-with-bounded-spatter.md) (R20-C; stock fallback, normal particle/decal paths and budgets).

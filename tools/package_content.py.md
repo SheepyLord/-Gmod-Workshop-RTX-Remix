@@ -4,6 +4,8 @@ Builds an **add-on package** ([docs/PACKAGE_FORMAT.md](../docs/PACKAGE_FORMAT.md
 folders, Remix mod folders and binary Lua modules. It is for what GMod cannot mount from the Workshop
 by itself: Remix mods (`.usda`, `.dds`) and binary modules are outside GMod's file whitelist, and GMod
 refuses an archive that holds them ([ADR 0015](../docs/decisions/0015-workshop-route-for-native-packages.md)).
+Direct invocation supports `python -I tools/package_content.py`: it resolves its own helper modules
+from this repository, without depending on Python's current-directory import path.
 The loader deploys the package instead: its Lua arrives as add-on folders, its mods in
 `rtx-remix\mods` and its modules in `garrysmod\lua\bin`.
 
@@ -14,6 +16,9 @@ It builds:
   - `Remove_halo`;
   - the user's five add-ons, among them Model Hotloader with its natives
     ([ADR 0024](../docs/decisions/0024-bundled-addons-and-module-dependencies.md)).
+  - R20-C's Dynamic Toolgun Screen and owned-only Blood Overhaul RTX parts. The blood controller
+    and coexistence bootstrap are attached from the maintained companion sources; the latter also
+    ships with the screen. Duplicate virtual paths have identical bytes in the combined package.
 
 ```powershell
 # Modern House RTX: the add-on and its Remix mod, hidden without RTX, as one archive for the Workshop:

@@ -1,0 +1,10 @@
+Blood Overhaul RTX: new patterns, colour schemes, PBR maps and code by SheepyLord and Codex.
+Bundled at the owner's request (R20 item 48), owned code/assets under this repository's MIT licence.
+The eighteen new patterns were made with an AI image model. Original prompts are in prompts.json;
+Crunchy textures were attached as style references. Reference images are not distributed here.
+Base/style credit: Crunchy's '2022' Blood Overhaul, Workshop 2683396098.
+Crunchy's original files and maps derived from their pixels are NOT included. No permission to
+redistribute those was assumed. This package does not require his add-on; subscribing is optional.
+The old flying droplet, derived from Crunchy's blood8, is excluded. R20-C's small droplet and mist
+are original analytic textures made by tools/prepare_blood.py, without any source image.
+The selected/excluded source paths and SHA-256 values are recorded in provenance.json.

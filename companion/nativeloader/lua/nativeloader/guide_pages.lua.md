@@ -1,5 +1,9 @@
 # guide_pages.lua
 
+R20-C adds two paragraphs under Rendering on the RTX-tab page: the moved Dynamic toolgun screen
+and entity-tracking tool, and Blood / Blood and impacts, including stock fallback and explicit
+decal clearing. Both are in the companion's six catalogs. The sky text is unchanged by this task.
+
 The pages of the in-game RTX Remix guide, as data. [`../autorun/client/nativeloader_guide.lua`](../autorun/client/nativeloader_guide.lua.md)
 includes it and draws them; it returns `{ pages = { ... } }`. No hooks, no files, no console commands.
 The server sends it to clients with the translations ([`../autorun/nativeloader_i18n.lua`](../autorun/nativeloader_i18n.lua.md)).

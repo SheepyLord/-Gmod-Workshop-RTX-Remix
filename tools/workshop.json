@@ -185,6 +185,66 @@
         "--lua-bin",
         "out/inputs/glass/bin/gmcl_nlglass_win64.dll"
       ]
+    },
+    {
+      "name": "toolgun-screen",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "toolgun-screen",
+        "--name",
+        "Dynamic Toolgun Screen",
+        "--addon-as",
+        "nldynamic_toolgun_screen",
+        "out/inputs/toolgun-screen/dynamic_toolgun_screen",
+        "--add-to-addon",
+        "nldynamic_toolgun_screen/lua/dynamic_toolgun_screen/nl_package.lua",
+        "companion/nativeloader/lua/nativeloader/dts_package.lua",
+        "--add-to-addon",
+        "nldynamic_toolgun_screen/lua/autorun/!nativeloader_blood.lua",
+        "companion/nativeloader/lua/autorun/!nativeloader_blood.lua",
+        "--add-to-addon",
+        "nldynamic_toolgun_screen/LICENSE",
+        "packages/toolgun-screen/LICENSE",
+        "--add-to-addon",
+        "nldynamic_toolgun_screen/CREDITS.txt",
+        "packages/toolgun-screen/licenses/CREDITS.txt"
+      ]
+    },
+    {
+      "name": "blood-overhaul-rtx",
+      "build": "package_content",
+      "args": [
+        "--id",
+        "blood-overhaul-rtx",
+        "--name",
+        "Blood Overhaul RTX",
+        "--addon",
+        "out/inputs/blood-overhaul-rtx/nlblood",
+        "--mod",
+        "out/inputs/blood-overhaul-rtx/nl_blood_overhaul_rtx",
+        "--add-to-addon",
+        "nlblood/lua/autorun/!nativeloader_blood.lua",
+        "companion/nativeloader/lua/autorun/!nativeloader_blood.lua",
+        "--add-to-addon",
+        "nlblood/lua/autorun/client/nativeloader_blood_menu.lua",
+        "companion/nativeloader/lua/autorun/client/nativeloader_blood_menu.lua",
+        "--add-to-addon",
+        "nlblood/lua/nativeloader/blood_budget.lua",
+        "companion/nativeloader/lua/nativeloader/blood_budget.lua",
+        "--add-to-addon",
+        "nlblood/lua/nativeloader/blood_core.lua",
+        "companion/nativeloader/lua/nativeloader/blood_core.lua",
+        "--add-to-addon",
+        "nlblood/lua/nativeloader/blood_impacts.lua",
+        "companion/nativeloader/lua/nativeloader/blood_impacts.lua",
+        "--add-to-addon",
+        "nlblood/LICENSE",
+        "packages/blood-overhaul-rtx/LICENSE",
+        "--add-to-addon",
+        "nlblood/CREDITS.txt",
+        "packages/blood-overhaul-rtx/licenses/CREDITS.txt"
+      ]
     }
   ],
   "gmpublish": "H:\\SteamLibrary\\steamapps\\common\\GarrysMod_PoC\\bin\\win64\\gmpublish.exe"

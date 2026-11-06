@@ -1,0 +1,8 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/dark_core_halo"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.054688"
+    "$color2" "[1.000 1.000 1.000]"
+}

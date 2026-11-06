@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/ring_spatter"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.046875"
+    "$color" "[1.000 1.000 1.000]"
+    "$modelmaterial" "decals/bloodoverhaul/red/ring_spatter_model"
+}
