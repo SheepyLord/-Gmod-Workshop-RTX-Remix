@@ -4,7 +4,7 @@ R20-E adds `0040-Publish-live-upscaling-state-for-startup-advice.patch`
 ([ADR 0123](../docs/decisions/0123-live-upscaling-readback.md)). The selected device publishes one
 versioned atomic snapshot at `rtx.runtime.upscalingState`, through the existing
 `remixapi_GetGameValue`; plugins cannot write the reserved `rtx.runtime.` namespace. Readiness waits
-for startup graphics/DLSS presets and pending callbacks, is invalidated by option edits and refreshed
+for startup graphics/DLSS presets and pending callbacks, is invalidated by dependent option edits and refreshed
 at each present. The fixes' `RemixConfig.GetUpscalingState()` reads it for R20-B's startup hint.
 Unit test: `test_upscaling_state` (also compiled from the patch by the aggregate Release gate).
 
@@ -13,6 +13,15 @@ separately from unchanged packaged provenance. Integration imports one DLL with 
 runtime patch; `build_runtime.ps1` clears the pending record on import. The guard accepts only
 declared new suffix patches, never changes to packaged inputs. Pending patches still participate in
 every source-tree/build check.
+
+The R20-Q follow-up narrows dirty notifications to **19 option objects** registered by
+`RtxInitializer`: selectors, upscaler/graphics presets and their upscaling/FG inputs and outputs.
+Sky/weather/effect/category writes leave readiness intact. Device ownership and publication locks
+are unchanged; genuine dependent edits and failed convergence remain unready. `test_upscaling_options`
+exercises actual option writes/callbacks: 20,100 unrelated writes with intervening reads, selector/preset
+transitions and failed convergence. Run it beside `test_upscaling_state` in `_CompUnitTest_x64`.
+The re-exported **single 0040** still applies to `51cf1b8b`; its new hash is in
+`base.json.pending_patches`. The test DLL remains unimported.
 
 R19 adds `0033-Bound-the-DDS-readers-and-fix-the-review-s-other-run.patch`
 ([report](../docs/handover/R19-R-report.md)), the runtime's findings of the pre-release review

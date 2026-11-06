@@ -75,3 +75,25 @@ absent, oversized and failed API results. The aggregate Release gate builds both
 patch/source without a runtime clone. PoC acceptance uses both new binaries and in-memory setting
 changes, records real capabilities, then restores the snapshot under the shared lock. The combined
 runtime build/import remains integration work.
+
+**Amended 2026-11-06 (after R20-Q integration QA).** The original "every dirty option" invalidation
+above is superseded. The advancing sky writes unrelated settings between presents and starved the
+hint (Q measured 14 ready / 65 pending reads, then 140 / 0 while those writes were deferred). The
+device initializer now supplies a fixed list of **19 actual option objects** to the publisher. Dirty
+notifications carry the object's address; only a member clears readiness. There is no option-name
+matching, inferred config value, deferred sky write or getter override. The list covers the upscaler/FG
+selectors; graphics, DLSS, NIS, TAAU, DLSS render-model, XeSS and FSR presets; DLSS quality,
+resolution scale, Reflex, Ray Reconstruction and the DLSS automation guard; and DLFG enable, lite,
+max-frames and present-metering plus FSR-FG enable. It follows the upscaling branches of
+`updateGraphicsPresets`, `update*Upscaler*`, `updatePresetFromUpscaler` and `applyFrameGenerationType`.
+Lighting/post-effect outputs do not affect the snapshot; the graphics preset itself gates the whole
+transaction until resolution completes.
+
+The dependency list is replaced with the device owner and cleared on destruction. Publication and
+the option-update/store mutex order are unchanged. Dependent pending edits remain unready; an
+unrelated write after resolution cannot cancel publication. Failed convergence still suppresses
+readiness until device recreation and now immediately clears an already-published ready bit.
+A runtime regression adds 20,100 unrelated writes through actual `RtxOption::readOption` and
+callback/resolution code with intervening reads, dependent selectors/presets and a nonconverging
+callback. Live acceptance must use the merged companion's advancing sky and record timer-read
+readiness ratios; isolated getter success alone does not establish that acceptance.

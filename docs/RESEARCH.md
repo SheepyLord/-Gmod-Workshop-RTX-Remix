@@ -2,6 +2,16 @@
 
 ## R20-E: effective upscaling state, 2026-11-06
 
+- R20-Q exposed a gap in E's isolated proof: the merged advancing sky cleared readiness on every
+  dirty option. Q measured 14 ready / 65 pending reads normally, 140 / 0 with unrelated writes
+  deferred, 10 / 110 after restoration; `sunElevation` caused 536 transitions. A 1/1 request timed
+  out after 45 seconds. Source: branch `r20-qa`, `out/r20q/native-readiness.json`.
+- Follow-up: `RtxInitializer` registers actual `RtxOptionImpl` addresses from the upscaling preset/FG
+  code. `markDirty` passes its address; the store ignores nonmembers. This keeps generic option
+  writes independent of rendering subsystems. The new runtime regression uses real
+  `readOption`/callback/resolution machinery with controlled sky-like writers; live proof uses
+  the merged companion's actual advancing sky.
+
 - PoC: RTX 5090 reports DLSS/DLSS-G/FSR 3 FG support all true. Startup is unready at 04:01:49.660
   and ready after presets at 04:01:52.054. Six in-memory edits read unready first, then effective
   **0/0, 3/0, 1/0, 1/1, 3/2, 1/0** (upscaler/FG). The new module with the old runtime returns nil.

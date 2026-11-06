@@ -93,7 +93,7 @@
  "pending_patches": {
   "why": "R20-E builds and tests 0040 locally; Claude imports one runtime DLL after merging every R20 runtime patch. The packaged DLL and its provenance remain unchanged.",
   "files": {
-   "patches/0040-Publish-live-upscaling-state-for-startup-advice.patch": "7714032b739317315b244026b4e8e4ade75878262045decf1f6489a8472bf203"
+   "patches/0040-Publish-live-upscaling-state-for-startup-advice.patch": "1b44ea9bce85fd4da91597ae6aa0d5191d015833e39deb762a5a35f390ade2a5"
   }
  }
 }

@@ -4,8 +4,8 @@ Date: 2026-11-06. Branch/worktree: `r20-native`, `out/worktrees/r20-native`.
 Implementer: Codex (gpt-6.1-sol). [Brief](R20-E-upscaling-readback.md), [plan](R20-plan.md),
 [ADR 0123](../decisions/0123-live-upscaling-readback.md).
 
-Status: **complete**. Both native builds, live PoC runs, exact restoration, the one-time module import
-and the final `tools/test.ps1 -Config Release` gate pass.
+Initial delivery passed its isolated checks. R20-Q subsequently found starvation with the merged
+advancing sky; the follow-up below supersedes that initial acceptance for readiness under load.
 
 ## Built
 
@@ -99,11 +99,37 @@ Full addon/data/settings trees were snapshotted too, so ordinary startup writes 
 After acceptance, `tools/inputs.py import` stored the module **once**, changing only its xz input
 and `packages/fixes/files.json`; deep verification passed. The runtime DLL was **not imported**.
 
+## Follow-up after integration QA
+
+2026-11-06: Q's real timer reads were ready only 14/79 and 10/120 times with normal sky writers,
+versus 140/140 while unrelated writes were deferred. The original E unit test did not exercise
+`markDirty` with continuous unrelated writers, and its PoC fixture did not contain the merged
+advancing-clock defaults. Its success did not establish that case.
+
+The corrected single patch 0040 registers **19 actual option objects** on `RtxInitializer` and
+passes each dirty object's address to the store. Only a registered address invalidates readiness;
+sky/weather/effect/category edits cannot reset it. The list covers selectors, graphics/upscaling
+presets and their upscaling/FG inputs/outputs; lighting outputs of graphics presets are unrelated.
+No option-name matching or Lua workaround is used. Publication locking is unchanged. Failed
+convergence immediately clears readiness and remains latched until device recreation.
+
+The new SDK-linked runtime unit target passes **20,100** unrelated writes through real
+`RtxOption::readOption`, with intervening reads, writes after resolution/before present, dependent
+selector/preset callbacks and a failing resolver. Its inputs are controlled test options; the live
+case below uses the actual merged companion. The SDK-free unit adds 5,000 unrelated notifications.
+Evidence is separate from the original run, under **`out/r20e-followup/`**: `unit-tests.log`,
+`portable-tests.log`, `aggregate-native-tests.log`. The amended ADR is additive; its original
+decision text remains intact.
+
+The runtime is re-exported as one 0040 commit directly on `51cf1b8b`, with its pending hash updated.
+The final `-NoImport` build, merged-companion PoC acceptance and full Release gate are in progress.
+Neither native binary is being imported again in this follow-up.
+
 ## Open
 
 The combined R20 runtime build/import belongs to integration; the stored `d3d9.dll` and its packaged
 provenance remain unchanged. Patch 0040 is explicitly pending in `runtime/base.json`. R20-B's
 unchanged consumer can then use it; combined hint/field QA belongs to R20 integration. Non-5090
 hardware was covered by enum/capability unit cases, not physical-device runs.
-No implementation or required task check remains open. No push, merge, tag, Workshop action or
+The follow-up's remaining checks are recorded above. No push, merge, tag, Workshop action or
 GitHub workflow was run.
