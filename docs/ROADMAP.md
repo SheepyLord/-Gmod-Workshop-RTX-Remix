@@ -4,8 +4,8 @@ R22 (the user's item 52, 2026-11-07) is **done** on `r22` ([report](handover/R22
 window while the first start after installing or updating the package unpacks it, until the game's own
 window appears (loader **0.16.0**, [ADR 0128](decisions/0128-a-loading-window-while-start-up-unpacks.md));
 the upscaling and frame generation hint also at the top right for 15 seconds
-([ADR 0129](decisions/0129-the-upscaling-hint-also-at-the-top-right.md)). The loader change reaches
-players with the next loader release.
+([ADR 0129](decisions/0129-the-upscaling-hint-also-at-the-top-right.md)). Released as **v0.16.0**: the
+GitHub release carries loader 0.16.0, and the package's loader record names it.
 
 R21 (the user's two requests after R20's release, 2026-11-06) is **done** on `r21-int`
 ([plan](handover/R21-plan.md), [report](handover/R21-report.md)): Blood Overhaul's resources and the PBR

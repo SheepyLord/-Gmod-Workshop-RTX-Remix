@@ -8,6 +8,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R22
 
+- **Released as v0.16.0** (2026-11-07): the GitHub release
+  ([v0.16.0](https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix/releases/tag/v0.16.0)) carries loader 0.16.0,
+  built by the loader workflow (run 42352977098); the package's record of the newest released loader now names
+  it, so players on an older loader are reminded to update. The package workflow (run 42353686736) built the
+  package for the release commit `aa58b22`; it is on item 3829070317 as 0.0.0-dev.20261107081527+f94badbc
+  (`publish_workshop.py --from-ci`).
 - **A loading window while the first start unpacks the package (loader 0.16.0)**
   ([ADR 0128](docs/decisions/0128-a-loading-window-while-start-up-unpacks.md), [R22](docs/handover/R22-report.md);
   the user's item 52.1): the bootstrap unpacks the RTX package at the game's entry point, before Garry's

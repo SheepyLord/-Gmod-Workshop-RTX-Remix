@@ -72,3 +72,15 @@ package here and uploaded it to item 3829070317 as **0.0.0-dev.20261107074707+ea
 bytes, SHA-256 `23a3b3a80b321514b356b0f62d111277523f609a5185318cc7e1c53ec9c3a29a`); Steam's public record
 shows that size, updated 07:47:43 UTC. The notice reaches players with it; the loading window needs loader
 0.16.0, which is not released yet.
+
+## Release v0.16.0 (2026-11-07)
+
+The user approved the release ("Yes, release"). `main` at `a4e7ba7` was tagged **v0.16.0**; the loader
+workflow (run 42352977098) tested it and published the GitHub release, retitled "Remix loader v0.16.0" with
+notes, with `gmod-native-loader-0.16.0+a4e7ba78.zip` (its `winmm.dll` reports 0.16.0) and the symbols. The
+package's loader record then named 0.16.0 (`aa58b22`; the hook's local build reached the item first, so
+older loaders are reminded at once). The package workflow (run 42353686736) built the package for
+`aa58b22`, every native binary built or fetched there (54: 13 compiled, 41 fetched); it is on item
+3829070317 as **0.0.0-dev.20261107081527+f94badbc** (2,181,716,681 bytes, SHA-256
+`8ee9ca180d26ac182f5c96410b9060c3daec4c1c10f14a5149dc2a6d410bf174`), Steam's record updated 08:19:41 UTC.
+The field install still runs loader 0.15.0: the reminder offers the update; it was not changed here.
