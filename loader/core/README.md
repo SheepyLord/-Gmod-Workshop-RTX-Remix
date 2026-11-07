@@ -2,7 +2,9 @@
 
 Static library holding the loader logic that does not depend on running inside `gmod.exe`, so the
 bootstrap DLL, the `nlctl` CLI and the unit tests all use the same code. M2 built archives,
-manifests, discovery and planning; M3 added deployment; M4 added activation.
+manifests, discovery and planning; M3 added deployment; M4 added activation. Loader 0.16.0 (R22):
+`deploy::Options::progress` receives the run's phase and the bytes it unpacks, for the bootstrap's
+loading window ([ADR 0128](../../docs/decisions/0128-a-loading-window-while-start-up-unpacks.md)).
 
 R7-B replaces the memory percentage warning with strict 18 GiB free-commit / 24 GiB total
 thresholds derived from saved R6 sessions; see [the measurements](../../docs/RESEARCH.md#r7-b-commit-headroom-from-the-saved-r6-runs-2026-11-01).

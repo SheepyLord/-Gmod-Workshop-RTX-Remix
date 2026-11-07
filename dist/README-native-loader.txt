@@ -29,7 +29,9 @@ Install
      previous installation stays as it is, the package deploys anyway, and the log names the file.
      Steam verification (then the next start), or nlctl apply <game root> --legacy-source
      <verified vanilla root>, completes the migration.
-   - The first start after a download deploys the package, about 1.5 GB, which takes a few seconds.
+   - The first start after a download, or after an update of the package, unpacks it: about 7 GB,
+     which takes a minute or more (longer on a hard disk) before the game's window opens. Keep the
+     game running. Loader 0.16.0 and later show a window with the progress until the game opens.
      This shipment needs this loader (0.10.0 or later); an older loader keeps the version it has.
    - The package also brings Model Hotloader (with its native files), Advanced Material Editor,
      Advanced Bodygroup Tool, Procedural Bodygroup Destruction and the Character Motion Importer for

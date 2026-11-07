@@ -57,7 +57,17 @@
     "multiplayer_risk": "You use this add-on on servers at your own risk: its developers take no responsibility for any consequences.",
     "multiplayer_remember": "Don't show this again",
     "multiplayer_continue": "I understand, continue",
-    "multiplayer_back": "Back"
+    "multiplayer_back": "Back",
+    "loading_title": "RTX Remix",
+    "loading_heading": "Preparing RTX Remix",
+    "loading_body": "Garry's Mod is unpacking the files of the RTX package. The first start after installing or updating it can take a few minutes. Please keep it running: the game opens by itself when this is done.",
+    "loading_checking": "Checking installed files\u2026",
+    "loading_unpacking": "Unpacking files: {done} of {total} ({percent}%)",
+    "loading_placing": "Putting files in place\u2026",
+    "loading_starting": "Starting Garry's Mod\u2026",
+    "loading_megabytes": "MB",
+    "loading_gigabytes": "GB",
+    "loading_decimal": "."
   },
   "zh-CN": {
     "heading": "RTX Remix \u8bca\u65ad\u4fe1\u606f",
@@ -117,7 +127,17 @@
     "multiplayer_risk": "\u5728\u670d\u52a1\u5668\u4e0a\u4f7f\u7528\u672c\u9644\u52a0\u7ec4\u4ef6\u7684\u98ce\u9669\u7531\u4f60\u81ea\u884c\u627f\u62c5\uff0c\u5f00\u53d1\u8005\u4e0d\u5bf9\u4efb\u4f55\u540e\u679c\u8d1f\u8d23\u3002",
     "multiplayer_remember": "\u4e0d\u518d\u663e\u793a\u6b64\u63d0\u793a",
     "multiplayer_continue": "\u6211\u5df2\u4e86\u89e3\uff0c\u7ee7\u7eed",
-    "multiplayer_back": "\u8fd4\u56de"
+    "multiplayer_back": "\u8fd4\u56de",
+    "loading_title": "RTX Remix",
+    "loading_heading": "\u6b63\u5728\u51c6\u5907 RTX Remix",
+    "loading_body": "Garry's Mod \u6b63\u5728\u89e3\u538b RTX \u5305\u7684\u6587\u4ef6\u3002\u5b89\u88c5\u6216\u66f4\u65b0\u540e\u7684\u9996\u6b21\u542f\u52a8\u53ef\u80fd\u9700\u8981\u51e0\u5206\u949f\u3002\u8bf7\u4e0d\u8981\u5173\u95ed\u6e38\u620f\uff0c\u5b8c\u6210\u540e\u6e38\u620f\u4f1a\u81ea\u52a8\u6253\u5f00\u3002",
+    "loading_checking": "\u6b63\u5728\u68c0\u67e5\u5df2\u5b89\u88c5\u7684\u6587\u4ef6\u2026",
+    "loading_unpacking": "\u6b63\u5728\u89e3\u538b\u6587\u4ef6\uff1a{done} / {total}\uff08{percent}%\uff09",
+    "loading_placing": "\u6b63\u5728\u653e\u7f6e\u6587\u4ef6\u2026",
+    "loading_starting": "\u6b63\u5728\u542f\u52a8 Garry's Mod\u2026",
+    "loading_megabytes": "MB",
+    "loading_gigabytes": "GB",
+    "loading_decimal": "."
   },
   "zh-TW": {
     "heading": "RTX Remix \u8a3a\u65b7\u8cc7\u8a0a",
@@ -177,7 +197,17 @@
     "multiplayer_risk": "\u5728\u4f3a\u670d\u5668\u4e0a\u4f7f\u7528\u672c\u9644\u52a0\u5143\u4ef6\u7684\u98a8\u96aa\u7531\u4f60\u81ea\u884c\u627f\u64d4\uff0c\u958b\u767c\u8005\u4e0d\u5c0d\u4efb\u4f55\u5f8c\u679c\u8ca0\u8cac\u3002",
     "multiplayer_remember": "\u4e0d\u518d\u986f\u793a\u6b64\u63d0\u793a",
     "multiplayer_continue": "\u6211\u5df2\u4e86\u89e3\uff0c\u7e7c\u7e8c",
-    "multiplayer_back": "\u8fd4\u56de"
+    "multiplayer_back": "\u8fd4\u56de",
+    "loading_title": "RTX Remix",
+    "loading_heading": "\u6b63\u5728\u6e96\u5099 RTX Remix",
+    "loading_body": "Garry's Mod \u6b63\u5728\u89e3\u58d3\u7e2e RTX \u5957\u4ef6\u7684\u6a94\u6848\u3002\u5b89\u88dd\u6216\u66f4\u65b0\u5f8c\u7684\u9996\u6b21\u555f\u52d5\u53ef\u80fd\u9700\u8981\u5e7e\u5206\u9418\u3002\u8acb\u4e0d\u8981\u95dc\u9589\u904a\u6232\uff0c\u5b8c\u6210\u5f8c\u904a\u6232\u6703\u81ea\u52d5\u958b\u555f\u3002",
+    "loading_checking": "\u6b63\u5728\u6aa2\u67e5\u5df2\u5b89\u88dd\u7684\u6a94\u6848\u2026",
+    "loading_unpacking": "\u6b63\u5728\u89e3\u58d3\u7e2e\u6a94\u6848\uff1a{done} / {total}\uff08{percent}%\uff09",
+    "loading_placing": "\u6b63\u5728\u653e\u7f6e\u6a94\u6848\u2026",
+    "loading_starting": "\u6b63\u5728\u555f\u52d5 Garry's Mod\u2026",
+    "loading_megabytes": "MB",
+    "loading_gigabytes": "GB",
+    "loading_decimal": "."
   },
   "ja": {
     "heading": "RTX Remix \u8a3a\u65ad\u60c5\u5831",
@@ -237,7 +267,17 @@
     "multiplayer_risk": "\u30b5\u30fc\u30d0\u30fc\u4e0a\u3067\u306e\u672c\u30a2\u30c9\u30aa\u30f3\u306e\u4f7f\u7528\u306f\u81ea\u5df1\u8cac\u4efb\u3067\u3059\u3002\u958b\u767a\u8005\u306f\u3001\u305d\u308c\u306b\u3088\u3063\u3066\u751f\u3058\u305f\u3044\u304b\u306a\u308b\u7d50\u679c\u306b\u3082\u8cac\u4efb\u3092\u8ca0\u3044\u307e\u305b\u3093\u3002",
     "multiplayer_remember": "\u4eca\u5f8c\u8868\u793a\u3057\u306a\u3044",
     "multiplayer_continue": "\u7406\u89e3\u3057\u3066\u7d9a\u884c",
-    "multiplayer_back": "\u623b\u308b"
+    "multiplayer_back": "\u623b\u308b",
+    "loading_title": "RTX Remix",
+    "loading_heading": "RTX Remix \u3092\u6e96\u5099\u3057\u3066\u3044\u307e\u3059",
+    "loading_body": "Garry's Mod \u304c RTX \u30d1\u30c3\u30b1\u30fc\u30b8\u306e\u30d5\u30a1\u30a4\u30eb\u3092\u5c55\u958b\u3057\u3066\u3044\u307e\u3059\u3002\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u307e\u305f\u306f\u66f4\u65b0\u306e\u5f8c\u306e\u6700\u521d\u306e\u8d77\u52d5\u306b\u306f\u6570\u5206\u304b\u304b\u308b\u3053\u3068\u304c\u3042\u308a\u307e\u3059\u3002\u7d42\u4e86\u305b\u305a\u306b\u304a\u5f85\u3061\u304f\u3060\u3055\u3044\u3002\u5b8c\u4e86\u3059\u308b\u3068\u30b2\u30fc\u30e0\u304c\u81ea\u52d5\u7684\u306b\u958b\u304d\u307e\u3059\u3002",
+    "loading_checking": "\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u6e08\u307f\u306e\u30d5\u30a1\u30a4\u30eb\u3092\u78ba\u8a8d\u3057\u3066\u3044\u307e\u3059\u2026",
+    "loading_unpacking": "\u30d5\u30a1\u30a4\u30eb\u3092\u5c55\u958b\u3057\u3066\u3044\u307e\u3059: {done} / {total} ({percent}%)",
+    "loading_placing": "\u30d5\u30a1\u30a4\u30eb\u3092\u914d\u7f6e\u3057\u3066\u3044\u307e\u3059\u2026",
+    "loading_starting": "Garry's Mod \u3092\u8d77\u52d5\u3057\u3066\u3044\u307e\u3059\u2026",
+    "loading_megabytes": "MB",
+    "loading_gigabytes": "GB",
+    "loading_decimal": "."
   },
   "ko": {
     "heading": "RTX Remix \uc9c4\ub2e8 \uc815\ubcf4",
@@ -297,7 +337,17 @@
     "multiplayer_risk": "\uc11c\ubc84\uc5d0\uc11c \uc774 \uc560\ub4dc\uc628\uc744 \uc0ac\uc6a9\ud558\ub294 \ub370 \ub530\ub978 \uc704\ud5d8\uc740 \uc0ac\uc6a9\uc790 \ubcf8\uc778\uc774 \ubd80\ub2f4\ud558\uba70, \uac1c\ubc1c\uc790\ub294 \uadf8\ub85c \uc778\ud55c \uc5b4\ub5a0\ud55c \uacb0\uacfc\uc5d0\ub3c4 \ucc45\uc784\uc744 \uc9c0\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
     "multiplayer_remember": "\ub2e4\uc2dc \ud45c\uc2dc\ud558\uc9c0 \uc54a\uae30",
     "multiplayer_continue": "\uc774\ud574\ud588\uc73c\uba70 \uacc4\uc18d\ud558\uae30",
-    "multiplayer_back": "\ub4a4\ub85c"
+    "multiplayer_back": "\ub4a4\ub85c",
+    "loading_title": "RTX Remix",
+    "loading_heading": "RTX Remix \uc900\ube44 \uc911",
+    "loading_body": "Garry's Mod\uac00 RTX \ud328\ud0a4\uc9c0\uc758 \ud30c\uc77c\uc744 \uc555\ucd95 \ud574\uc81c\ud558\uace0 \uc788\uc2b5\ub2c8\ub2e4. \uc124\uce58\ud558\uac70\ub098 \uc5c5\ub370\uc774\ud2b8\ud55c \ub4a4 \ucc98\uc74c \uc2dc\uc791\ud560 \ub54c\ub294 \uba87 \ubd84 \uc815\ub3c4 \uac78\ub9b4 \uc218 \uc788\uc2b5\ub2c8\ub2e4. \uac8c\uc784\uc744 \uc885\ub8cc\ud558\uc9c0 \ub9c8\uc138\uc694. \uc644\ub8cc\ub418\uba74 \uac8c\uc784\uc774 \uc790\ub3d9\uc73c\ub85c \uc5f4\ub9bd\ub2c8\ub2e4.",
+    "loading_checking": "\uc124\uce58\ub41c \ud30c\uc77c\uc744 \ud655\uc778\ud558\ub294 \uc911\u2026",
+    "loading_unpacking": "\ud30c\uc77c \uc555\ucd95 \ud574\uc81c \uc911: {done} / {total} ({percent}%)",
+    "loading_placing": "\ud30c\uc77c\uc744 \ubc30\uce58\ud558\ub294 \uc911\u2026",
+    "loading_starting": "Garry's Mod\ub97c \uc2dc\uc791\ud558\ub294 \uc911\u2026",
+    "loading_megabytes": "MB",
+    "loading_gigabytes": "GB",
+    "loading_decimal": "."
   },
   "fr": {
     "heading": "Diagnostic RTX Remix",
@@ -357,7 +407,17 @@
     "multiplayer_risk": "Vous utilisez cet add-on sur les serveurs \u00e0 vos propres risques : ses d\u00e9veloppeurs d\u00e9clinent toute responsabilit\u00e9 quant aux cons\u00e9quences.",
     "multiplayer_remember": "Ne plus afficher ce message",
     "multiplayer_continue": "Je comprends, continuer",
-    "multiplayer_back": "Retour"
+    "multiplayer_back": "Retour",
+    "loading_title": "RTX Remix",
+    "loading_heading": "Pr\u00e9paration de RTX Remix",
+    "loading_body": "Garry's Mod d\u00e9compresse les fichiers du paquet RTX. Le premier d\u00e9marrage apr\u00e8s une installation ou une mise \u00e0 jour peut prendre quelques minutes. Ne fermez pas le jeu\u00a0: il s'ouvrira de lui-m\u00eame une fois termin\u00e9.",
+    "loading_checking": "V\u00e9rification des fichiers install\u00e9s\u2026",
+    "loading_unpacking": "D\u00e9compression des fichiers\u00a0: {done} sur {total} ({percent}\u00a0%)",
+    "loading_placing": "Mise en place des fichiers\u2026",
+    "loading_starting": "D\u00e9marrage de Garry's Mod\u2026",
+    "loading_megabytes": "Mo",
+    "loading_gigabytes": "Go",
+    "loading_decimal": ","
   },
   "ru": {
     "heading": "\u0414\u0438\u0430\u0433\u043d\u043e\u0441\u0442\u0438\u043a\u0430 RTX Remix",
@@ -417,6 +477,16 @@
     "multiplayer_risk": "\u0412\u044b \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0435 \u044d\u0442\u043e\u0442 \u0430\u0434\u0434\u043e\u043d \u043d\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430\u0445 \u043d\u0430 \u0441\u0432\u043e\u0439 \u0441\u0442\u0440\u0430\u0445 \u0438 \u0440\u0438\u0441\u043a: \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u0447\u0438\u043a\u0438 \u043d\u0435 \u043d\u0435\u0441\u0443\u0442 \u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0441\u0442\u0438 \u0437\u0430 \u043b\u044e\u0431\u044b\u0435 \u043f\u043e\u0441\u043b\u0435\u0434\u0441\u0442\u0432\u0438\u044f.",
     "multiplayer_remember": "\u0411\u043e\u043b\u044c\u0448\u0435 \u043d\u0435 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c",
     "multiplayer_continue": "\u041f\u043e\u043d\u044f\u0442\u043d\u043e, \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c",
-    "multiplayer_back": "\u041d\u0430\u0437\u0430\u0434"
+    "multiplayer_back": "\u041d\u0430\u0437\u0430\u0434",
+    "loading_title": "RTX Remix",
+    "loading_heading": "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 RTX Remix",
+    "loading_body": "Garry's Mod \u0440\u0430\u0441\u043f\u0430\u043a\u043e\u0432\u044b\u0432\u0430\u0435\u0442 \u0444\u0430\u0439\u043b\u044b \u043f\u0430\u043a\u0435\u0442\u0430 RTX. \u041f\u0435\u0440\u0432\u044b\u0439 \u0437\u0430\u043f\u0443\u0441\u043a \u043f\u043e\u0441\u043b\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0438 \u0438\u043b\u0438 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f \u043c\u043e\u0436\u0435\u0442 \u0437\u0430\u043d\u044f\u0442\u044c \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043c\u0438\u043d\u0443\u0442. \u041d\u0435 \u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439\u0442\u0435 \u0438\u0433\u0440\u0443: \u043e\u043d\u0430 \u043e\u0442\u043a\u0440\u043e\u0435\u0442\u0441\u044f \u0441\u0430\u043c\u0430, \u043a\u043e\u0433\u0434\u0430 \u0432\u0441\u0451 \u0431\u0443\u0434\u0435\u0442 \u0433\u043e\u0442\u043e\u0432\u043e.",
+    "loading_checking": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043d\u044b\u0445 \u0444\u0430\u0439\u043b\u043e\u0432\u2026",
+    "loading_unpacking": "\u0420\u0430\u0441\u043f\u0430\u043a\u043e\u0432\u043a\u0430 \u0444\u0430\u0439\u043b\u043e\u0432: {done} \u0438\u0437 {total} ({percent}%)",
+    "loading_placing": "\u0420\u0430\u0437\u043c\u0435\u0449\u0435\u043d\u0438\u0435 \u0444\u0430\u0439\u043b\u043e\u0432\u2026",
+    "loading_starting": "\u0417\u0430\u043f\u0443\u0441\u043a Garry's Mod\u2026",
+    "loading_megabytes": "\u041c\u0411",
+    "loading_gigabytes": "\u0413\u0411",
+    "loading_decimal": ","
   }
 }

@@ -5887,3 +5887,31 @@ From [R21-C](handover/R21-C-report.md); evidence in the main checkout's `out/fie
 - `dxvk.enableAftermath = True` logs "Aftermath enabled", but the PoC timeout wrote no `.nv-gpudmp`.
 - A fresh install still reads `%LOCALAPPDATA%\NVIDIA\RTXRemix\user_settings\<hash>.conf` first (the
   user's diagnostics choices): deleting the game's files leaves it in place.
+
+## R22: the first start's unpack, a window beside it, and the hint's switch (2026-11-07)
+
+Measured in the PoC (RTX 5090, 3840x2160 desktop at 200 %, GMod build 26439081) by R22's QA
+([report](handover/R22-report.md); evidence in the `r22` worktree's `out/r22/qa*`).
+
+- **A first start unpacks 7.3 GB** from the 2.18 GB package (parts are stored compressed): 2,324 changes,
+  131,748 file-system operations, 46.7-48.9 s of `deployment.elapsed_ms` (R21-A's runs 42-62 s). The game's
+  own window (`Valve001`) becomes visible about 1.5 s after start-up work ends. An ordinary start: 0.33 s,
+  outcome `unchanged`, 34-590 ms of start-up in R21's logs.
+- **`MsgWaitForMultipleObjects` and paint input.** With `QS_ALLINPUT`, a pending paint (`QS_PAINT`) makes
+  the wait return input at once; a loop that calls `InvalidateRect` on every pass therefore never sleeps,
+  and in R22's first build it never saw its event signalled either. Redraw from `WM_TIMER` and test the
+  event explicitly (`WaitForSingleObject(event, 0)`) on every pass.
+- **The first `ShowWindow` of a process started hidden.** A test runner (CTest) starts the test process
+  with a hidden show command, and Windows applies it to the first `ShowWindow` of an ordinary
+  (overlapped) window: `SW_SHOWNOACTIVATE` left the stand-in game window hidden. `SetWindowPos` with
+  `SWP_SHOWWINDOW` is not subject to it. A popup window (the loading window) was not affected.
+- **Destroying an active window** activates another top-level window of the process; if that window's
+  thread does not pump messages, the destroying thread waits in `DestroyWindow`. A window that is never
+  active (`WS_EX_NOACTIVATE`, `SW_SHOWNOACTIVATE`) hands nothing over.
+- **`poc_session.game_window(pid)`** takes any visible window of the game's process whose title contains
+  "Garry's Mod"; the loading window is titled "RTX Remix" so it is never taken for the game's.
+- **`cl_showhints` is archived in `garrysmod/cfg/client.vdf`**, not `config.cfg`; Steam Cloud keeps only
+  `cfg/config.cfg` for app 4000 (`userdata/<account>/4000/remote/cfg`). The user's field game and the PoC
+  both had `"cl_showhints" "0"` (field file dated 2026-11-06 23:18), so ADR 0117's hint never showed there.
+- **The loading window at 200 %**: 560 DIP wide is 1,146 x 490 physical pixels with the frame; the
+  per-monitor-aware thread draws it crisply while the game's thread stays DPI-unaware.

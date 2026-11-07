@@ -18,16 +18,19 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/mainmenu.js ui
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/read_notices.lua)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ui/menu_choices.lua)
 configure_file(ui/presentation_data.h.in "${CMAKE_CURRENT_BINARY_DIR}/generated/presentation_data.h" @ONLY)
-add_library(nl_proxy_presentation STATIC presentation.cpp diagnostics.cpp loader_release.cpp exit_report.cpp)
+add_library(nl_proxy_presentation STATIC presentation.cpp diagnostics.cpp loader_release.cpp exit_report.cpp loading_text.cpp)
 target_include_directories(nl_proxy_presentation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(nl_proxy_presentation PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(nl_proxy_presentation PUBLIC nl_core nl_client_catalog PRIVATE nl_build_options)
+# The loading window (ADR 0128): its own library so the tests can run it; user32/gdi32 bound at run time.
+add_library(nl_proxy_window STATIC loading_window.cpp)
+target_link_libraries(nl_proxy_window PUBLIC nl_proxy_presentation PRIVATE nl_build_options)
 
 configure_file(version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
 add_library(nl_winmm SHARED bootstrap.cpp startup.cpp runtime.cpp modules.cpp telemetry.cpp observer.cpp generated/thunks.asm
   generated/winmm.def "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 set_target_properties(nl_winmm PROPERTIES OUTPUT_NAME winmm)
-target_link_libraries(nl_winmm PRIVATE nl_proxy_logic nl_proxy_presentation nl_core nl_build_options)
+target_link_libraries(nl_winmm PRIVATE nl_proxy_logic nl_proxy_presentation nl_proxy_window nl_core nl_build_options)
 # C++ switches from nl_build_options do not apply to ml64.exe or rc.exe.
 set_source_files_properties(generated/thunks.asm PROPERTIES COMPILE_OPTIONS "/nologo")
 

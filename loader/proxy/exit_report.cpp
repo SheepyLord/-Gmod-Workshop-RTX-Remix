@@ -4,6 +4,7 @@
 #include "nl/fs.h"
 #include "nl/json.h"
 #include "nl/session.h"
+#include "nl/vdf.h"
 #include <cstdio>
 #include <cwchar>
 
@@ -45,6 +46,17 @@ std::string command_language(std::wstring_view command) {
   for (std::size_t i = 0; i + 1 < args.size(); ++i)
     if (_wcsicmp(args[i].c_str(), L"+gmod_language") == 0) result = fs::utf8(std::filesystem::path(args[++i]));
   return result;
+}
+std::string app_language(std::string_view appmanifest) {
+  try {
+    const auto document = vdf::parse(appmanifest);
+    const auto* app = document.find("AppState");
+    const auto* user = app ? app->find("UserConfig") : nullptr;
+    const auto* language = user ? user->find("language") : nullptr;
+    if (language && !language->block) return language->value;
+  } catch (const std::exception&) {
+  }
+  return {};
 }
 std::string language(std::string_view config, std::string_view override_code, std::string_view os_locale) {
   if (!override_code.empty()) return normalize(std::string(override_code));

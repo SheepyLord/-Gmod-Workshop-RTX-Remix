@@ -172,3 +172,9 @@ Each with the reason it lost.
   `publish_workshop.py` leaves `packages/README.md` and `packages/<part>/README.md` out of the hold's
   comparisons and the check for uncommitted inputs; every other file under `packages/` still counts, and
   the fingerprint is unchanged.
+- [0128: A loading window while start-up unpacks the package](0128-a-loading-window-while-start-up-unpacks.md)
+  (R22, the user's item 52.1; loader 0.16.0): a window of the bootstrap's own, with the deployer's progress, from
+  a large unpack or a slow start until the game's window appears; never active, KERNEL32-only imports kept.
+- [0129: The upscaling hint also shows at the top right for fifteen seconds](0129-the-upscaling-hint-also-at-the-top-right.md)
+  (R22, item 52.2; amends 0117): a notice like the Model Hotloader's beside the sandbox hint, shown even with
+  `cl_showhints 0`; the RTX tab's checkbox turns both off.

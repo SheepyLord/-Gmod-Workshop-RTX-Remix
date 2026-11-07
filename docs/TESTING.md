@@ -1,5 +1,29 @@
 # Testing
 
+## R22: the loading window and the hint's top-right notice
+
+`nl_proxy_tests` covers the loading window's decisions and text (`test_loading.cpp`) and runs the real
+window on its own thread: it opens without taking activation, uses little CPU while open, closes when a
+window of the process appears or after its wait, and never opens for a quick start. A test that stands
+in for the game's window must pump its own messages and show it with `SetWindowPos`: a runner that
+starts the test hidden makes the first `ShowWindow` of an ordinary window hide it.
+
+`NATIVE_LOADER_LOADING_WINDOW=always` opens it at once for screenshots; `0` turns it off. A first start
+in the PoC needs nothing deployed: R22's QA ([report](handover/R22-report.md)) moved the PoC's
+`native-loader`, `garrysmod/addons`, `garrysmod/data`, `garrysmod/lua/bin` and `rtx-remix` aside, started
+from empty ones (the game's settings and the guide's marker copied), installed the branch's loader and
+package with `poc_session.py`, watched the window from outside (class `NativeLoaderLoadingWindow`,
+captured with `PrintWindow`) and the game's own window by its class, `Valve001`: `poc_session.game_window`
+matches any title with "Garry's Mod", so the loading window is titled "RTX Remix". Afterwards it moved
+the originals back and checked every file's size and time, and `field_snapshot.py rollback` the depot.
+
+The hint's notice is covered by `test_companion_qol.py` (`notice` at 1080p, 4K and 720p, with sandbox
+hints off and with the RTX checkbox off). In a live session the hint waits while any menu is open,
+Remix's own included: a probe that wants it closes them (`gui.HideGameUI()`, `rtx.showUI False`) and sets
+the case (`rtx.upscalerType`, `rtx.frameGenerationType`) before the decision, 12 s after the first frame.
+`cl_showhints` is archived in `garrysmod/cfg/client.vdf`, which the PoC keeps (the user's game and the
+PoC both had `0`): with it off only the notice shows.
+
 ## R20-T: the screen must be the first HUD draw too
 
 [R20-T's report](handover/R20-T-report.md) records the nearly black toolgun's cause and fix.

@@ -4,13 +4,22 @@ Client-only R20-B startup advice ([ADR 0117](../../../../../docs/decisions/0117-
 The companion loads this automatically in its RTX-only add-on. No command or manual invocation.
 
 `nativeloader_upscaling_hint` is archived, default `1`; its translated checkbox follows Frame
-generation in RTX Remix > Remix settings. `cl_showhints 0` also suppresses the hint. The first map's
+generation in RTX Remix > Remix settings, and turns off the hint and its notice. `cl_showhints 0`
+suppresses the sandbox hint only (R22): the top-right notice still shows. The first map's
 first `PostRender` starts a 12-second minimum delay. The first-run guide, spawn/pause menus and
 Remix's own menu defer the decision until the map is unobstructed; the current snapshot is read
 after closing them, never queued from before an edit. An unavailable live readout is retried every
 two seconds, at most 25 attempts (60 seconds when unobstructed). UI waiting spends no readiness
 attempt and does no DATA/snapshot reads. Nothing runs in a render callback
 except scheduling the timer. No snapshot, invalid state or unsupported hardware means silence.
+
+R22 ([ADR 0129](../../../../../docs/decisions/0129-the-upscaling-hint-also-at-the-top-right.md)): when the
+hint shows, the same text also shows in a notice at the top right, like the Model Hotloader's: the
+title RTX Remix, the hint's text and a close button, 20 px from the right and 40 px from the top,
+below a notice-sized panel already in that corner. It fades in, stays 15 seconds and fades out; its
+size and fonts scale with `ScrH()/1080` (at least 0.65). It follows the hint's decision and the RTX
+tab's checkbox, but not `cl_showhints` (it is not a sandbox hint; the user's own game had hints off).
+A notice that cannot be made never costs the hint.
 
 The schema-1 loader status must report active RTX, a selected performance-tier adapter, NVIDIA's
 vendor id (`4318`) and `non_nvidia = false`. Only recognized RTX 20/30/40/50 model names qualify.

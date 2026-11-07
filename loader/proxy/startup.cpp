@@ -1,4 +1,5 @@
 #include "bootstrap.h"
+#include "loading.h"
 #include "modules.h"
 #include "presentation.h"
 #include "runtime.h"
@@ -25,6 +26,10 @@
 
 namespace nl::proxy {
 namespace {
+// What start-up is doing, for the loading window (ADR 0128). Static: the window's thread may read it
+// after start-up returns, until the game's own window appears.
+deploy::Progress g_loading_progress;
+
 std::string utf8(std::wstring_view value) {
   if (value.empty()) return {};
   const int size = WideCharToMultiByte(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), nullptr, 0, nullptr, nullptr);
@@ -139,6 +144,10 @@ struct StartupContext {
 };
 
 void finish_report(StartupContext& context) {
+  try {
+    context.report.session.notes.push_back(loading::note());
+  } catch (const std::exception&) {
+  }
   if (context.evidence_worker.valid()) {
     auto evidence = context.evidence_worker.get();
     context.report.previous_session = std::move(evidence.previous);
@@ -286,7 +295,19 @@ void startup_cxx(StartupContext& context) noexcept {
       emergency_log("loader.log could not be written; continuing", 0);
       context.report.errors.emplace_back(std::string("loader.log: ") + error.what());
     }
-    context.prepared = startup::prepare(context.root, context.report.process_id);
+    // The loading window (ADR 0128): until the game opens its own window, say what start-up is doing.
+    // It shows only for a real wait (a large unpack, or more than a few seconds); never fails start-up.
+    try {
+      wchar_t choice[32]{};
+      const DWORD length = GetEnvironmentVariableW(L"NATIVE_LOADER_LOADING_WINDOW", choice, 32);
+      const auto mode = loading::mode(length && length < 32 ? utf8(std::wstring_view(choice, length)) : std::string());
+      g_loading_progress.phase.store(deploy::Progress::checking, std::memory_order_relaxed);
+      if (mode != loading::Mode::off) loading::start(observer::game_language(context.root), &g_loading_progress, mode);
+    } catch (const std::exception& error) {
+      context.report.session.notes.push_back(std::string("loading window unavailable: ") + error.what());
+    }
+    context.prepared = startup::prepare(context.root, context.report.process_id, &g_loading_progress);
+    g_loading_progress.phase.store(deploy::Progress::starting, std::memory_order_relaxed);
     context.report.deployment = context.prepared.deployment;
     context.report.packages = context.prepared.sources;
     context.report.deployment_ms = context.prepared.elapsed_ms;
@@ -456,5 +477,7 @@ void startup_guarded() noexcept {
   } catch (...) {
     emergency_log("startup context failed; continuing vanilla", 0);
   }
+  // Start-up work is over on every path: an open loading window now waits for the game's window.
+  loading::finish();
 }
 }  // namespace nl::proxy

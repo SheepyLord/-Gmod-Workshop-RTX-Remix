@@ -528,14 +528,14 @@
    "imported": "2026-10-30T21:44:41+00:00"
   },
   "modules/gmsv_nlrtxclient_win64.dll": {
-   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r20-qa\\out\\build\\win64-release\\loader\\client\\gmsv_nlrtxclient_win64.dll",
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r22\\out\\build\\win64-release\\loader\\client\\gmsv_nlrtxclient_win64.dll",
    "git": {
-    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r20-qa",
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r22",
     "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
-    "commit": "01c028cef4cbe0c6e093aa117431e6705d91b33b",
+    "commit": "21e46457e884a58756c5f32f82bb9cde3fdfa2ee",
     "dirty": false
    },
-   "imported": "2026-11-06T15:41:17+00:00"
+   "imported": "2026-11-07T07:41:44+00:00"
   },
   "modules/gmcl_rtxdebug_win64.dll": {
    "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\debug-multiplayer\\x86_64\\Release\\gmcl_rtxdebug_win64.dll",
@@ -3861,11 +3861,11 @@
   },
   "modules/gmsv_nlrtxclient_win64.dll": {
    "size": 460800,
-   "sha256": "f23c711c4e6b3678661cbed45cf34d034d064b0444cd45c77a3e8b66851c508b",
-   "mtime_ns": 1793971662290136400,
+   "sha256": "1b44fd7c1931e770e0ef8bef9d87456a6363e688949b1a2a3eb7d4d09a6391dd",
+   "mtime_ns": 1794034859026157200,
    "stored": "xz",
-   "stored_size": 182140,
-   "stored_sha256": "2e194f52356d6a2ddc7011adf565f466086c40731516b95c551b85711d468d53"
+   "stored_size": 182180,
+   "stored_sha256": "e7ad594ccd0c9b15f31c87bac303ab7487262fc917ea9cd116dbbd3f7796a01c"
   },
   "source/debug/addon/lua/autorun/client/rtx_debug.lua": {
    "size": 5345,

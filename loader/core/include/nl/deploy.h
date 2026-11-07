@@ -12,6 +12,7 @@
 #include "nl/manifest.h"
 #include "nl/planner.h"
 
+#include <atomic>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -24,6 +25,16 @@ struct Catalog;
 
 namespace nl::deploy {
 
+// What a deployment is doing, for the loading window the bootstrap shows at start-up (loader 0.16.0,
+// ADR 0128). The deployer only stores to it and another thread reads it: relaxed atomics are enough
+// for a display. The bootstrap owns the phases before and after the deployer's own.
+struct Progress {
+  enum Phase : std::uint32_t { idle = 0, checking = 1, unpacking = 2, placing = 3, starting = 4 };
+  std::atomic<std::uint32_t> phase{idle};
+  std::atomic<std::uint64_t> total{0};  // bytes this run unpacks from its packages; 0 while none
+  std::atomic<std::uint64_t> done{0};   // bytes unpacked so far
+};
+
 struct Options {
   fs::FileSystem* filesystem = nullptr;  // where changes go; default fs::win32()
   bool dry_run = false;                  // work out and report the changes, make none
@@ -32,6 +43,7 @@ struct Options {
   bool keep_last_good = false;           // M4 only: an unusable still-allowlisted source cannot remove/replace current
   std::optional<std::filesystem::path> legacy_source;  // optional hash-verified stock recovery root
   const legacy::Catalog* legacy_catalog = nullptr;     // tests: synthetic stock identities; default the built-in one
+  Progress* progress = nullptr;                        // start-up: what the run is doing, for the loading window
 };
 
 struct Change {

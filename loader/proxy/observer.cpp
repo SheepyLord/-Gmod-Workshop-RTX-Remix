@@ -91,9 +91,17 @@ std::string language(const std::filesystem::path& root, std::string_view overrid
     fs::refuse_links(root, session::kConfigCfg);
     config = fs::read_file(fs::join(root, session::kConfigCfg), 1u << 20);
   } catch (const std::exception&) { }
+  // Without gmod_language the game speaks Steam's language for it (loader 0.16.0): read it from the
+  // library's app manifest, steamapps/appmanifest_4000.acf, two folders above the game root.
+  std::string app;
+  try {
+    const auto steamapps = root.parent_path().parent_path();
+    if (CompareStringOrdinal(steamapps.filename().c_str(), -1, L"steamapps", -1, TRUE) == CSTR_EQUAL)
+      app = exit_report::app_language(fs::read_file(steamapps / "appmanifest_4000.acf", 1u << 20));
+  } catch (const std::exception&) { }
   wchar_t locale[LOCALE_NAME_MAX_LENGTH]{};
   GetUserDefaultLocaleName(locale, LOCALE_NAME_MAX_LENGTH);
-  return exit_report::language(config, override_code, fs::utf8(std::filesystem::path(locale)));
+  return exit_report::language(config, override_code, app.empty() ? fs::utf8(std::filesystem::path(locale)) : app);
 }
 void show(const evidence::PreviousSession& previous, DWORD code, const std::filesystem::path& root, std::string_view locale) {
   const auto text = wide(exit_report::message(previous, code, root, locale));
@@ -158,6 +166,9 @@ Refusal observe(std::wstring_view command) {
   return kBound;
 }
 }  // namespace
+std::string game_language(const std::filesystem::path& root) {
+  return language(root, exit_report::command_language(GetCommandLineW()));
+}
 bool host() noexcept {
   wchar_t exe[kPathCapacity]{}, expected[MAX_PATH]{};
   const auto size = GetModuleFileNameW(nullptr, exe, kPathCapacity);

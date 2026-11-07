@@ -1,6 +1,10 @@
 # Handovers
 
-The latest round is R21, the user's two requests after R20's release (Blood Overhaul's resources by
+The latest round is R22, the user's item 52 (a loading window while the first start unpacks the
+package, loader 0.16.0; the frame generation hint also at the top right): [R22-report.md](R22-report.md),
+done by Claude alone at the user's request (no Codex).
+
+Before it, R21, the user's two requests after R20's release (Blood Overhaul's resources by
 permission; no Hotloader warning after game updates): [R21-report.md](R21-report.md), with its
 [plan](R21-plan.md) and the task reports ([A](R21-A-report.md), [B](R21-B-report.md)), then the 4K GPU
 timeout during a map load, closed as not reproducible ([R21-C](R21-C-report.md)).

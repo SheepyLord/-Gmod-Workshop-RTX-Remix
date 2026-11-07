@@ -139,7 +139,8 @@ elseif scenario == "suppressed" then
     if arg1 == "gpu" then status.activation.performance_tier = nil end
     if arg1 == "vendor" then status.activation.gpu_vendors = nil end
     if arg1 == "non-nvidia" then status.activation.non_nvidia = nil end
-    boot() advance(70) checkHint(0) assert(reads == 0)
+    -- cl_showhints 0 still decides, for the top-right notice (R22, ADR 0129); the rest never read.
+    boot() advance(70) checkHint(0) assert(reads == (arg1 == "hints" and 1 or 0))
 elseif scenario == "unreadable" then
     if arg1 == "no-api" then RemixConfig = nil
     elseif arg1 == "file-getter-only" then RemixConfig.GetUpscalingState = nil
@@ -186,6 +187,71 @@ elseif scenario == "both-on-then-off" then
     boot() advance(15) checkHint(0)
     state.upscaler, state.frame_generation = 0, 0
     boot() advance(15) checkHint(0)
+elseif scenario == "notice" or scenario == "notice-hints-off" or scenario == "notice-opt-out" then
+    -- R22: the hint's top-right notice. A recording VGUI: every panel method works, a few are kept.
+    local width, height = tonumber(arg1) or 1920, tonumber(arg2) or 1080
+    state.upscaler = 1 -- DLSS on, frame generation off: the user's case
+    if scenario == "notice-hints-off" then archive.cl_showhints = "0" end -- as in the user's own game
+    if scenario == "notice-opt-out" then archive.nativeloader_upscaling_hint = "0" end
+    local panels, world = {}, {}
+    local function panel(kind)
+        local p = { kind = kind, x = 0, y = 0, w = 64, h = 24, visible = true, alpha = 255, children = {} }
+        panels[#panels + 1] = p
+        return setmetatable(p, { __index = function(_, name)
+            if name == "SetSize" then return function(self, w, h) self.w, self.h = w, h end end
+            if name == "SetTall" then return function(self, h) self.h = h end end
+            if name == "GetTall" then return function(self) return self.h end end
+            if name == "GetSize" then return function(self) return self.w, self.h end end
+            if name == "SetPos" then return function(self, x, y) self.x, self.y = x, y end end
+            if name == "GetPos" then return function(self) return self.x, self.y end end
+            if name == "SetText" then return function(self, text) self.text = text end end
+            if name == "SetAlpha" then return function(self, a) self.alpha = a end end
+            if name == "IsVisible" then return function(self) return self.visible end end
+            if name == "Remove" then return function(self) self.removed = true end end
+            if name == "Add" then return function(self, child)
+                local c = panel(child) self.children[#self.children + 1] = c return c end end
+            -- Methods are no-ops; plain fields are nil, as on a real panel.
+            if type(name) == "string" and name:match("^%u") then return function() end end
+        end })
+    end
+    -- The Hotloader's notice, already at the top right (540 x 92 at y = 40), and a hidden full-screen menu.
+    local hotloader = panel("DPanel") hotloader.x, hotloader.y, hotloader.w, hotloader.h = width - 560, 40, 540, 92
+    local menu = panel("EditablePanel") menu.w, menu.h, menu.visible = width, height, false
+    world[1], world[2] = hotloader, menu
+    vgui.Create = function(kind) local p = panel(kind) world[#world + 1] = p return p end
+    vgui.GetWorldPanel = function() return { GetChildren = function() return world end } end
+    ScrW, ScrH = function() return width end, function() return height end
+    IsValid = function(p) return p ~= nil and not p.removed end
+    SysTime = function() return now end
+    Color = function(r, g, b, a) return { r = r, g = g, b = b, a = a } end
+    draw = { RoundedBox = function() end }
+    surface.CreateFont = function(name, data) surface.fonts = surface.fonts or {} surface.fonts[name] = data end
+    surface.SetDrawColor, surface.DrawRect = function() end, function() end
+    math.Clamp = function(v, lo, hi) return math.max(lo, math.min(hi, v)) end
+    boot() advance(12.01)
+    local notice
+    for _, p in ipairs(panels) do if p.nativeloaderHintNotice then notice = p end end
+    if scenario == "notice-opt-out" then
+        checkHint(0)
+        assert(not notice, "the RTX tab's checkbox turns the notice off too")
+        assert(reads == 0)
+    else
+        local sandbox = scenario == "notice" and 1 or 0 -- cl_showhints 0 hides the sandbox hint only
+        checkHint(sandbox, sandbox == 1 and "Frame generation is off." or nil)
+        assert(notice, "a top-right notice")
+        local expected = "Frame generation is off.\nRTX Remix > Remix settings, or Alt+X:\nChoose Frame generation: DLSS-G."
+        local body
+        for _, c in ipairs(notice.children) do if c.text == expected then body = c end end
+        assert(body, "the notice says what the hint says")
+        local scale = math.max(0.65, height / 1080)
+        assert(notice.x + notice.w == width - math.floor(20 * scale + 0.5), "at the right edge")
+        assert(notice.y >= hotloader.y + hotloader.h, "below the Hotloader's notice, not over it")
+        assert(notice.w == math.min(math.floor(500 * scale + 0.5), width - math.floor(40 * scale + 0.5)), "scaled with the screen")
+        assert(surface.fonts.NativeLoaderHintNotice.size == math.floor(17 * scale + 0.5))
+        advance(14.9) assert(not notice.removed, "still there before fifteen seconds")
+        advance(0.2) assert(notice.removed, "gone after fifteen seconds")
+        checkHint(sandbox) -- the sandbox hint, if any, is unchanged and shown once
+    end
 elseif scenario == "migration" then
     dofile(lua .. "autorun/nativeloader_defaults.lua")
     CreateClientConVar("nativeloader_sky_time_passes", "1")

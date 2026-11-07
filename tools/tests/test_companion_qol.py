@@ -58,6 +58,16 @@ class CompanionQoLTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 self.run_case('ui', mode)
 
+    def test_top_right_notice_beside_the_hint_for_fifteen_seconds(self):
+        # R22: the hint also shows at the top right, below the Hotloader's notice, scaled for 4K.
+        for size in (("1920", "1080"), ("3840", "2160"), ("1280", "720")):
+            self.run_case("notice", *size)
+
+    def test_notice_shows_with_sandbox_hints_off_but_not_with_the_rtx_checkbox_off(self):
+        # The user's own game had cl_showhints 0 and saw no advice at all; the RTX checkbox stops both.
+        self.run_case("notice-hints-off", "3840", "2160")
+        self.run_case("notice-opt-out", "1920", "1080")
+
     def test_migration_preserves_changed_pairs_and_marks_even_when_skipped(self):
         for passes, minutes in [('0', '30'), ('0.000000', '30.000000'), ('1', '20'), ('1', '30'),
                                 ('0', '20'), ('0', '45'), ('0', '30.1')]:

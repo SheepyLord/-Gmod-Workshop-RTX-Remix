@@ -47,7 +47,8 @@ struct Prepared {
 
 // Missing/disabled/invalid config or invalid journal never reaches the deployer. Successful
 // deployment (including held/kept generations), or contention with no pending transaction, may
-// activate the current generation. No environment, command-line or DLL changes here.
-Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id);
+// activate the current generation. No environment, command-line or DLL changes here. `progress`
+// (optional) receives the deployer's phases and the bytes it unpacks, for the loading window.
+Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id, deploy::Progress* progress = nullptr);
 
 }  // namespace nl::startup

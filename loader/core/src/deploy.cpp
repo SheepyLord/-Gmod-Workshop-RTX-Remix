@@ -184,12 +184,16 @@ struct Run {
         allow_running_game(options.allow_running_game),
         exclude_process_id(options.exclude_process_id),
         legacy_source(options.legacy_source),
-        legacy_catalog(options.legacy_catalog ? options.legacy_catalog : &legacy::builtin_catalog()) {
+        legacy_catalog(options.legacy_catalog ? options.legacy_catalog : &legacy::builtin_catalog()),
+        progress(options.progress) {
     report.action = action;
   }
 
   Path at(std::string_view relative) const { return fs::join(root, relative); }
   void note(std::string text) { report.notes.push_back(std::move(text)); }
+  void phase(Progress::Phase value) const {
+    if (progress) progress->phase.store(value, std::memory_order_relaxed);
+  }
 
   Path root;
   fs::Counting disk;  // every change goes through it, so the report can count them
@@ -198,6 +202,7 @@ struct Run {
   std::uint32_t exclude_process_id;
   std::optional<Path> legacy_source;
   const legacy::Catalog* legacy_catalog;
+  Progress* progress;  // may be null
   Report report;
   Journal journal;
 };
@@ -663,6 +668,7 @@ class StagingSink final : public package::Sink {
     if (written_ > file_->second.size) throw PackageProblem(file_->first + " is larger than its manifest says");
     hasher_->update(bytes, size);
     writer_->write(bytes, size);
+    if (run_->progress) run_->progress->done.fetch_add(size, std::memory_order_relaxed);
   }
 
   void end() override {
@@ -1167,6 +1173,12 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
     }
     needed = add_size(needed, own);
   }
+  // The loading window's total: what the packages' files still to unpack hold. A later planning pass
+  // (a package re-planned as broken) keeps what is unpacked and adds what it still needs.
+  if (run.progress) {
+    run.progress->total.store(add_size(run.progress->done.load(std::memory_order_relaxed), needed), std::memory_order_relaxed);
+    run.phase(Progress::unpacking);
+  }
   for (const auto& file : migration.files) needed = add_size(needed, file.stock.size);
   ensure_space(space, needed);
   for (std::size_t i = 0; i < planned.size(); ++i) {
@@ -1187,6 +1199,8 @@ void deploy_plan(Run& run, const planner::Plan& plan, std::uint64_t tx, StagedBy
       throw Broken{planned[i].index, e.what()};
     }
   }
+
+  run.phase(Progress::placing);
 
   // Copy and verify recovery material while originals are still in place. Every write uses the
   // same injectable filesystem as package extraction and transaction steps.

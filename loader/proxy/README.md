@@ -1,5 +1,14 @@
 # loader/proxy
 
+Loader 0.16.0 (R22): `loading.h`, `loading_text.cpp` and `loading_window.cpp` show the loading window
+while start-up unpacks a package (the first start after installing or updating it took a minute with
+nothing on screen). `startup.cpp` starts it before deployment with the deployer's `deploy::Progress`
+and finishes it after start-up work; the window stays until the game's own window appears. It shows
+only for an unpack of at least 64 MiB or a start-up longer than 3 s, never takes activation, and binds
+user32/gdi32 at run time. `observer::game_language()` gives it the game's language, now with Steam's
+language for the game (`exit_report::app_language`) before Windows'. See
+[ADR 0128](../../docs/decisions/0128-a-loading-window-while-start-up-unpacks.md).
+
 R7-B: `observer.h` / `observer.cpp` start a System32 rundll32 host from this same DLL, pin the
 game with an inherited restricted handle, validate its identity and wait outside the game.
 `bootstrap.cpp` explicitly bypasses all loader work in that host. `exit_report.h` /
@@ -64,6 +73,7 @@ See [ADR 0008](../../docs/decisions/0008-activation-at-startup.md) and
 
 | File | Purpose |
 |---|---|
+| `loading.h`, `loading_text.cpp`, `loading_window.cpp` | R22 (loader 0.16.0, ADR 0128): the loading window. `loading_text.cpp` (in `nl_proxy_presentation`) decides when it shows and what it says in the seven `ui/labels.json` catalogs; `loading_window.cpp` (its own static library, `nl_proxy_window`, so the tests can run it) draws it on a thread of its own with user32/gdi32 bound at run time, per-monitor DPI aware, never active, redrawn by a timer, until the game's window appears |
 | `loader_release.h`, `loader_release.cpp` | R20-A: bounded release-record JSON/URL validation and exact active runtime-owner, allowlist, journal size/hash verification; unavailable records produce no update reminder |
 | `telemetry.h`, `telemetry.cpp` | R6 process-lifetime background worker, outside loader lock after evidence collection; flushes memory history every ten seconds and supplies the latest system-commit snapshot. Holds a bootstrap reference while running; no shutdown join under loader lock. History off queries only system commit; disabled loader starts no worker |
 | `presentation.h`, `presentation.cpp` | Loader 0.7.0: validate current Workshop package identities, build inert display GMAs and a targeted addon-menu overlay under `native-loader/presentation`; exact read redirects give GMod blue native-package cards and normal Workshop descriptions without changing depot or Workshop files ([ADR 0039](../../docs/decisions/0039-native-package-addon-presentation.md)). Loader 0.10.1: when the stock main menu controller changed, the main menu view still carries the multiplayer bootstrap trigger alone ([ADR 0056](../../docs/decisions/0056-guard-and-startup-fallbacks.md)) |

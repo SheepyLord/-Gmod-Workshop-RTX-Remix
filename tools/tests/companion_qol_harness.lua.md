@@ -12,6 +12,11 @@ Scenarios cover all 18 upscaler/frame-generation combinations; NVIDIA/non-NVIDIA
 adapters and explicit backend support; opt-outs and invalid status; unavailable/malformed/throwing
 readouts, failed marker persistence and bounded retries; delay after drawing, late readiness, two
 maps and a new process startup; old/fresh/changed sky pairs, missing ConVars and persistent markers.
+The `notice` scenario (R22, arguments: screen width and height) records VGUI calls and checks the
+top-right notice: the hint's text, at the right edge below an existing Hotloader notice, scaled with
+the screen, removed after 15 seconds, the sandbox hint unchanged. `notice-hints-off` (`cl_showhints 0`,
+as in the user's game) shows the notice without the sandbox hint or its sound; `notice-opt-out` (the RTX
+tab's checkbox off) shows neither and reads nothing.
 UI scenarios keep the guide/cursor, pause menu or Remix menu open beyond the readiness budget,
 then verify one fresh decision after closing; changing both features to on during the wait stays silent.
 The migration harness rejects queued console writes, ensuring values change synchronously before

@@ -79,7 +79,7 @@ AfterDeployment after_deployment(const deploy::Report& deployment, bool pending)
                     "); using the current committed generation"};
 }
 
-Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
+Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id, deploy::Progress* progress) {
   Prepared result;
   result.deployment.action = "apply";
   result.deployment.outcome = "skipped";
@@ -108,6 +108,7 @@ Prepared prepare(const std::filesystem::path& root, std::uint32_t process_id) {
       deploy::Options options;
       options.exclude_process_id = process_id;
       options.keep_last_good = true;
+      options.progress = progress;
       const auto loader = manifest::parse_version(nl::version());
       if (!loader) throw std::runtime_error("loader version is invalid");
       result.deployment = deploy::apply(root, std::move(considered), result.config,

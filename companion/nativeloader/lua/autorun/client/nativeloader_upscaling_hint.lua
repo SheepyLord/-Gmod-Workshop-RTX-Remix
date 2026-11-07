@@ -68,6 +68,88 @@ local function message(generation, state)
     end
 end
 
+-- R22 (ADR 0129): the same advice in a notice at the top right, like the Model Hotloader's, so it is
+-- not missed among the sandbox hints. It goes after NOTICE_SECONDS, or earlier with its close button.
+local NOTICE_SECONDS, NOTICE_FONT, NOTICE_TITLE_FONT = 15, "NativeLoaderHintNotice", "NativeLoaderHintNoticeTitle"
+local function noticeTop(width, px)
+    -- Below another notice already in the top-right corner (the Hotloader's sits at y = 40): only
+    -- notice-sized panels count, never a visible full-screen menu.
+    local top = px(40)
+    local world = type(vgui.GetWorldPanel) == "function" and vgui.GetWorldPanel()
+    if not world or type(world.GetChildren) ~= "function" then return top end
+    local left = ScrW() - width - px(20)
+    for _ = 1, 4 do
+        local moved = false
+        for _, child in ipairs(world:GetChildren()) do
+            if IsValid(child) and child:IsVisible() and not child.nativeloaderHintNotice then
+                local x, y = child:GetPos()
+                local w, h = child:GetSize()
+                if w < ScrW() / 2 and h < ScrH() / 2 and x + w > left and y < top + px(110) and y + h > top then
+                    top, moved = y + h + px(10), true
+                end
+            end
+        end
+        if not moved then break end
+    end
+    return top
+end
+
+local function showNotice(text)
+    if type(vgui) ~= "table" or type(vgui.Create) ~= "function" or type(ScrW) ~= "function" then return end
+    local scale = math.max(0.65, ScrH() / 1080) -- the companion's windows scale with the screen (4K)
+    local function px(n) return math.floor(n * scale + 0.5) end
+    surface.CreateFont(NOTICE_TITLE_FONT, { font = "Arial", size = px(19), weight = 700 })
+    surface.CreateFont(NOTICE_FONT, { font = "Arial", size = px(17), weight = 400 })
+    local width = math.min(px(500), ScrW() - px(40))
+    local panel = vgui.Create("DPanel")
+    panel.nativeloaderHintNotice = true
+    panel:SetSize(width, px(120))
+    panel:DockPadding(px(18), px(12), px(40), px(14))
+    local born = SysTime()
+    panel.Paint = function(_, w, h)
+        draw.RoundedBox(px(6), 0, 0, w, h, Color(24, 26, 30, 235))
+        surface.SetDrawColor(118, 185, 0, 255) -- the accent of the loading window and RTX Remix
+        surface.DrawRect(0, 0, px(4), h)
+    end
+    local title, body
+    local function fit(self)
+        -- The wrapped body sets its height during its own layout: follow it.
+        local tall = px(12) + title:GetTall() + body:GetTall() + px(14)
+        if self:GetTall() ~= tall then self:SetTall(tall) end
+    end
+    panel.Think = function(self)
+        local age = SysTime() - born
+        self:SetAlpha(255 * math.Clamp(math.min(age / 0.25, (NOTICE_SECONDS - age) / 0.6), 0, 1))
+        fit(self)
+    end
+    title = panel:Add("DLabel")
+    title:Dock(TOP)
+    title:SetTall(px(26))
+    title:SetFont(NOTICE_TITLE_FONT)
+    title:SetTextColor(Color(118, 185, 0))
+    title:SetText("RTX Remix")
+    body = panel:Add("DLabel")
+    body:Dock(TOP)
+    body:SetFont(NOTICE_FONT)
+    body:SetTextColor(Color(235, 237, 240))
+    body:SetWrap(true)
+    body:SetAutoStretchVertical(true)
+    body:SetText(text)
+    local close = panel:Add("DButton")
+    close:SetText("\xC3\x97") -- the multiplication sign, as the Hotloader's notice uses
+    close:SetFont(NOTICE_TITLE_FONT)
+    close:SetSize(px(26), px(26))
+    close.DoClick = function() panel:Remove() end
+    panel.PerformLayout = function(self, w)
+        close:SetPos(w - px(32), px(8))
+        fit(self)
+    end
+    panel:SetPos(ScrW() - width - px(20), noticeTop(width, px))
+    panel:SetAlpha(0)
+    timer.Simple(NOTICE_SECONDS, function() if IsValid(panel) then panel:Remove() end end)
+    return panel
+end
+
 local attempts, finished = 0, false
 local function finish(token)
     finished = true
@@ -98,8 +180,11 @@ local function check()
     local activation, token = status()
     if activation then
         if file.Read(MARKER, "DATA") == token then finished = true timer.Remove(POLL) return end
+        -- The RTX tab's checkbox turns both off. cl_showhints turns off sandbox hints only: the top-right
+        -- notice is not one (R22, ADR 0129; the user's own game had cl_showhints 0, so it saw neither).
+        if not enabled:GetBool() then finish(token) return end
         local hints = GetConVar("cl_showhints")
-        if not enabled:GetBool() or not hints or not hints:GetBool() then finish(token) return end
+        local sandbox = hints ~= nil and hints:GetBool()
         local generation = rtxGPU(activation)
         if not generation then finish(token) return end
         local state = snapshot()
@@ -107,8 +192,11 @@ local function check()
             local text = message(generation, state)
             local recorded = finish(token) -- consume "both on" too; never nag at a later map
             if text and recorded then
-                notification.AddLegacy(text, NOTIFY_HINT, 18)
-                surface.PlaySound("ambient/water/drip1.wav") -- sandbox's hint sound
+                if sandbox then
+                    notification.AddLegacy(text, NOTIFY_HINT, 18)
+                    surface.PlaySound("ambient/water/drip1.wav") -- sandbox's hint sound
+                end
+                pcall(showNotice, text) -- a failed notice never costs the hint
             end
             return
         end

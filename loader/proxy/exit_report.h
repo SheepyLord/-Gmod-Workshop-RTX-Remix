@@ -15,6 +15,11 @@ bool keep_window_ghosting(std::string_view environment) noexcept;
 // which made the observer refuse on CI runners at the default tick. Allows two such ticks, no more.
 bool session_after_creation(std::uint64_t start, std::uint64_t created) noexcept;
 std::string command_language(std::wstring_view command);
+// Steam's language for the game, from steamapps/appmanifest_4000.acf ("UserConfig" "language", such as
+// "schinese"): what Garry's Mod uses while gmod_language is unset. Empty when absent or unreadable.
+std::string app_language(std::string_view appmanifest);
+// +gmod_language, then config.cfg's gmod_language, then `os_locale` (callers pass Steam's game
+// language there when they have one, then Windows'), normalized to a catalog code.
 std::string language(std::string_view config, std::string_view override_code, std::string_view os_locale);
 std::string message(const evidence::PreviousSession& previous, std::uint32_t code,
                     const std::filesystem::path& root, std::string_view language);

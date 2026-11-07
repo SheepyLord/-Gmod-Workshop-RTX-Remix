@@ -6,6 +6,26 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R22
+
+- **A loading window while the first start unpacks the package (loader 0.16.0)**
+  ([ADR 0128](docs/decisions/0128-a-loading-window-while-start-up-unpacks.md), [R22](docs/handover/R22-report.md);
+  the user's item 52.1): the bootstrap unpacks the RTX package at the game's entry point, before Garry's
+  Mod opens a window, and the first start after installing or updating it took about a minute (7.3 GB in
+  the PoC) with nothing on screen, so players closed the game. A window now says what is happening, in the
+  game's language: preparing RTX Remix, keep the game running; unpacking files with a progress bar (done of
+  total, percent), then putting files in place and starting the game. It stays until the game's own
+  window appears. It shows only for an unpack of at least 64 MiB or a start-up longer than 3 s, never for
+  an ordinary start; never takes keyboard focus; `NATIVE_LOADER_LOADING_WINDOW=0` turns it off. The
+  deployer reports its phase and the bytes it unpacks (`deploy::Options::progress`). The loader's own
+  windows now follow Steam's language for the game when `gmod_language` is unset.
+- **The upscaling and frame generation hint also shows at the top right**
+  ([ADR 0129](docs/decisions/0129-the-upscaling-hint-also-at-the-top-right.md); the user's item 52.2): besides
+  the sandbox hint, the same advice shows in a notice like the Model Hotloader's, for 15 seconds, scaled for
+  4K and placed below another notice in that corner. The notice is not a sandbox hint: `cl_showhints 0`
+  (set in the user's own game, which therefore showed no advice) hides only the sandbox hint; the RTX tab's
+  checkbox turns both off.
+
 ### R21
 
 - **After R21: the 4K GPU timeout during a map load, investigated and closed** ([R21-C](docs/handover/R21-C-report.md)):
