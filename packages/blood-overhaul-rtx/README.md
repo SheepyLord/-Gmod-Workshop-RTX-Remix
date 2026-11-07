@@ -73,5 +73,12 @@ maps. The SHA-256 audit/prompts are part documents; CREDITS.txt, the scoped MIT 
 resource permission notice ship in the add-on.
 
 See [ADR 0124](../../docs/decisions/0124-blood-overhaul-resources-by-permission.md) for the superseded
-R20 exclusions and off-switch scope. PoC coexistence findings and screenshots are recorded in the
-R21-A handover report when acceptance completes; a winning legacy VMT remains that add-on's VMT.
+R20 exclusions and off-switch scope. A winning legacy VMT remains that add-on's VMT. With Crunchy's
+original Subrect/DecalModulate files winning, the PBR layer keeps red/yellow engine blood visible,
+but those engine decals retain their natural colours: the controller safely skips those shaders
+and their shared parents. All four private mixer families still accept every scheme. For schemes
+on the engine decals too, disable the duplicate original add-on so this part's alpha VMTs win.
+The field-style Blood Overhaul RTX copy has the same modern VMT bytes and a guarded legacy mixer.
+The [R21-A report](../../docs/handover/R21-A-report.md) records actual winners and PoC evidence.
+The import/material tests and native engine colour/restore probe pass. Post-clear Lua DecalEx
+palette views remain an open visual QA item; the report preserves the failed views and repro probes.

@@ -1,6 +1,7 @@
 # r21_blood_poc.lua
 
 Client acceptance probe sent through `poc_session.py --lua` in a locked R21-A PoC session. The
+probe is idempotent so a console-delivery retry cannot install another timer/step sequence. The
 runner installs the server portion of `r20_blood_poc.lua` as a temporary local fixture first, plus
 `r21a_grid`, which positions the player near the sample grid without spawning a target.
 The fixture's `r21a_native` broadcasts server-side Blood/YellowBlood decals through the engine.
@@ -14,6 +15,8 @@ model materials). Lua-created blood convars use synchronous SetString, since Run
 queues changes; engine HUD convars use console commands because SetString cannot modify them.
 Grid decals trace the actual brush/displacement surface, rather than assuming a fixed floor Z.
 They are stamped after the queued clear command has run; otherwise the next frame erases them.
+API assertions and screenshot completion are distinct from visual acceptance: the report records
+the unresolved post-clear Lua palette rendering discrepancy.
 Stamps C++ Blood/YellowBlood decals, shoots citizens, Combine,
 zombies, antlions and a ragdoll with actual weapons, then stresses the existing impact budgets.
 When the private Physics Blood fixture is mounted, also draws its own drops, pools and stain

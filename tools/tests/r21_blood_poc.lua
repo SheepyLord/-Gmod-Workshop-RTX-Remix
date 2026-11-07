@@ -1,4 +1,6 @@
 -- R21-A client acceptance probe. A locked runner sends this after the map and server fixture load.
+if R21ABloodProbeRunning then return end
+R21ABloodProbeRunning = true
 local BO = assert(BloodOverhaul and BloodOverhaul.Packaged and BloodOverhaul, "packaged blood missing")
 assert(#BO.Shapes == 26 and #BO.Schemes == 12, "wrong shape/scheme inventory")
 local saved, steps, index, label = {}, {}, 0, ""
@@ -93,7 +95,7 @@ emit("START", { shapes = #BO.Shapes, schemes = #BO.Schemes, remix = RemixMateria
 local function clear(after)
     RunConsoleCommand("r_cleardecals")
     -- Clearing is queued too: stamping now would erase the new decals on the next frame.
-    if after then timer.Simple(.2, after) end
+    if after then timer.Simple(.6, after) end
 end
 local function original_grid(name)
     clear(function()
@@ -138,22 +140,28 @@ add(function()
     end
     emit("RESTORED", { equal = true, materials = restored })
     -- Server util.Decal broadcasts the engine decal, matching native NPC bleeding dispatch.
-    RunConsoleCommand("r21a_native")
-    shot("engine_blood_yellow_master_off", 5)
+    timer.Simple(.6, function()
+        RunConsoleCommand("r21a_native")
+        shot("engine_blood_yellow_master_off", 5)
+    end)
     end)
 end)
 add(function()
     set("bloodoverhaul_enable", "1") set("bloodoverhaul_scheme", "blue")
-    RunConsoleCommand("r21a_native")
-    shot("engine_blood_yellow_blue", 4)
+    clear(function()
+        RunConsoleCommand("r21a_native")
+        shot("engine_blood_yellow_blue", 4)
+    end)
 end)
 add(function()
     set("bloodoverhaul_enable", "0")
     local restored = materials()
     check_source(restored)
     emit("NATIVE_RESTORED", { equal = true, materials = restored })
-    RunConsoleCommand("r21a_native")
-    shot("engine_blood_yellow_restored", 4)
+    clear(function()
+        RunConsoleCommand("r21a_native")
+        shot("engine_blood_yellow_restored", 4)
+    end)
 end)
 if ABL and ABL.Drops and ABL.Pools then
     add(function()
