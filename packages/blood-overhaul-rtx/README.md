@@ -87,5 +87,8 @@ and their shared parents. All four private mixer families still accept every sch
 on the engine decals too, disable the duplicate original add-on so this part's alpha VMTs win.
 The field-style Blood Overhaul RTX copy has the same modern VMT bytes and a guarded legacy mixer.
 The [R21-A report](../../docs/handover/R21-A-report.md) records actual winners and PoC evidence.
-The import/material tests and native engine colour/restore probe pass. Post-clear Lua DecalEx
-palette views remain an open visual QA item; the report preserves the failed views and repro probes.
+The review's package-only player-step comparison uses the published R20 natives for both packages.
+Native blood appears after clearing/cleanup and in the selected R21 scheme. The small Lua impact
+stains are not visible on the white test floor in either published R20 or R21, initially or after
+clearing, waiting ten seconds or changing maps. That pre-existing visual limitation remains open;
+the report records the exact steps, screenshots, counters and unchanged-runtime comparison.

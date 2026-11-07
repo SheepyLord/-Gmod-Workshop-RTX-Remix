@@ -3,7 +3,118 @@
 Branch `r21-blood`, from `r21-int`. Implemented by Codex (gpt-6.1-sol). Code commits:
 `9b08506`, `2be91ce`, `18d4c44`, `94e1a49` (the setter-skipping experiment in `d464883`
 was reverted after visual QA). Every commit uses SheepyLord's configured identity and
-the plan's Codex trailer. Status: **packaging implemented; final Release gate passed; post-clear Lua decal palette visual QA remains open**.
+the plan's Codex trailer. Status: **review changes implemented; the controlled comparison classifies the small Lua stain issue as pre-existing; final Release verification recorded below**.
+
+## Review follow-up: player-step baseline comparison and attribution
+
+This section supersedes the earlier open item's unclassified status. The published v0.15.0
+archive was `gmod-rtx-remix-0.0.0-dev.20261106182636_169e5e26.gma`, SHA-256
+`bf4aa6a784c7901938d2d3449c9a30a763b5ae10b606282b8265307ba6d5ebbf`, the same archive R21-B used.
+All follow-up evidence is in this worktree's `out/r21a-review/`.
+
+### Controlled packages and player actions
+
+The default local candidate's native DLL/EXE bytes differed from the published build. For the
+comparison the candidate used a local copy of R21-B's `release-overlay`, without importing a binary
+or changing a native source. `native-overlay-proof.json` and `paint-native-proof.json` confirm
+**all 54 DLL/EXE payloads identical to the published archive**. No runtime change was made.
+
+Each isolated PoC run used RTX, `-multirun`, no legacy/Physics Blood duplicates, and
+`allow.subscribed_content=false` plus `-noworkshop`. Only the tested package and the temporary
+test fixture were mounted. Actual SMG bursts (11 confirmed target hits per burst) hit citizens
+and antlions in front of a frozen stock white cube; a stock white floor plate made small stains
+inspectable. Each target has a wall and floor capture. Actions were the real Blood panel clear
+button's DoClick, server `game.CleanUpMap`, console `r_cleardecals`, and realistic -> blue ->
+realistic. Fresh shots followed each action. A ten-second view and an actual changelevel back
+to gm_construct tested recovery, with fresh shots on the new map.
+
+| Run | Package/core | Captures | Real target bursts |
+|---|---|---:|---:|
+| `baseline-whiteplate-final` | Published R20 | 35 | 14 |
+| `candidate-restore-whiteplate-final` | R21 reviewed restore-then-paint path, corrected text | 35 | 14 |
+| `candidate-paint-whiteplate-final` | R21 enabled paint-only path | 35 | 14 |
+
+`player-comparison.json` and each run's `player-checks.json` record actions, material variables,
+actual calls/stain counters, hit counts, screenshots and restoration. The preliminary grass-only
+runs are `baseline-player-final` and `candidate-player-final`; the controlled white-floor reruns
+supersede a transient grass-view cleanup difference and do not support claiming it as an R21
+regression.
+
+### Outcome
+
+**No R21-specific post-clear disappearance was established by the controlled player-step runs.**
+New native blood appears on the cube/NPC after the panel clear, sandbox cleanup and raw clear in
+all three runs. The final R21's native blood appears blue under the blue setting and returns to
+natural red/yellow under realistic. R20 does not recolour these stock-name native materials,
+which is the intentional R21 addition. Representative pairs are
+`shot-06-after_button_npc_citizen_wall.png`, `shot-11-after_cleanup_npc_citizen_wall.png`,
+`shot-16-after_raw_clear_npc_citizen_wall.png`, `shot-21-blue_npc_citizen_wall.png` and
+`shot-26-realistic_again_npc_citizen_wall.png` in each run's `game/` folder.
+
+**The small Lua collision-stain visual limitation predates R21 in this test.** The white floor
+shows no visible small impact stains even in the initial published-R20 run, despite recorded
+landing callbacks, successful trace admissions and `util.DecalEx` calls. They remain absent
+after each clear/cleanup and after the palette switches, after a ten-second wait, and after
+the real map change. R21 behaves the same. For example, the citizen-floor admitted stain counts
+initial / after button / after cleanup / after raw clear are 64 / 198 / 331 / 454 in R20,
+66 / 191 / 323 / 449 in the reviewed R21 core and 69 / 191 / 319 / 443 in paint-only R21.
+These are cumulative counters across explicit reset epochs, not a claim that more than 384
+stains were admitted within one epoch. No visible recovery occurred after ten seconds or map
+change; after-map citizen counts restart at 71 / 65 / 66 respectively and the floor is still
+blank. Compare `shot-02-initial_npc_citizen_floor.png`,
+`shot-07-after_button_npc_citizen_floor.png`, `shot-12-after_cleanup_npc_citizen_floor.png`,
+`shot-17-after_raw_clear_npc_citizen_floor.png`, `shot-22-blue_npc_citizen_floor.png`,
+`shot-30-wait_10_seconds_floor.png`, `shot-32-after_map_change_npc_citizen_floor.png` and the
+final wait view. This remains an open pre-existing rendering item, with an unestablished cause;
+the counters are not substituted for visual proof, and the runtime was left unchanged.
+
+Enabled scheme changes now follow R20's **paint-only** path, rather than first restoring all
+used materials and painting again. Baselines stay captured until master off. The by-name
+texture restore and canonical material-name alias fix remain. `paint-regression.json` records
+the enabled-path regression failing against e05534a and passing after the change; this verifies
+the removal of the intermediate restore, not a claim that it caused the shared stain problem.
+The final player-step repeat verifies the resulting native colours and cleanup behavior.
+
+All three comparison runs have normal exits, zero Lua errors and field settings executed before
+quit. Their `restoration.json` receipts confirm byte/registry equality, unchanged user.conf,
+rtx.conf and dxvk.conf, depot verification exit 0, verified large-copy cleanup and released
+exclusive locks. The source project, field install, Workshop archive and other worktrees were
+read only. The DATA map-return marker exists only in the isolated test data and is restored away.
+
+### Attribution, permission wording and text-only input update
+
+The panel msgid and all six catalogs now avoid assuming Crunchy's pronouns. The changed catalog
+was updated through `companion_i18n.py update`, translated with UTF-8 Python, read back for exact
+equality, and checked; `translations.json` preserves ASCII-escaped Unicode values for review.
+The report, ADR 0124, part README, CREDITS and permission notice now state only that SheepyLord
+reported the resource author's permission on 2026-11-06 and asked for the resources to be packaged
+and published with this project's RTX package (Workshop 3829070317), whose inputs this public
+repository holds. Terms were not supplied; no additional repository grant or general licence is
+asserted. The resources/derivatives remain the author's and outside MIT.
+
+The two shipped notices are now indexed plain text under `notices/`, with readable copies in
+the reserved part-document `licenses/` folder. The package reads the unpacked indexed copies.
+`text-import.log` records exactly two text files stored. `text-only-import-proof.json` confirms
+all **272 binary entries and LFS objects unchanged; zero binary imports**. The part now has
+550 indexed inputs, 365,184,772 uncompressed bytes and 109,680,367 total stored bytes; compressed
+binary bytes remain 109,378,436. Tests verify the indexed notices match the readable copies and
+the builder's source paths. No Workshop page, branch push, tag, merge, publication or workflow run.
+
+### Final review verification
+
+The review gate passed `tools/test.ps1 -Config Release`: **27/27 CTests and 711 Python tests**
+(29 gmapack, 26 Steam, 656 tools), with two existing optional skips. Player comparison receipts,
+deep inputs, i18n and the final package each return 0 in `out/r21a-review/final-checks.json`.
+The tested final package is `gmod-rtx-remix-0.0.0-dev.20261107010242_353d05fe.gma`, **1,746 files,
+2,181,711,767 GMA bytes**, digest `693fc1b4028667235a41eb9d157f6edce4663ee84eb3f0e81227d1c45c62ee4d`. Its native payloads use the
+published-native overlay; that overlay stays under out and is not imported into packages/.
+The root cause of the shared small Lua-stain limitation remains unestablished; it is not
+attributed conclusively to the runtime. No runtime patch or native binary input changed.
+
+Review commits: `1a678fc` corrects attribution/permission and indexes two plain-text notices;
+`9f95c31` retains the R20 enabled paint-only path and the by-name disable restore. The final
+report/QA commit follows the passing Release gate. The original single binary import remains
+unchanged, and all 272 binary index entries still match the pre-review index byte for byte.
 
 ## Built
 
@@ -153,7 +264,7 @@ cleared, and its per-file CRCs verified. Original archive hashes are in `fixture
 
 ## Open
 
-- **Open visual QA:** the larger Lua DecalEx palette probes show correct material values but
+- **Pre-review open item (classification superseded above):** the larger Lua DecalEx palette probes show correct material values but
   blank post-clear palette views. The initial original-shape grid and the separately paced native
   engine four-state sequence render, including blue and restored red/yellow. A smaller palette
   probe, a refresh after clearing and explicit opaque stamp colours did not resolve the
