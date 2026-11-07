@@ -78,6 +78,15 @@ class DecodeTests(unittest.TestCase):
             a.decode(sdk, b'')
         self.assertEqual(sdk.destroyed, 0)
 
+    def test_dump_without_shader_information_still_decodes(self):
+        sdk = FakeSDK()
+        sdk.GetActiveShadersInfoCount = lambda *args: 2
+        result = a.decode(sdk, b'dump')
+        self.assertEqual(result['active_shaders'], [])
+        self.assertEqual(result['sdk']['device']['status'], 'Timeout')
+        self.assertEqual(len(result['warnings']), 1)
+        self.assertEqual(sdk.destroyed, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

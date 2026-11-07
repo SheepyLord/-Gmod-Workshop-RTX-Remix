@@ -11,7 +11,8 @@ python -I tools/aftermath_decode.py out/r21c/crash.nv-gpudmp --dll '<SDK>/lib/x6
 Requires 64-bit Windows Python and a trusted local Aftermath DLL. ABI defaults to Aftermath 2026.3,
 API 2.27 (`0x21b`); `--api-version` selects another compatible ABI. No SDK headers or DLLs are
 redistributed. Decoder flags are `ALL_INFO`; unavailable shader/source debug data stays unavailable.
-`--spirv-root` is optional. A match requires the SDK's binary hash to match exactly; an active shader
+`--spirv-root` is optional. Missing active-shader data is recorded as a warning while keeping the
+rest of the decoded dump. A match requires the SDK's binary hash to match exactly; an active shader
 or matching hash alone does not establish the cause of a GPU timeout. Unknown/internal shaders keep
 their hashes and numeric shader types. The original SDK JSON remains under `sdk`.
 

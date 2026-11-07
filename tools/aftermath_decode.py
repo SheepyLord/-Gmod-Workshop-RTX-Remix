@@ -99,7 +99,13 @@ def decode(sdk: Aftermath, data: bytes, names: dict[str, list[str]] | None = Non
         check(sdk.GetJSON(decoder, size.value, output), 'GetJSON')
         report = json.loads(output.value.decode('utf-8'))
         count = c.c_uint32()
-        check(sdk.GetActiveShadersInfoCount(decoder, c.byref(count)), 'GetActiveShadersInfoCount')
+        warnings = []
+        status = sdk.GetActiveShadersInfoCount(decoder, c.byref(count))
+        if status == 2:  # valid dumps need not contain active-shader data
+            count.value = 0
+            warnings.append('active shader information is not available in this dump')
+        else:
+            check(status, 'GetActiveShadersInfoCount')
         if count.value > 1_000_000:
             raise DecodeError(f'unreasonable active shader count: {count.value}')
         shaders = (ShaderInfo * count.value)()
@@ -117,7 +123,7 @@ def decode(sdk: Aftermath, data: bytes, names: dict[str, list[str]] | None = Non
                 hash_result=f'0x{status:08x}', instances=0))
             entry['instances'] += 1
         return dict(api_version=f'0x{sdk.api_version:x}', sdk=report, active_shaders=list(active.values()),
-                    spirv_hashes_indexed=len(names or {}))
+                    spirv_hashes_indexed=len(names or {}), warnings=warnings)
     finally:
         # Release even when JSON parsing, shader enumeration or a lookup fails.
         check(sdk.DestroyDecoder(decoder), 'DestroyDecoder')
