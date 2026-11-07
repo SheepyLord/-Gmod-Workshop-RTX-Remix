@@ -1,8 +1,10 @@
 Blood Overhaul resources by Crunchy, '2022' Blood Overhaul, Workshop 2683396098:
 https://steamcommunity.com/sharedfiles/filedetails/?id=2683396098
-The resources and PBR made from them are included with their author's permission, obtained by
-SheepyLord on 2026-11-06. They remain the author's and are not under this repository's MIT licence.
-See CRUNCHY-RESOURCES.txt. This records permission for this distribution, not a new public licence.
+On 2026-11-06 SheepyLord reported the resource author's permission and asked for the resources
+to be packaged and published with this project's RTX package (Workshop item 3829070317), whose
+inputs this public repository holds. The permission's terms were not provided. Crunchy's resources
+and derivatives remain the author's and are not under this repository's MIT licence.
+See CRUNCHY-RESOURCES.txt. This records the report and request, not a general licence.
 
 Blood Overhaul RTX: PBR, new patterns, colour schemes and code by SheepyLord and Codex.
 The eighteen new patterns were made with an AI image model, with Crunchy's textures as style

@@ -2,12 +2,13 @@ Blood Overhaul resources by Crunchy
 Source: '2022' Blood Overhaul, Steam Workshop 2683396098
 https://steamcommunity.com/sharedfiles/filedetails/?id=2683396098
 
-Included with the resource author's permission, obtained by SheepyLord on 2026-11-06 and reported
-in the project's R21 instruction that day. The permission covers inclusion of these resources and
-their derived PBR in this project's RTX package and its public repository of package inputs.
+On 2026-11-06 SheepyLord reported the resource author's permission and asked for the Blood Overhaul
+resources to be packaged and published with this project's RTX package (Workshop item 3829070317).
+This public repository holds that package's inputs. The permission's terms were not provided;
+this notice does not infer a separate grant for the repository or describe additional terms.
 
 Crunchy's resources and derivatives remain the author's. They are not licensed under this
-repository's MIT licence. This notice records the permission to include them in this distribution;
+repository's MIT licence. This notice records SheepyLord's report and request;
 it does not grant an independent general licence to redistribute or relicense the resources.
 The author retains all rights not granted by that permission. No private correspondence is bundled.
 

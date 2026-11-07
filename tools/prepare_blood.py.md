@@ -24,7 +24,8 @@ Outputs a new folder strictly under this worktree's `out/`: `nlblood` (add-on),
 and the original prompts text (reference images excluded). Schema 2 audits every source-project file,
 selected or excluded, with SHA-256 and reason; MD5 comparisons distinguish Crunchy's unchanged files
 from the user's edits, derived resources and owned patterns. Generated outputs have separate hashes;
-the sprite tool refreshes these after appending its materials. Permission/author/date are explicit.
+the sprite tool refreshes these after appending its materials. The author, date and SheepyLord's
+reported permission/request are explicit; no unspecified permission terms or general licence are inferred.
 Legacy Lua is replaced by the private controller/data. Archives, source/reference images, backups,
 previews and development files stay out. Refuses an existing output. Writes no
 game/source files, does not import to LFS or publish. Import the final inventory with `inputs.py`;

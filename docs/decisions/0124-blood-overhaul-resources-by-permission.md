@@ -3,8 +3,11 @@
 Status: accepted (R21-A, the user's instruction). Date: 2026-11-06.
 
 Supersedes ADR 0118's exclusions of Crunchy's resources and derivatives and its statement that no
-stock blood material is replaced. SheepyLord obtained the resource author's permission on
-2026-11-06 and requested inclusion. The Workshop credit section remains the user's responsibility.
+stock blood material is replaced. On 2026-11-06 SheepyLord reported the resource author's permission
+and asked for the resources to be packaged and published with this project's RTX package (Workshop
+item 3829070317), whose inputs this public repository holds. The permission's terms were not
+provided; this record does not infer additional terms or a separate repository grant. The Workshop
+credit section remains the user's responsibility.
 
 Include the runtime materials/textures from the user's `dist/addon`, and every PBR DDS and both
 texture-hash kinds from `dist/remix_mod/blood_overhaul_rtx`. Preserve selected source bytes;
@@ -34,9 +37,9 @@ also covers Crunchy's original texture hashes with explicit opacity instead of l
 Record the actual winners and renders in PoC coexistence evidence. Use the package without the
 duplicate legacy/subscribed copy if its winning shader cannot accept colour schemes safely.
 
-Credit Crunchy's Blood Overhaul (2683396098). The resources and PBR derived from them are included
-by permission, remain the author's, and are outside this repository's MIT licence. Keep that
-statement beside and inside the part. Retain AI-generation disclosure and the original prompts for
+Credit Crunchy's Blood Overhaul (2683396098). The resources and PBR derived from them are bundled
+following that report and request, remain the author's, and are outside this repository's MIT licence.
+No general licence is granted. Keep that statement beside and inside the part. Retain AI-generation disclosure and the original prompts for
 the eighteen generated patterns. Import final binaries once through `inputs.py`, then report the
 indexed, compressed and package size changes. No trust, native code, Steam or runtime-global
 preference changes are needed.

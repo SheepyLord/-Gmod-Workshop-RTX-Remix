@@ -71,6 +71,16 @@
     "dirty": false
    },
    "imported": "2026-11-06T12:40:22+00:00"
+  },
+  "notices": {
+   "source": "H:\\BACKUP_20260815\\Modding\\!NVIDIA-RTX-Remix\\out\\worktrees\\r21-blood\\out\\r21a-review\\text-inputs",
+   "git": {
+    "repository": "H:/BACKUP_20260815/Modding/!NVIDIA-RTX-Remix/out/worktrees/r21-blood",
+    "remote": "https://github.com/SheepyLord/Gmod-Workshop-RTX-Remix.git",
+    "commit": "e05534a84244ae89926041aa38c347ac69199180",
+    "dirty": false
+   },
+   "imported": "2026-11-07T00:27:52+00:00"
   }
  },
  "files": {
@@ -3905,6 +3915,18 @@
    "stored": "xz",
    "stored_size": 2388,
    "stored_sha256": "bbba89696ab5b2ba647debb928d0e13b7f652a5598186e10030a0522a108b272"
+  },
+  "notices/CREDITS.txt": {
+   "size": 1454,
+   "sha256": "b700234092b3f72967b5fff706ad9af583bb2788df4f75588a45a5ca9c0af8ee",
+   "mtime_ns": 1794011228086902400,
+   "stored": "plain"
+  },
+  "notices/CRUNCHY-RESOURCES.txt": {
+   "size": 1102,
+   "sha256": "f9b36923281e7c37b90f0bb85f0aa212a0132a9fbe34cd16438a002fc2c628ca",
+   "mtime_ns": 1794011228085902600,
+   "stored": "plain"
   }
  }
 }

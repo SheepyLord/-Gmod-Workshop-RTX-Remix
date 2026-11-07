@@ -27,9 +27,12 @@ the plan's Codex trailer. Status: **packaging implemented; final Release gate pa
 - R20-C's impact code/budgets are unchanged: 640 particle admissions/s, 512 alive, 42 per event,
   80 events/s; 48 stains/s and 384 per cleanup/clear epoch; 160 ragdoll checks/s and 64 recent
   cross-name entries. There is no new native code, trust change, server damage hook or message.
-- Credits and a shipped permission notice name Crunchy, Workshop 2683396098, permission obtained
-  by SheepyLord on **2026-11-06**, and the exclusion of his resources/derivatives from MIT. Owned
-  code/assets retain MIT. The eighteen generated patterns' AI disclosure and prompts remain.
+- Credits and a shipped notice name Crunchy, Workshop 2683396098. On **2026-11-06** SheepyLord
+  reported the resource author's permission and asked for the resources to be packaged and
+  published with this project's RTX package (Workshop item 3829070317), whose inputs this public
+  repository holds. The permission's terms were not provided. The resources/derivatives remain
+  the author's, outside MIT; no general licence is granted. Owned code/assets retain MIT. The
+  eighteen generated patterns' AI disclosure and prompts remain.
 
 [ADR 0124](../decisions/0124-blood-overhaul-resources-by-permission.md) supersedes 0118's resource
 exclusions and stock-material policy. Accepted R20 reports/decisions remain historical records.

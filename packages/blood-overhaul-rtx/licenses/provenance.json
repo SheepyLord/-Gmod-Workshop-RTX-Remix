@@ -32,9 +32,11 @@
   "permission": {
     "author": "Crunchy",
     "workshop": "2683396098",
-    "obtained_by": "SheepyLord",
+    "reported_by": "SheepyLord",
     "date": "2026-11-06",
-    "terms": "Included by permission; Crunchy resources and derivatives are not MIT."
+    "distribution_workshop": "3829070317",
+    "statement": "SheepyLord reported the resource author's permission and asked for the resources to be packaged and published with this project's RTX package, whose inputs this public repository holds.",
+    "terms": "Terms were not provided; the resources and derivatives remain the author's, outside MIT; no general licence is granted."
   },
   "selected": {
     "dist/addon/materials/decals/alienflesh/shot1.vmt": {

@@ -129,6 +129,18 @@ class BloodInputsTests(unittest.TestCase):
             self.assertNotIn('--requires-remix', parts[name]['args'])
         self.assertIn('--mod', parts['blood-overhaul-rtx']['args'])
 
+    def test_shipped_credit_and_permission_notices_are_indexed_plain_text(self):
+        import hashlib
+        part = REPO / 'packages/blood-overhaul-rtx'
+        index = json.loads((part / 'files.json').read_text())['files']
+        config = json.loads((REPO / 'tools/workshop.json').read_text())
+        args = next(p['args'] for p in config['parts'] if p['name'] == 'blood-overhaul-rtx')
+        for name in ('CREDITS.txt', 'CRUNCHY-RESOURCES.txt'):
+            entry = index['notices/' + name]
+            self.assertEqual(entry['stored'], 'plain')
+            self.assertEqual(entry['sha256'], hashlib.sha256((part / 'licenses' / name).read_bytes()).hexdigest())
+            self.assertIn('out/inputs/blood-overhaul-rtx/notices/' + name, args)
+
     def test_packager_can_start_with_isolated_python(self):
         import sys
         run = subprocess.run([sys.executable, '-I', str(REPO / 'tools/package_content.py'), '--help'],

@@ -39,7 +39,7 @@ local function build(panel)
     panel:Button(L("Test splats where you look"), "bloodoverhaul_test")
     panel:Button(L("Clear all decals"), "bloodoverhaul_clear")
     panel:Button(L("Reset blood settings"), "bloodoverhaul_reset")
-    panel:Help(L("Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are included with his permission."))
+    panel:Help(L("Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are bundled. SheepyLord reported the resource author's permission."))
 end
 BO.BuildMenu = build
 -- The complete companion owns the tab/categories. A part tested alone has the same usable panel.

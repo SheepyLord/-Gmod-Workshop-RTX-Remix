@@ -433,8 +433,8 @@ msgid "Reset blood settings"
 msgstr "Réinitialiser les réglages du sang"
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:42
-msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are included with his permission."
-msgstr "Dix-huit nouveaux motifs créés avec un modèle d’images IA. Les ressources de Blood Overhaul de Crunchy (2683396098) et leurs cartes PBR sont incluses avec son autorisation."
+msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are bundled. SheepyLord reported the resource author's permission."
+msgstr "Dix-huit nouveaux motifs créés avec un modèle d’images IA. Les ressources de Blood Overhaul de Crunchy (2683396098) et leurs cartes PBR sont incluses. SheepyLord a indiqué avoir obtenu l’autorisation de la personne ayant créé les ressources."
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:48
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23

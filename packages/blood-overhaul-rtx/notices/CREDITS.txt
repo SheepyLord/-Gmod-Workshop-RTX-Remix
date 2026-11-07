@@ -1,0 +1,18 @@
+Blood Overhaul resources by Crunchy, '2022' Blood Overhaul, Workshop 2683396098:
+https://steamcommunity.com/sharedfiles/filedetails/?id=2683396098
+On 2026-11-06 SheepyLord reported the resource author's permission and asked for the resources
+to be packaged and published with this project's RTX package (Workshop item 3829070317), whose
+inputs this public repository holds. The permission's terms were not provided. Crunchy's resources
+and derivatives remain the author's and are not under this repository's MIT licence.
+See CRUNCHY-RESOURCES.txt. This records the report and request, not a general licence.
+
+Blood Overhaul RTX: PBR, new patterns, colour schemes and code by SheepyLord and Codex.
+The eighteen new patterns were made with an AI image model, with Crunchy's textures as style
+references. Original prompts are in prompts.json. Source/reference images are not distributed.
+Owned code/assets are under this repository's MIT licence; that excludes Crunchy's resources
+and every neutral/PBR map derived from their pixels. Crunchy's add-on need not be subscribed.
+
+R20-C's analytic droplet/mist textures, two opacity DDSs and four material entries use no source
+image. Their provenance is in particle-pbr.json and tools/prepare_blood_particles.py. The unused
+old blood8-derived flying droplet and the legacy mixer/menu are excluded. The preparation audit
+in provenance.json records selected/excluded source SHA-256s and original MD5 comparisons.

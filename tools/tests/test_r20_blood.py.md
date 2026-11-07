@@ -9,6 +9,10 @@ non-emissive world stains, permission date, original MD5 comparisons and byte-id
 source inputs. The audit still excludes the unused old blood8-derived droplet. PNG/CRC round-trip and output-path refusal cover the
 sprite-opacity generator without invoking NVTT in normal tests.
 
+Review follow-up checks that the shipped credits/permission notices are indexed plain text,
+match the part's readable licence documents byte for byte, and are read by the package builder
+from the unpacked index. No binary is imported for notice updates.
+
 Runs the R20-C/R21-A Lua harness with installed LuaJIT and checks complete 26-shape selection,
 rejection of unexpected texture/DDS paths, deterministic droplet/mist VTF coverage and two-part
 configuration without native/trust changes. `python -I -m unittest` from tools is not supported by

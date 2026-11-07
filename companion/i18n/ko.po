@@ -433,8 +433,8 @@ msgid "Reset blood settings"
 msgstr "혈액 설정 초기화"
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:42
-msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are included with his permission."
-msgstr "새 무늬 18개는 AI 이미지 모델로 제작했습니다. Crunchy의 Blood Overhaul (2683396098) 리소스와 그 PBR 맵은 저자의 허락을 받아 포함했습니다."
+msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are bundled. SheepyLord reported the resource author's permission."
+msgstr "새 무늬 18개는 AI 이미지 모델로 제작했습니다. Crunchy의 Blood Overhaul (2683396098) 리소스와 그 PBR 맵을 포함합니다. SheepyLord가 리소스 저자의 허락을 받았다고 알렸습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:48
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23

@@ -6,10 +6,12 @@ permission, plus R20-C's bounded client impacts. Read-only source:
 inputs; package builds thereafter need only this repository.
 
 Resources by Crunchy, [2022 Blood Overhaul](https://steamcommunity.com/sharedfiles/filedetails/?id=2683396098),
-and the PBR derived from them are included with their author's permission, obtained by SheepyLord
-on **2026-11-06**. They remain the author's and **are not under this repository's MIT licence**.
-See `licenses/CRUNCHY-RESOURCES.txt` and `licenses/CREDITS.txt`; permission for this distribution is
-not a new general licence. Owned code/assets retain MIT. No separate subscription is required.
+and the PBR derived from them are bundled here. On **2026-11-06** SheepyLord reported the resource
+author's permission and asked for the resources to be packaged and published with this project's
+RTX package (Workshop item 3829070317), whose inputs this public repository holds. The permission's
+terms were not provided. The resources and derivatives remain the author's and **are not under
+this repository's MIT licence**. See `licenses/CRUNCHY-RESOURCES.txt` and `licenses/CREDITS.txt`;
+no general licence is granted. Owned code/assets retain MIT. No separate subscription is required.
 
 **The eighteen new patterns were made with an AI image model**, using Crunchy's textures as style
 references. Source/reference images do not ship. Original prompts remain in `licenses/prompts.json`.
@@ -64,13 +66,18 @@ Hard bounds: 640 particles/s, 512 live, 42 per event, 80 events/s; 48 stains/s a
 decal clearing/map cleanup. Effect scale approximates damage; the event has no exit-wound data.
 See [ADR 0119](../../docs/decisions/0119-client-blood-impacts-with-bounded-spatter.md).
 
-**548 indexed inputs; 272 binaries; 365,182,216 uncompressed bytes; 109,378,436 compressed binary
-bytes**, 109,677,811 total stored bytes. R20's 261 inputs/112 binaries held 138,668,672 bytes in
+**550 indexed inputs; 272 binaries; 365,184,772 uncompressed bytes; 109,378,436 compressed binary
+bytes**, 109,680,367 total stored bytes. R20's 261 inputs/112 binaries held 138,668,672 bytes in
 55,523,212 compressed binary bytes. R21 adds 287 inputs/160 binaries and **53,855,224 compressed
 binary bytes** (51.36 MiB). The unchanged R20 binaries are reused; new binaries are imported once
 through `inputs.py import`, after final preparation. Natural/neutral variants share normal/roughness
 maps. The SHA-256 audit/prompts are part documents; CREDITS.txt, the scoped MIT LICENSE and the
 resource permission notice ship in the add-on.
+
+The review indexed the two shipped notices under `notices/` with a text-only import (2,556 bytes).
+Their readable copies remain under `licenses/`, a reserved part-document directory that
+`inputs.py import` does not index. The package's `--add-to-addon` flags read the unpacked indexed
+copies. All 272 existing binary entries, compressed hashes and LFS objects are unchanged.
 
 See [ADR 0124](../../docs/decisions/0124-blood-overhaul-resources-by-permission.md) for the superseded
 R20 exclusions and off-switch scope. A winning legacy VMT remains that add-on's VMT. With Crunchy's

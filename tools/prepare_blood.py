@@ -222,8 +222,11 @@ def prepare(project: Path, output: Path) -> dict:
             reason = 'development/source/reference/backup or duplicate distribution output; not a runtime input'
         excluded[rel] = {'sha256': sha(path), 'reason': reason}
     audit = {'schema': 2, 'project': str(project), 'patterns': [s['key'] for s in shapes],
-             'permission': {'author': 'Crunchy', 'workshop': '2683396098', 'obtained_by': 'SheepyLord',
-                            'date': '2026-11-06', 'terms': 'Included by permission; Crunchy resources and derivatives are not MIT.'},
+             'permission': {'author': 'Crunchy', 'workshop': '2683396098', 'reported_by': 'SheepyLord',
+                            'date': '2026-11-06', 'distribution_workshop': '3829070317',
+                            'statement': "SheepyLord reported the resource author's permission and asked for the resources "
+                                         "to be packaged and published with this project's RTX package, whose inputs this public repository holds.",
+                            'terms': "Terms were not provided; the resources and derivatives remain the author's, outside MIT; no general licence is granted."},
              'selected': selected, 'excluded': excluded, 'generated': generated,
              'note': 'Audit covers every source-project file. Eighteen AI-generated patterns used Crunchy style references; '
                      'reference images do not ship. All selected source bytes are unchanged. Stock blood materials now ship. '
