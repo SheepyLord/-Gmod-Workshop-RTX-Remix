@@ -1,4 +1,4 @@
--- Owned Blood Overhaul RTX patterns, colour schemes and mixer. No stock material is changed.
+-- Blood Overhaul RTX patterns, colour schemes and mixer (resources by permission, ADR 0124).
 local BO = BloodOverhaul
 local cv = {
     enable = CreateClientConVar("bloodoverhaul_enable", "1", true, false),
@@ -32,10 +32,34 @@ function BO.Colour(code, index)
 end
 BO.Family = function(code) return FAMILIES[code] end
 BO.StockColour = function(code) return STOCK[code] end
-local cached = {}
+local cached, originals = {}, {}
+local function remember(mat, model)
+    -- Separate Lua userdata can refer to the same engine material. Key by its canonical name.
+    local name = string.lower(mat:GetName())
+    if originals[name] then return end
+    local key = model and "$color2" or "$color"
+    local colour = mat:GetVector(key) or Vector(1, 1, 1)
+    local texture = mat:GetTexture("$basetexture")
+    originals[name] = { mat = mat, texture = texture, texture_name = texture and texture:GetName(),
+        colour = Vector(colour.x, colour.y, colour.z), key = key }
+end
+local function restore()
+    for _, original in pairs(originals) do
+        local mat = original.mat
+        -- Retain the original ITexture above, but rebind by name like normal scheme painting.
+        -- Passing the userdata back left native engine decal draws missing under RTX in QA.
+        if original.texture_name then mat:SetTexture("$basetexture", original.texture_name) end
+        mat:SetVector(original.key, original.colour)
+    end
+    originals = {}
+end
 local function paint(name, texture, col, model)
     local mat = Material(name)
     if not mat or mat:IsError() then return end
+    -- Subrect shares its parent's variables. Other add-ons' shaders must not be retinted.
+    local shader = string.lower(mat:GetShader())
+    if not shader:find(model and "vertexlitgeneric" or "lightmappedgeneric", 1, true) then return end
+    remember(mat, model)
     mat:SetTexture("$basetexture", texture)
     mat:SetVector(model and "$color2" or "$color", Vector(col.r / 255, col.g / 255, col.b / 255))
     return mat
@@ -44,6 +68,7 @@ function BO.Pattern(code, index)
     local family, shape = FAMILIES[code], BO.Shapes[index]
     if not family or not shape then return end
     local name = "decals/bloodoverhaul/" .. family .. "/" .. shape.key
+    if not cv.enable:GetBool() then return Material(name) end
     if not cached[name] then
         local col = BO.Colour(code, index)
         local natural = code == 0 and cv.scheme:GetString() == "realistic"
@@ -53,17 +78,52 @@ function BO.Pattern(code, index)
     end
     return cached[name]
 end
+local stock = {}
+local TEX = "decals/bloodoverhaul/tex/"
+for code, count in pairs({ [0] = 8, [1] = 6 }) do
+    for i = 1, count do
+        local family = FAMILIES[code]
+        stock[#stock + 1] = { code = code, index = i,
+            world = (code == 0 and "decals/blood" or "decals/yblood") .. i .. "_subrect",
+            model = "decals/bloodoverhaul/" .. family .. "/bo_blood" .. i .. "_model",
+            natural = code == 0 and TEX .. "bo_blood" .. i, neutral = TEX .. "bo_blood" .. i .. "_n" }
+    end
+end
+for i = 1, 5 do
+    for _, family in ipairs({ "flesh", "alienflesh", "antlion" }) do
+        local name = "decals/" .. family .. "/" .. (family == "flesh" and "blood" or "shot") .. i
+        stock[#stock + 1] = { code = family == "flesh" and 0 or 1, index = i + 26,
+            world = name .. "_subrect", model = name, natural = family == "flesh" and name,
+            neutral = TEX .. (family == "flesh" and "flesh" or "alienflesh") .. i .. "_n" }
+    end
+end
+local function apply_stock()
+    -- These are exactly the engine/flesh materials recoloured by the original cl_core.lua.
+    -- Stains and legacy DecalModulate base materials retain their published textures/PBR.
+    for _, entry in ipairs(stock) do
+        local natural = entry.natural and cv.scheme:GetString() == "realistic"
+        local texture = natural and entry.natural or entry.neutral
+        local colour = natural and color_white or BO.Colour(entry.code, entry.index)
+        paint(entry.world, texture, colour)
+        paint(entry.model, texture, colour, true)
+    end
+end
 function BO.Apply()
     local previous = cached
     cached = {}
+    -- Enabled palette changes follow R20's paint-only path. Retain the original baseline
+    -- until disabling instead of restoring/repainting every already-used decal material.
+    if cv.enable:GetBool() then apply_stock() else restore() end
     -- Only already-used materials need retinting. Do not load every shape/PBR map at startup.
     for family, code in pairs(CODES) do
         for i, s in ipairs(BO.Shapes) do
-            if previous["decals/bloodoverhaul/" .. family .. "/" .. s.key] then BO.Pattern(code, i) end
+            if cv.enable:GetBool() and previous["decals/bloodoverhaul/" .. family .. "/" .. s.key] then BO.Pattern(code, i) end
         end
     end
     hook.Run("NativeLoaderBloodColoursChanged")
 end
+hook.Add("InitPostEntity", "nativeloader_blood_materials", BO.Apply)
+timer.Simple(0, BO.Apply)
 for name in pairs(cv) do
     cvars.AddChangeCallback("bloodoverhaul_" .. name, BO.Apply, "nativeloader_blood")
 end

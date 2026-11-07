@@ -365,79 +365,83 @@ msgid "Enable Blood Overhaul RTX"
 msgstr "Blood Overhaul RTX 사용"
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:24
-msgid "Eighteen new patterns and twelve colour schemes, with wet PBR surfaces under RTX. Crunchy's Blood Overhaul is optional."
-msgstr "새 무늬 18개와 색상 구성 12개를 제공하며 RTX에서는 젖은 PBR 표면을 표현합니다. Crunchy의 Blood Overhaul은 선택 사항입니다."
+msgid "Twenty-six patterns and twelve colour schemes, with wet PBR surfaces under RTX. No separate Blood Overhaul subscription is needed."
+msgstr "무늬 26개와 색상 구성 12개를 제공하며 RTX에서는 젖은 PBR 표면을 표현합니다. Blood Overhaul을 따로 구독할 필요가 없습니다."
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:25
+msgid "Off restores material colours, the mixer and engine impacts. Packaged Blood Overhaul textures and PBR remain until the package is removed."
+msgstr "끄면 재질 색상, 믹서 및 엔진의 혈액 충격 효과가 복원됩니다. 포함된 Blood Overhaul 텍스처와 PBR은 패키지를 제거할 때까지 유지됩니다."
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
 msgid "Realistic bullet impacts"
 msgstr "사실적인 탄환 충돌"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
 msgid "Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."
 msgstr "방향성 분사, 짧은 안개와 작은 자국을 남기는 낙하 물방울을 표현합니다. 끄면 엔진의 기본 혈액 충돌 효과로 돌아갑니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
 msgid "Impact amount"
 msgstr "충돌 효과량"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
 msgid "Zero uses the stock impact. Detail reduces with viewing distance; the particle and stain limits always apply."
 msgstr "0이면 기본 효과를 사용합니다. 시점에서 멀수록 세부 묘사가 줄며 입자와 자국 제한은 항상 적용됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:30
 msgid "Colour scheme"
 msgstr "색상 구성"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:31
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
 msgid "Mix all blood patterns"
 msgstr "모든 혈흔 무늬 섞기"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
 msgid "Splat size"
 msgstr "혈흔 크기"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
 msgid "Recolour flying droplets"
 msgstr "날아가는 방울 색상 변경"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
 msgid "Custom colours apply when the Custom colours scheme is selected."
 msgstr "사용자 지정 색상 구성을 선택하면 아래 색상이 적용됩니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
 msgid "Red blood"
 msgstr "붉은 피"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
 msgid "Alien blood"
 msgstr "외계 생물의 피"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
 msgid "Limits: 640 particles per second, 512 alive; 48 new stains per second, 384 until map cleanup or Clear all decals. Existing stains stay when impacts are turned off."
 msgstr "제한: 초당 입자 640개, 동시 512개. 새 자국은 초당 48개이며 지도 정리 또는 모든 데칼 지우기 전까지 총 384개입니다. 충돌 효과를 꺼도 기존 자국은 남습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
 msgid "Test splats where you look"
 msgstr "바라보는 곳에 혈흔 시험"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
 msgid "Clear all decals"
 msgstr "모든 데칼 지우기"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
 msgid "Reset blood settings"
 msgstr "혈액 설정 초기화"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
-msgid "New patterns made with an AI image model. Base and style credit: Crunchy's 2022 Blood Overhaul (2683396098); its original textures and derived maps are not bundled."
-msgstr "새 무늬는 AI 이미지 모델로 제작했습니다. 기반과 스타일: Crunchy의 2022 Blood Overhaul (2683396098). 원본 텍스처와 그 파생 맵은 포함하지 않습니다."
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:42
+msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are bundled. SheepyLord reported the resource author's permission."
+msgstr "새 무늬 18개는 AI 이미지 모델로 제작했습니다. Crunchy의 Blood Overhaul (2683396098) 리소스와 그 PBR 맵을 포함합니다. SheepyLord가 리소스 저자의 허락을 받았다고 알렸습니다."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:47
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:48
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
 msgid "Blood"
 msgstr "혈액"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:50
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:51
 msgid "Blood and impacts"
 msgstr "혈액과 충돌 효과"
 

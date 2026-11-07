@@ -1,0 +1,8 @@
+"VertexLitGeneric"
+{
+    "$basetexture" "decals/bloodoverhaul/tex/bo_blood3_n"
+    "$decal" "1"
+    "$translucent" "1"
+    "$decalscale" "0.059961"
+    "$color2" "[0.670 0.820 0.140]"
+}

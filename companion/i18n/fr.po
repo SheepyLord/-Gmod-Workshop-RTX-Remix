@@ -365,79 +365,83 @@ msgid "Enable Blood Overhaul RTX"
 msgstr "Activer Blood Overhaul RTX"
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:24
-msgid "Eighteen new patterns and twelve colour schemes, with wet PBR surfaces under RTX. Crunchy's Blood Overhaul is optional."
-msgstr "Dix-huit nouveaux motifs et douze palettes, avec des surfaces PBR humides sous RTX. Blood Overhaul de Crunchy est facultatif."
+msgid "Twenty-six patterns and twelve colour schemes, with wet PBR surfaces under RTX. No separate Blood Overhaul subscription is needed."
+msgstr "Vingt-six motifs et douze palettes, avec des surfaces PBR humides sous RTX. Aucun abonnement séparé à Blood Overhaul n’est nécessaire."
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:25
+msgid "Off restores material colours, the mixer and engine impacts. Packaged Blood Overhaul textures and PBR remain until the package is removed."
+msgstr "La désactivation rétablit les couleurs des matériaux, le mélangeur et les impacts du moteur. Les textures et cartes PBR de Blood Overhaul restent jusqu’au retrait du paquet."
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
 msgid "Realistic bullet impacts"
 msgstr "Impacts de balles réalistes"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
 msgid "Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."
 msgstr "Projection directionnelle, brume brève et gouttes laissant de petites taches. Désactiver rétablit l’effet sanguin du moteur."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
 msgid "Impact amount"
 msgstr "Quantité à l’impact"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
 msgid "Zero uses the stock impact. Detail reduces with viewing distance; the particle and stain limits always apply."
 msgstr "Zéro utilise l’effet d’origine. Le détail diminue avec la distance ; les limites de particules et de taches restent actives."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:30
 msgid "Colour scheme"
 msgstr "Palette de couleurs"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:31
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
 msgid "Mix all blood patterns"
 msgstr "Mélanger tous les motifs"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
 msgid "Splat size"
 msgstr "Taille des éclaboussures"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
 msgid "Recolour flying droplets"
 msgstr "Recolorer les gouttes en vol"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
 msgid "Custom colours apply when the Custom colours scheme is selected."
 msgstr "Ces couleurs s’appliquent lorsque la palette Couleurs personnalisées est sélectionnée."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
 msgid "Red blood"
 msgstr "Sang rouge"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
 msgid "Alien blood"
 msgstr "Sang extraterrestre"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
 msgid "Limits: 640 particles per second, 512 alive; 48 new stains per second, 384 until map cleanup or Clear all decals. Existing stains stay when impacts are turned off."
 msgstr "Limites : 640 particules/s, 512 simultanées ; 48 nouvelles taches/s, 384 avant nettoyage de la carte ou effacement des décalcomanies. Désactiver les impacts conserve les taches existantes."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
 msgid "Test splats where you look"
 msgstr "Tester les taches au point visé"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
 msgid "Clear all decals"
 msgstr "Effacer toutes les décalcomanies"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
 msgid "Reset blood settings"
 msgstr "Réinitialiser les réglages du sang"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
-msgid "New patterns made with an AI image model. Base and style credit: Crunchy's 2022 Blood Overhaul (2683396098); its original textures and derived maps are not bundled."
-msgstr "Nouveaux motifs créés avec un modèle d’images IA. Base et style : 2022 Blood Overhaul de Crunchy (2683396098) ; ses textures originales et leurs dérivés sont exclus."
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:42
+msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are bundled. SheepyLord reported the resource author's permission."
+msgstr "Dix-huit nouveaux motifs créés avec un modèle d’images IA. Les ressources de Blood Overhaul de Crunchy (2683396098) et leurs cartes PBR sont incluses. SheepyLord a indiqué avoir obtenu l’autorisation de la personne ayant créé les ressources."
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:47
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:48
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
 msgid "Blood"
 msgstr "Sang"
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:50
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:51
 msgid "Blood and impacts"
 msgstr "Sang et impacts"
 

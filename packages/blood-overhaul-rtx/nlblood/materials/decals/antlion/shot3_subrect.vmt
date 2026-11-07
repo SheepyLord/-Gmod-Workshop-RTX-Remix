@@ -1,0 +1,9 @@
+"LightmappedGeneric"
+{
+	// Blood Overhaul RTX: antlion impact, tinted at runtime
+	"$basetexture" "decals/alienflesh/shot3"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.06"
+	"$modelmaterial" "decals/antlion/shot3"
+}

@@ -365,79 +365,83 @@ msgid "Enable Blood Overhaul RTX"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:24
-msgid "Eighteen new patterns and twelve colour schemes, with wet PBR surfaces under RTX. Crunchy's Blood Overhaul is optional."
+msgid "Twenty-six patterns and twelve colour schemes, with wet PBR surfaces under RTX. No separate Blood Overhaul subscription is needed."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:25
-msgid "Realistic bullet impacts"
+msgid "Off restores material colours, the mixer and engine impacts. Packaged Blood Overhaul textures and PBR remain until the package is removed."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:26
-msgid "Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."
+msgid "Realistic bullet impacts"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:27
-msgid "Impact amount"
+msgid "Directional spray, brief mist and falling droplets that leave small stains. Off restores the engine's blood impact effect."
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:28
-msgid "Zero uses the stock impact. Detail reduces with viewing distance; the particle and stain limits always apply."
+msgid "Impact amount"
 msgstr ""
 
 #: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:29
+msgid "Zero uses the stock impact. Detail reduces with viewing distance; the particle and stain limits always apply."
+msgstr ""
+
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:30
 msgid "Colour scheme"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:31
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
 msgid "Mix all blood patterns"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:32
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
 msgid "Splat size"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:33
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
 msgid "Recolour flying droplets"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:34
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
 msgid "Custom colours apply when the Custom colours scheme is selected."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:35
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
 msgid "Red blood"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:36
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
 msgid "Alien blood"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:37
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
 msgid "Limits: 640 particles per second, 512 alive; 48 new stains per second, 384 until map cleanup or Clear all decals. Existing stains stay when impacts are turned off."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:38
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
 msgid "Test splats where you look"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:39
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
 msgid "Clear all decals"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:40
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
 msgid "Reset blood settings"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:41
-msgid "New patterns made with an AI image model. Base and style credit: Crunchy's 2022 Blood Overhaul (2683396098); its original textures and derived maps are not bundled."
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:42
+msgid "Eighteen new patterns made with an AI image model. Blood Overhaul resources by Crunchy (2683396098) and their PBR are bundled. SheepyLord reported the resource author's permission."
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:47
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:48
 #: nativeloader/lua/autorun/client/nativeloader_menu.lua:23
 msgid "Blood"
 msgstr ""
 
-#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:50
+#: nativeloader/lua/autorun/client/nativeloader_blood_menu.lua:51
 msgid "Blood and impacts"
 msgstr ""
 

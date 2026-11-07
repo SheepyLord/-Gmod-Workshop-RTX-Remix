@@ -1,9 +1,10 @@
 "LightmappedGeneric"
 {
-    "$basetexture" "decals/bloodoverhaul/tex/drip_runs_n"
-    "$decal" "1"
-    "$translucent" "1"
-    "$decalscale" "0.046875"
-    "$color" "[0.780 0.700 0.240]"
-    "$modelmaterial" "decals/bloodoverhaul/alien/drip_runs_model"
+	// Blood Overhaul RTX: alien blood splat, tinted at runtime
+	"$basetexture" "decals/bloodoverhaul/tex/drip_runs_n"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0469"
+	"$color" "[0.780 0.700 0.240]"
+	"$modelmaterial" "decals/bloodoverhaul/alien/drip_runs_model"
 }

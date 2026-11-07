@@ -1,0 +1,9 @@
+"DecalModulate"
+{
+	"$translucent" 1
+	"$basetexture" "Decals/yBlood1"
+	"$decal" 1
+	"$decalsecondpass" 1
+	"$decalscale" 0.012
+	"$modelmaterial" "decals/yBlood1"
+}

@@ -1,0 +1,8 @@
+"VertexLitGeneric"
+{
+	// Blood Overhaul RTX: antlion impact on models, tinted at runtime
+	"$basetexture" "decals/alienflesh/shot5"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.25"
+}

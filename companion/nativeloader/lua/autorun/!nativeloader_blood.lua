@@ -1,5 +1,5 @@
--- R20-C: exact-path coexistence guards and the owned blood implementation (ADR 0118).
--- This sorts before the standalone autoruns. Their files and materials remain untouched.
+-- R20-C/R21-A: exact-path coexistence guards and private blood implementation (ADRs 0118/0124).
+-- This sorts before standalone autoruns. Their on-disk files remain untouched.
 local blood = file.Exists("nlblood/shapes.lua", "LUA")
 local screen = file.Exists("dynamic_toolgun_screen/nl_package.lua", "LUA")
 if not blood and not screen then return end

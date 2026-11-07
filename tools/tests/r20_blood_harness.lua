@@ -55,9 +55,37 @@ function Material(name)
     local mat={name=name}
     function mat:GetName() return self.name end
     function mat:IsError() return false end
-    function mat:SetTexture(key,value) self[key]=value end
+    function mat:GetShader()
+        if self.shader then return self.shader end
+        local model = self.name:find('_model',1,true) or (not self.name:find('_subrect',1,true) and
+            (self.name:find('decals/flesh/',1,true) or self.name:find('decals/alienflesh/',1,true) or self.name:find('decals/antlion/',1,true)))
+        return model and 'VertexLitGeneric' or 'LightmappedGeneric'
+    end
+    function mat:GetTexture(key)
+        local value=self[key] or ('original:'..self.name)
+        if type(value)=='string' then return {GetName=function() return value end} end
+        return value
+    end
+    function mat:GetVector(key) return self[key] or Vector(.7,.8,.9) end
+    function mat:SetTexture(key,value)
+        if calls.watch_material==self.name then
+            calls.material_writes=(calls.material_writes or 0)+1
+            calls.texture_trace=calls.texture_trace or {}
+            calls.texture_trace[#calls.texture_trace+1]=type(value)=='string' and value or value:GetName()
+        end
+        self[key]=value
+    end
     function mat:SetVector(key,value) self[key]=value end
     mats[name]=mat return mat
+end
+if scenario=='stock_materials' then
+    -- GMod may hand Lua distinct userdata wrappers for one underlying material pointer.
+    -- Material mutations still affect the same backing data; wrapper identity is not a key.
+    local original_material=Material
+    Material=function(name)
+        local shared=original_material(name)
+        return setmetatable({}, {__index=shared,__newindex=shared})
+    end
 end
 CreateMaterial = function(name,shader,fields) local m=Material(name) for k,v in pairs(fields) do m[k]=v end return m end
 local emitter_meta = {Add=function(self,mat,pos,...) return {mat=mat,pos=pos,extra={...},
@@ -253,6 +281,53 @@ else
             if p.props.SetCollideCallback then p.props.SetCollideCallback[1](p,Vector(),Vector(0,0,1)) break end
         end
         assert(BO.ImpactStats.landings==1 and BO.ImpactStats.stains==1 and BO.ImpactStats.trace_misses==0)
+    elseif scenario=='stock_materials' then
+        local original=Material('decals/blood1_subrect')
+        local oldtex,oldcol=original:GetTexture('$basetexture'):GetName(),original:GetVector('$color')
+        local model=Material('decals/flesh/blood1')
+        local modeltex,modelcol=model:GetTexture('$basetexture'):GetName(),model:GetVector('$color2')
+        local shared_model=Material('decals/bloodoverhaul/red/bo_blood1_model')
+        local shared_tex,shared_col=shared_model:GetTexture('$basetexture'):GetName(),shared_model:GetVector('$color2')
+        local unsafe=Material('decals/yblood2_subrect') unsafe.shader='Subrect'
+        local unsafe_tex=unsafe:GetTexture('$basetexture'):GetName()
+        local stain=Material('decals/bloodstain_001')
+        local staintex=stain:GetTexture('$basetexture'):GetName()
+        BO.Apply()
+        assert(original:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/bo_blood1')
+        for _,s in ipairs(BO.Schemes) do
+            RunConsoleCommand('bloodoverhaul_scheme',s.id)
+            for _,code in ipairs({0,1,2,6}) do
+                for i=1,8 do assert(BO.Pattern(code,i),'all eight originals in every family') end
+            end
+            assert(unsafe:GetTexture('$basetexture'):GetName()==unsafe_tex,'Subrect must not alter its parent')
+            assert(stain:GetTexture('$basetexture'):GetName()==staintex,'original did not recolour stains')
+        end
+        RunConsoleCommand('bloodoverhaul_scheme','blue')
+        assert(original:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/bo_blood1_n')
+        assert(model:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/flesh1_n')
+        assert(model:GetVector('$color2').z>model:GetVector('$color2').x)
+        calls.watch_material=shared_model:GetName() calls.material_writes=0 calls.texture_trace={}
+        RunConsoleCommand('bloodoverhaul_scheme','violet')
+        for _,texture in ipairs(calls.texture_trace) do
+            assert(texture~='original:'..shared_model:GetName(),
+                'enabled palette changes must paint directly, without restoring the baseline in between')
+        end
+        calls.watch_material=shared_model:GetName() calls.material_writes=0
+        RunConsoleCommand('bloodoverhaul_enable','0')
+        assert(calls.material_writes==1,'one restore for each underlying engine material, including wrapper aliases')
+        calls.watch_material=nil
+        assert(original:GetTexture('$basetexture'):GetName()==oldtex and original:GetVector('$color').x==oldcol.x)
+        assert(model:GetTexture('$basetexture'):GetName()==modeltex and model:GetVector('$color2').z==modelcol.z)
+        assert(shared_model:GetTexture('$basetexture'):GetName()==shared_tex and shared_model:GetVector('$color2').x==shared_col.x,
+            'stock subrect and mixer aliases must share one original model-material snapshot')
+        BO.Pattern(0,1) BO.Apply()
+        assert(original:GetTexture('$basetexture'):GetName()==oldtex,'disabled apply must stay restored')
+        RunConsoleCommand('bloodoverhaul_enable','1')
+        assert(original:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/bo_blood1_n')
+        -- A later add-on edit while disabled becomes the next restore baseline.
+        RunConsoleCommand('bloodoverhaul_enable','0') original:SetTexture('$basetexture','another_addon')
+        RunConsoleCommand('bloodoverhaul_enable','1') RunConsoleCommand('bloodoverhaul_enable','0')
+        assert(original:GetTexture('$basetexture'):GetName()=='another_addon')
     elseif scenario=='impacts' then
         assert(registered:Think()==false)
         for _,name in ipairs({'nativeloader_blood_impacts','bloodoverhaul_enable','nativeloader_blood_amount'}) do
@@ -303,6 +378,9 @@ else
         external=emitter_meta.Add({},'decals/blood1',Vector(),99)
         assert(external.mat=='decals/blood1' and external.extra[1]==99)
         local original=Material('decals/blood1')
+        RunConsoleCommand('bloodoverhaul_variety','0')
+        util.DecalEx(original,'ent','pos','normal','colour',.7,.9)
+        assert(calls.decals[#calls.decals][1]:GetName()=='decals/bloodoverhaul/red/bo_blood1')
         RunConsoleCommand('bloodoverhaul_enable','0')
         util.DecalEx(original,'ent','pos','normal','colour',.7,.9)
         local dec=calls.decals[#calls.decals]

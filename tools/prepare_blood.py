@@ -1,6 +1,6 @@
-"""Select only the user's eighteen generated Blood Overhaul RTX patterns; never deploy anything.
+"""Prepare Blood Overhaul's permitted resources and the user's PBR; never deploy anything.
 
-python -I tools/prepare_blood.py --project <blood_overhaul_rtx> --out out/r20c/prepared
+python -I tools/prepare_blood.py --project <blood_overhaul_rtx> --out out/r21a/prepared
 The output is an import-ready part tree plus a provenance/exclusion audit. See prepare_blood.py.md.
 """
 from __future__ import annotations
@@ -18,6 +18,9 @@ PATTERNS = frozenset('arterial_trail castoff_sweep dark_core_halo directional_sp
                      'drip_runs drops_scatter heavy_splash impact_dense long_swipe mist_cloud pooled_smear '
                      'ring_spatter shotgun_clusters sparse_mist spray_fan streak_web torn_blotches'.split())
 FAMILIES = {'red': (1, 1, 1), 'alien': (.78, .70, .24), 'green': (.43, .55, .12), 'worker': (.67, .82, .14)}
+ORIGINALS = {f'bo_blood{i}': units for i, units in enumerate((41, 51.2, 61.4, 41, 51.2, 41, 45.1, 24.6), 1)}
+MAPS = PATTERNS | ORIGINALS.keys() | {f'{family}{i}' for family in ('flesh', 'alienflesh') for i in range(1, 6)} | {
+    f'bo_yblood{i}' for i in range(1, 7)} | {f'bloodstain_{i}' for i in ('001', '002', '003', '003b', '101')}
 
 
 def sha(path: Path) -> str:
@@ -25,21 +28,27 @@ def sha(path: Path) -> str:
 
 
 def select_shapes(manifest: dict) -> list[dict]:
-    shapes = [s for s in manifest['shapes'] if s['key'] in PATTERNS]
-    if len(shapes) != len(PATTERNS) or {s['key'] for s in shapes} != PATTERNS:
-        raise ValueError('expected each of the eighteen owned patterns exactly once')
+    keys = PATTERNS | ORIGINALS.keys()
+    shapes = [s for s in manifest['shapes'] if s['key'] in keys]
+    if len(shapes) != len(keys) or {s['key'] for s in shapes} != keys:
+        raise ValueError('expected each of the twenty-six patterns exactly once')
     for shape in shapes:
-        if shape['kind'] != 'pool' or shape['units'] <= 0:
-            raise ValueError('invalid owned pattern')
+        if shape['kind'] != 'pool' or shape['units'] <= 0 or len(shape['size']) != 2 or min(shape['size']) <= 0:
+            raise ValueError('invalid pattern')
+        if shape['key'] in ORIGINALS and shape['units'] != ORIGINALS[shape['key']]:
+            raise ValueError('original shape world size differs from the published shape list')
         textures = shape['textures']
         expected = {f'decals/bloodoverhaul/tex/{shape["key"]}', f'decals/bloodoverhaul/tex/{shape["key"]}_n'}
-        if len(textures) != 2 or {t['tex'] for t in textures} != expected or any(t.get('original') for t in textures):
-            raise ValueError('owned pattern references an original or unexpected game texture')
+        if shape['key'] in ORIGINALS:
+            expected.add('decals/blood' + shape['key'].removeprefix('bo_blood'))
+        if len(textures) != len(expected) or {t['tex'] for t in textures} != expected:
+            raise ValueError('pattern references an unexpected game texture')
         for texture in textures:
             for algorithm in ('xxh64', 'xxh3'):
                 if not re.fullmatch(r'0x[0-9A-Fa-f]{16}', texture['hash'][algorithm]):
                     raise ValueError('invalid texture hash')
-    return sorted(shapes, key=lambda s: s['key'])
+    # The original eight lead the list: variety off preserves bloodN's requested shape.
+    return sorted(shapes, key=lambda s: (s['key'] not in ORIGINALS, s['key']))
 
 
 def selected_layer(layer: str, shapes: list[dict]) -> str:
@@ -59,11 +68,11 @@ def selected_layer(layer: str, shapes: list[dict]) -> str:
         allowed = {s['key'] + suffix for s in shapes for suffix in ('.a', '_n.a', '.n', '.r')}
         paths = re.findall(r'@\./textures/([^@]+)\.rtex\.dds@', block)
         if len(paths) != 3 or any(p not in allowed for p in paths):
-            raise ValueError('material block references an excluded/unknown DDS')
+            raise ValueError('material block references an unknown DDS')
         blocks[key] = block
     if set(blocks) != wanted:
-        raise ValueError('missing owned material hash')
-    return ('#usda 1.0\n(\n    doc = "Only the eighteen owned AI-generated Blood Overhaul RTX patterns."\n'
+        raise ValueError('missing material hash')
+    return ('#usda 1.0\n(\n    doc = "Blood Overhaul resources by permission, with SheepyLord PBR and analytic impacts."\n'
             '    upAxis = "Z"\n)\nover "RootNode"\n{\n    over "Looks"\n    {\n' +
             '\n'.join(blocks[key] for key in sorted(blocks)) + '\n    }\n}\n')
 
@@ -112,30 +121,63 @@ def prepare(project: Path, output: Path) -> dict:
         raise ValueError('output must be a new folder under this worktree/out, outside the source')
     if output.exists():
         raise ValueError('output already exists; choose a new folder')
-    shapes = select_shapes(json.loads((project / 'work/manifest.json').read_text(encoding='utf-8')))
-    source_addon, source_mod = project / 'dist/addon_companion', project / 'dist/remix_mod/blood_overhaul_rtx'
-    layer = selected_layer((source_mod / 'replacements.usda').read_text(encoding='utf-8'), shapes)
+    manifest = json.loads((project / 'work/manifest.json').read_text(encoding='utf-8'))
+    shapes = select_shapes(manifest)
+    maps = manifest['shapes']
+    if len(maps) != len(MAPS) or {s['key'] for s in maps} != MAPS:
+        raise ValueError('unexpected or missing PBR shape')
+    source_addon, source_mod = project / 'dist/addon', project / 'dist/remix_mod/blood_overhaul_rtx'
+    layer = selected_layer((source_mod / 'replacements.usda').read_text(encoding='utf-8'), maps)
+    referenced = set(re.findall(r'@\./textures/([^@]+)@', layer))
+    available = {p.name for p in (source_mod / 'textures').glob('*.dds')}
+    if referenced != available:
+        raise ValueError('PBR DDS inventory and material references differ')
+    md5s = {}
+    for line in (project / 'backup/blood_overhaul_md5.txt').read_text(encoding='utf-8-sig').splitlines():
+        match = re.fullmatch(r'([0-9a-fA-F]{32})\s+\*?\./(.+)', line)
+        if not match:
+            raise ValueError('invalid original MD5 inventory line')
+        md5s[match[2].lower()] = match[1].lower()
     addon, mod = output / 'nlblood', output / 'nl_blood_overhaul_rtx'
-    selected = {}
+    selected, generated = {}, {}
+
+    def authorship(source: Path):
+        rel = source.relative_to(source_addon).as_posix() if source.is_relative_to(source_addon) else ''
+        if rel.lower() in md5s:
+            original = md5s[rel.lower()]
+            same = hashlib.md5(source.read_bytes()).hexdigest() == original
+            return {'authorship': 'Crunchy unchanged' if same else 'Crunchy file modified by SheepyLord',
+                    'original_md5': original, 'matches_original_md5': same}
+        if any(key in source.name for key in PATTERNS):
+            return {'authorship': 'SheepyLord AI-generated pattern or its PBR/material'}
+        if source.suffix.lower() in ('.vtf', '.dds'):
+            return {'authorship': 'SheepyLord conversion/PBR derived from Crunchy resources'}
+        return {'authorship': 'SheepyLord material, Lua data or layer'}
 
     def copy(source: Path, target: Path):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-        selected[source.relative_to(project).as_posix()] = {'sha256': sha(source), 'to': target.relative_to(output).as_posix()}
+        selected[source.relative_to(project).as_posix()] = {
+            'sha256': sha(source), 'to': target.relative_to(output).as_posix(),
+            'reason': 'source bytes included with the resource author\'s permission' if source.suffix.lower() in ('.dds', '.vtf')
+                      else 'published source bytes retained', **authorship(source)}
 
     def text(target: Path, body: str):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(body, encoding='utf-8', newline='\n')
+        generated[target.relative_to(output).as_posix()] = {'sha256': sha(target), 'reason': 'private package material, data or layer'}
 
+    for source in sorted((source_addon / 'materials').rglob('*')):
+        if source.is_file() and 'particle/bo_droplets/' not in source.as_posix():
+            if source.suffix.lower() not in ('.vmt', '.vtf'):
+                raise ValueError('unexpected add-on asset')
+            copy(source, addon / source.relative_to(source_addon))
+    for name in sorted(referenced):
+        copy(source_mod / 'textures' / name, mod / 'textures' / name)
     for shape in shapes:
         key = shape['key']
-        for suffix in ('', '_n'):
-            rel = Path(f'materials/decals/bloodoverhaul/tex/{key}{suffix}.vtf')
-            copy(source_addon / rel, addon / rel)
-        for suffix in ('.a', '_n.a', '.n', '.r'):
-            rel = Path(f'textures/{key}{suffix}.rtex.dds')
-            copy(source_mod / rel, mod / rel)
-        for family in FAMILIES:
+        # Published red/alien VMTs stay byte-identical. R20-C adds the other species.
+        for family in ('green', 'worker'):
             tex = f'decals/bloodoverhaul/tex/{key}' + ('' if family == 'red' else '_n')
             for model in (False, True):
                 path = addon / f'materials/decals/bloodoverhaul/{family}/{key}'
@@ -145,7 +187,7 @@ def prepare(project: Path, output: Path) -> dict:
     copy(scheme_source, addon / 'lua/nlblood/schemes.lua')
     text(addon / 'lua/nlblood/shapes.lua', 'return {\n' + ''.join(
         f'    {{ key = "{s["key"]}", units = {s["units"]:g} }},\n' for s in shapes) + '}\n')
-    text(addon / 'addon.json', json.dumps({'title': 'Blood Overhaul RTX: owned patterns', 'type': 'effects', 'tags': ['realism']}, indent=2))
+    text(addon / 'addon.json', json.dumps({'title': 'Blood Overhaul RTX', 'type': 'effects', 'tags': ['realism']}, indent=2))
     text(mod / 'replacements.usda', layer)
     text(mod / 'mod.usda', '#usda 1.0\n(\n    customLayerData = {\n'
          '        string lightspeed_game_name = "Garry\'s Mod (x64)"\n'
@@ -156,20 +198,40 @@ def prepare(project: Path, output: Path) -> dict:
         path = addon / f'materials/particle/nlfluid/{name}.vtf'
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(procedural_vtf(size, name == 'mist'))
+        generated[path.relative_to(output).as_posix()] = {'sha256': sha(path), 'reason': 'unchanged R20-C analytic sprite; no source image'}
     excluded = {}
-    for folder in (source_addon, source_mod):
-        for path in sorted(folder.rglob('*')):
-            if not path.is_file() or path.relative_to(project).as_posix() in selected:
-                continue
-            rel = path.relative_to(project).as_posix()
-            reason = ('Crunchy original or derivative, including the old blood8 droplet' if path.suffix.lower() in ('.vtf', '.dds')
-                      else 'replaced with owned-only generated materials, private Lua or a filtered USD layer')
-            excluded[rel] = {'sha256': sha(path), 'reason': reason}
-    audit = {'schema': 1, 'project': str(project), 'patterns': sorted(PATTERNS), 'selected': selected, 'excluded': excluded,
-             'note': 'New generated shapes used Crunchy textures as style references; no reference pixels/files are distributed. '
-                     'Original/derived bo_*, flesh, alienflesh, stains and old droplet excluded. No dependency on Crunchy.'}
+    copy(project / 'tools/prompts.json', output / 'prompts.json')
+    transformed = {
+        'dist/addon/lua/bloodoverhaul/sh_shapes.lua': 'world sizes retained in private shapes.lua; legacy global code replaced',
+        'dist/remix_mod/blood_overhaul_rtx/replacements.usda': 'all hash overrides retained with lazy loading, plus R20-C sprites',
+        'dist/remix_mod/blood_overhaul_rtx/mod.usda': 'private Remix mod identity prevents a collision with the legacy folder',
+    }
+    for path in sorted(project.rglob('*')):
+        if not path.is_file() or path.relative_to(project).as_posix() in selected:
+            continue
+        rel = path.relative_to(project).as_posix()
+        if rel in transformed:
+            reason = transformed[rel]
+        elif 'particle/bo_droplets/' in rel:
+            reason = 'unused old blood8-derived droplet replaced by R20-C analytic sprites'
+        elif path.is_relative_to(source_addon) and path.suffix == '.lua':
+            reason = 'legacy mixer/menu replaced by the companion private implementation'
+        elif path.is_relative_to(source_addon) and path.name == 'addon.json':
+            reason = 'package identity replaces standalone add-on metadata'
+        else:
+            reason = 'development/source/reference/backup or duplicate distribution output; not a runtime input'
+        excluded[rel] = {'sha256': sha(path), 'reason': reason}
+    audit = {'schema': 2, 'project': str(project), 'patterns': [s['key'] for s in shapes],
+             'permission': {'author': 'Crunchy', 'workshop': '2683396098', 'reported_by': 'SheepyLord',
+                            'date': '2026-11-06', 'distribution_workshop': '3829070317',
+                            'statement': "SheepyLord reported the resource author's permission and asked for the resources "
+                                         "to be packaged and published with this project's RTX package, whose inputs this public repository holds.",
+                            'terms': "Terms were not provided; the resources and derivatives remain the author's, outside MIT; no general licence is granted."},
+             'selected': selected, 'excluded': excluded, 'generated': generated,
+             'note': 'Audit covers every source-project file. Eighteen AI-generated patterns used Crunchy style references; '
+                     'reference images do not ship. All selected source bytes are unchanged. Stock blood materials now ship. '
+                     'Original MD5 comparisons distinguish unchanged Crunchy files from the user\'s edits.'}
     text(output / 'provenance.json', json.dumps(audit, indent=2, ensure_ascii=True) + '\n')
-    shutil.copy2(project / 'tools/prompts.json', output / 'prompts.json')
     return audit
 
 

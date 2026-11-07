@@ -1,3 +1,7 @@
+Scope: this MIT licence covers this project's owned code and assets only. Crunchy's Blood Overhaul
+resources and all textures/PBR derived from them are excluded; see licenses/CRUNCHY-RESOURCES.txt
+(shipped beside CREDITS.txt as CRUNCHY-RESOURCES.txt).
+
 MIT License
 
 Copyright (c) 2026 SheepyLord

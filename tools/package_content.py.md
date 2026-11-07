@@ -16,7 +16,7 @@ It builds:
   - `Remove_halo`;
   - the user's five add-ons, among them Model Hotloader with its natives
     ([ADR 0024](../docs/decisions/0024-bundled-addons-and-module-dependencies.md)).
-  - R20-C's Dynamic Toolgun Screen and owned-only Blood Overhaul RTX parts. The blood controller
+  - R20-C's Dynamic Toolgun Screen and Blood Overhaul RTX parts (R21-A adds Crunchy's resources by permission). The blood controller
     and coexistence bootstrap are attached from the maintained companion sources; the latter also
     ships with the screen. Duplicate virtual paths have identical bytes in the combined package.
 

@@ -14,7 +14,8 @@ Requires Python xxhash and NVIDIA's installed NVTT export CLI for **asset prepar
 package builds use the indexed outputs and need neither dependency. Writes only under this
 worktree's out: two DDSs, a marked idempotent section of replacements.usda and a PNG/hash provenance
 record in particle-pbr-work. It never changes a VTF, package input, game, runtime option or source
-project. Import only final DDSs with `inputs.py import` after visual verification.
+project. If the sibling `provenance.json` has preparation schema 2, refreshes its final layer/DDS
+generated hashes. Import only final DDSs with `inputs.py import` after visual verification.
 
 Opacity comes from the authored coverage rather than a legacy modulate state. Metallic is zero,
 roughness .18; a small scene-adaptive intrinsic fill (`--adaptive`, default .05, range 0–1) retains

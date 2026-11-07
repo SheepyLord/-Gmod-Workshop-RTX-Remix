@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import struct
@@ -99,6 +100,16 @@ def build(addon: Path, mod: Path, nvtt: Path, adaptive: float = .05) -> dict:
     text = text[:-len('    }\n}\n')] + BEGIN + ''.join(blocks) + END + '    }\n}\n'
     layer.write_text(text, encoding='utf-8', newline='\n')
     (work / 'provenance.json').write_text(json.dumps(records, indent=2, ensure_ascii=True) + '\n', encoding='utf-8')
+    # Keep the preparation audit's generated hashes true after appending the sprite materials.
+    audit_path = mod.parent / 'provenance.json'
+    if audit_path.is_file():
+        audit = json.loads(audit_path.read_text(encoding='utf-8'))
+        if audit.get('schema') == 2:
+            for path in (layer, *(mod / f'textures/nlfluid_{name}.a.rtex.dds' for name in records)):
+                audit['generated'][path.relative_to(mod.parent).as_posix()] = {
+                    'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                    'reason': 'final layer or analytic sprite opacity DDS, prepared by prepare_blood_particles.py'}
+            audit_path.write_text(json.dumps(audit, indent=2, ensure_ascii=True) + '\n', encoding='utf-8', newline='\n')
     return records
 
 

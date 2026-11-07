@@ -1,8 +1,9 @@
 "VertexLitGeneric"
 {
-    "$basetexture" "decals/bloodoverhaul/tex/shotgun_clusters_n"
-    "$decal" "1"
-    "$translucent" "1"
-    "$decalscale" "0.056641"
-    "$color2" "[0.780 0.700 0.240]"
+	// Blood Overhaul RTX: alien blood splat, tinted at runtime (on models)
+	"$basetexture" "decals/bloodoverhaul/tex/shotgun_clusters_n"
+	"$decal" "1"
+	"$translucent" "1"
+	"$decalscale" "0.0566"
+	"$color2" "[0.780 0.700 0.240]"
 }
