@@ -64,3 +64,11 @@ whole hint, so that game had shown no advice at all; the notice now shows regard
 - **The loader change reaches players with a loader release.** Loader 0.16.0 is built and tested here;
   releasing it (a `v0.16.0` tag, then the package record) needs the user's go-ahead.
 - The package change (the notice) is published with this round's push of `main`, as a local build.
+
+## Published (2026-11-07 UTC)
+
+`main` was pushed at `156138d` (two Git LFS objects, the refreshed modules). The merge's hook built the
+package here and uploaded it to item 3829070317 as **0.0.0-dev.20261107074707+ea3267dc** (2,181,716,693
+bytes, SHA-256 `23a3b3a80b321514b356b0f62d111277523f609a5185318cc7e1c53ec9c3a29a`); Steam's public record
+shows that size, updated 07:47:43 UTC. The notice reaches players with it; the loading window needs loader
+0.16.0, which is not released yet.
