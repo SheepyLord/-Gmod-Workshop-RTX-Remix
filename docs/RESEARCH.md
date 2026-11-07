@@ -5866,3 +5866,24 @@ build 26439081, RTX on); evidence under each task worktree's `out/r21a*`, `out/r
 - **Size of the complete blood part**: 550 indexed inputs, 272 binaries, 365.2 MB uncompressed, 109.4 MB
   compressed (R20: 261, 112, 138.7 MB, 55.5 MB); the package grows by 226.6 MB to 1,746 files,
   2.18 GB.
+
+## After R21: GPU timeouts around a 4K map load (2026-11-06)
+
+From [R21-C](handover/R21-C-report.md); evidence in the main checkout's `out/field-stuck-20261106/` and
+`out/worktrees/r21-device-loss/out/r21c/`.
+
+- A Remix "device lost" here is a Windows GPU timeout: nvlddmkm event 153, twice two seconds apart
+  (`\Device\Video3`, "Error occurred on GPUID: 100"), then `VK_ERROR_DEVICE_LOST` about five seconds after
+  the first; this machine's WER LiveKernelEvent reports are code 141 (video engine timeout). The registry
+  has no `TdrDelay`, so Windows' two-second default applies. 74 such events in the 14 days before.
+- Remix's GPU-crash prompt (`util_sentry.cpp` `promptGpuCrashConsent`, `MB_YESNO | MB_TOPMOST`, no owner)
+  keeps the game on its last frame until answered; a player sees a frozen loading screen.
+- `remix-dxvk.log` stays 0 bytes on disk while the game runs and is written at exit (397,703 bytes after
+  the prompt was declined in the field).
+- The field's timeout came three seconds after the map's first ray-traced frames (NRC activated at
+  22:59:42, an Opacity Micromap texel-tap warning at 22:59:44.751, timeout at 22:59:45). The PoC's came
+  34 s after start, after the map command, with no acceleration structures or micromaps yet (frame 4110,
+  3.7 GB in use).
+- `dxvk.enableAftermath = True` logs "Aftermath enabled", but the PoC timeout wrote no `.nv-gpudmp`.
+- A fresh install still reads `%LOCALAPPDATA%\NVIDIA\RTXRemix\user_settings\<hash>.conf` first (the
+  user's diagnostics choices): deleting the game's files leaves it in place.

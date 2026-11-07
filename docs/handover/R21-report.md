@@ -51,6 +51,9 @@ about 226.6 MB (1,746 files, about 2.18 GB). Remix replacement textures still lo
   materials follow the schemes. The package's own VMTs do the full job; the subscription is no longer
   needed. The field still has Crunchy's item subscribed and the legacy `Blood Overhaul` folder; both
   are the user's to remove or keep.
+- **The 4K GPU timeout during a map load** ([R21-C](R21-C-report.md)): the user's fresh-install field
+  start timed out in the map's first ray-traced frames; one of five PoC starts timed out before them.
+  Closed by the user as not reproducible; the cause is not established.
 - Carried from R20: the darker stock ragdoll blood cloud under RTX, and R20-A's two unreproduced 4K
   device losses.
 

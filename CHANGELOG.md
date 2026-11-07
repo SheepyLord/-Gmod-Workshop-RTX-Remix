@@ -8,6 +8,12 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ### R21
 
+- **After R21: the 4K GPU timeout during a map load, investigated and closed** ([R21-C](docs/handover/R21-C-report.md)):
+  the user's "stuck" fresh-install map load was a GPU timeout and driver reset (nvlddmkm 153, WER code
+  141) followed by Remix's GPU-crash prompt, which held the loading screen. Five counted 3840x2160 PoC
+  starts gave one more timeout, before any ray-traced frame of the map; Aftermath wrote no dump. The
+  user closed the task as not reproducible; the cause is not established and nothing shipped changed.
+  New: `tools/aftermath_decode.py`, which decodes an Aftermath GPU crash dump with the runtime's library.
 - **Blood Overhaul's resources ship in the package, by permission** ([ADR 0124](docs/decisions/0124-blood-overhaul-resources-by-permission.md),
   [R21-A](docs/handover/R21-A-report.md); the user reported the author's permission on 2026-11-06 and
   asked for them to be packaged and published): the `blood-overhaul-rtx` part adds Crunchy's textures,
