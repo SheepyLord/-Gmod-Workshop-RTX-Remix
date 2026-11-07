@@ -1,6 +1,10 @@
 # Handovers
 
-The latest round is R20, the user's report of 2026-11-06 (items 44-51), loader 0.15.0:
+The latest round is R21, the user's two requests after R20's release (Blood Overhaul's resources by
+permission; no Hotloader warning after game updates): [R21-report.md](R21-report.md), with its
+[plan](R21-plan.md) and the task reports ([A](R21-A-report.md), [B](R21-B-report.md)).
+
+Before it, R20, the user's report of 2026-11-06 (items 44-51), loader 0.15.0:
 [R20-report.md](R20-report.md), with its [plan](R20-plan.md) and the task reports
 ([A](R20-A-report.md), [B](R20-B-report.md), [C](R20-C-report.md), [D](R20-D-report.md),
 [E](R20-E-report.md), [Q](R20-Q-report.md)), then the field check of the published package

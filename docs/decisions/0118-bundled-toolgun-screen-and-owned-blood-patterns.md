@@ -1,6 +1,8 @@
 # ADR 0118: Bundle the user's screen and owned blood patterns
 
-Status: accepted (R20-C, the user's item 48). Date: 2026-11-06.
+Status: accepted (R20-C, the user's item 48). Date: 2026-11-06. Superseded in part by
+[ADR 0124](0124-blood-overhaul-resources-by-permission.md) (R21-A): with the author's permission, which
+the user reported, Crunchy's resources, the PBR made from them and the stock-name decal files now ship.
 
 The combined RTX package gains `toolgun-screen` and `blood-overhaul-rtx`. The screen keeps Dynamic
 Toolgun Screen 1.3.1, its thirteen language catalogs and its existing settings. Its tool panel moves

@@ -6,6 +6,29 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### R21
+
+- **Blood Overhaul's resources ship in the package, by permission** ([ADR 0124](docs/decisions/0124-blood-overhaul-resources-by-permission.md),
+  [R21-A](docs/handover/R21-A-report.md); the user reported the author's permission on 2026-11-06 and
+  asked for them to be packaged and published): the `blood-overhaul-rtx` part adds Crunchy's textures,
+  the stock-name decal files as the user's own add-on ships them (blood1..8, yblood1..6 and subrects,
+  stains, flesh, alien flesh, antlion impacts) and all PBR made from them: 179 DDS maps, 186 material
+  entries in both hash kinds. The engine's own blood now looks like Blood Overhaul with wet PBR; the
+  mixer draws 26 shapes (the eight originals first) in red, yellow, green and worker blood; colour
+  schemes reach the engine's blood materials as the original add-on did, and the master switch restores
+  what it changed (packaged textures stay until the package is removed). Credits and a shipped notice
+  name Crunchy (Workshop 2683396098); those resources stay the author's, outside the MIT licence.
+  Crunchy's own subscription is no longer needed. 160 new Git LFS objects (51.36 MiB); the package
+  grows by about 226.6 MB.
+- **No Model Hotloader warning about the game's build** ([ADR 0125](docs/decisions/0125-hotloader-game-build-findings-are-diagnostics.md),
+  [R21-B](docs/handover/R21-B-report.md); the user's decision to assume the Hotloader keeps working
+  across GMod updates): the package's install check keeps game-build findings for diagnostics and one
+  console line per realm, with no banner, notice or Dismiss, for build 26439081 and later builds. The
+  natives, their guards and every other warning are unchanged.
+- **Fixed during review**: restoring blood materials by texture object left the engine's own decals
+  missing under RTX (now by name), a material reached through two Lua objects was restored from the
+  wrong baseline, and enabled scheme changes are back on R20's paint-only path.
+
 ### After R20: the part folders' READMEs keep the release on the Workshop item
 
 - **A commit of only `packages/README.md` or a part folder's `README.md` no longer replaces a release

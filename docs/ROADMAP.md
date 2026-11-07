@@ -1,5 +1,14 @@
 # Roadmap
 
+R21 (the user's two requests after R20's release, 2026-11-06) is **done** on `r21-int`
+([plan](handover/R21-plan.md), [report](handover/R21-report.md)): Blood Overhaul's resources and the PBR
+made from them ship in the `blood-overhaul-rtx` part by the author's permission, which the user reported
+([ADR 0124](decisions/0124-blood-overhaul-resources-by-permission.md)), so the engine's own blood looks like
+Blood Overhaul under RTX and the mixer draws 26 shapes; the Model Hotloader shows no warning about the
+game's build, now or after later updates
+([ADR 0125](decisions/0125-hotloader-game-build-findings-are-diagnostics.md)). No loader change; the
+package update is published to item 3829070317 as a local build.
+
 R20 (the user's report of 2026-11-06, items 44-51) is **done** on `r20-int`, with loader **0.15.0**
 ([plan](handover/R20-plan.md), [report](handover/R20-report.md)): particle and decal add-ons such as
 Physics Blood display correctly under RTX (session-only effect categories, runtime patches 0034 and

@@ -1,21 +1,5 @@
 # Decision records
 
-- [0115: Published loader record and reminders](0115-released-loader-record-and-reminders.md)
-  (R20-A, item 46; accepted 2026-11-06).
-- [0116: Multiplayer entry warning](0116-multiplayer-entry-warning.md)
-  (R20-A, item 50; accepted 2026-11-06).
-- [0123: live effective upscaling readback](0123-live-upscaling-readback.md) (R20-E): runtime-owned
-  atomic game-value snapshot, defensive native Lua getter and explicit pending-patch provenance.
-- [0126: A record of what this repository's own modules were built from](0126-a-record-of-what-this-repositorys-modules-were-built-from.md)
-  (after R20-Q; accepted 2026-11-06): `pins.json` `repository_builds` declares each module's sources and
-  records them with the stored copy; `check_repo.py` fails while they differ; `tools/ci/repo_builds.py
-  refresh` builds, compares and imports only another image.
-- [0127: The part folders' own READMEs do not end the release hold](0127-part-folder-readmes-keep-the-release.md)
-  (after R20; accepted 2026-11-06; amends review R19's hold on 0108's development path):
-  `publish_workshop.py` leaves `packages/README.md` and `packages/<part>/README.md` out of the hold's
-  comparisons and the check for uncommitted inputs; every other file under `packages/` still counts, and
-  the fingerprint is unchanged.
-
 One file per decision, numbered in order: `NNNN-short-title.md`. An accepted record is never
 rewritten; a later record supersedes it and both say so. Add one whenever a choice would surprise
 someone reading the code later, or when [AGENTS.md](../../AGENTS.md) rules change.
@@ -165,12 +149,26 @@ Each with the reason it lost.
 - [0112: The RTX fixes' Lua functions keep paths in the game, and ToPBR follows the player's settings](0112-fixes-lua-apis-stay-in-the-game-and-follow-the-player.md) (R19 H3, the pre-release review).
 - [0113: Every Actions artifact expires after two days](0113-every-actions-artifact-expires-after-two-days.md) (after R19, the user; amends decision 1 of 0017 and decisions 3 and 4 of 0106).
 - [0114: The loader's workflow runs only for a release or when a person starts it](0114-the-loader-workflow-runs-only-for-a-release-or-by-hand.md) (after R19, the user; amends decision 1 of 0017: no push or pull request starts `build.yml`).
-
-- [0120: Every camera closer consumes the guard's matching scope](0120-camera-closers-share-the-guards-stack.md) (R20-D, dupe icons and camera aliases).
-
-- [0121: Source effect categories for this session](0121-source-effect-categories-for-the-session.md) (R20-D, automatic particle/decal and blended-mesh tags).
-- [0122: Offscreen raster canvases keep their native draws](0122-raster-canvases-keep-their-native-draws.md) (R20-D, alpha masks and post-injection canvas updates).
+- [0115: Published loader record and reminders](0115-released-loader-record-and-reminders.md)
+  (R20-A, item 46; accepted 2026-11-06).
+- [0116: Multiplayer entry warning](0116-multiplayer-entry-warning.md)
+  (R20-A, item 50; accepted 2026-11-06).
+- [0117: A capability-aware startup hint and a running 20-minute sky day](0117-startup-upscaling-hint-and-sky-defaults.md) (R20-B, items 45 and 49; the native live snapshot followed in 0123).
 - [0118: Bundle the user's screen and owned blood patterns](0118-bundled-toolgun-screen-and-owned-blood-patterns.md) (R20-C, item 48; provenance boundaries and coexistence).
 - [0119: Client blood impacts with bounded spatter](0119-client-blood-impacts-with-bounded-spatter.md) (R20-C; stock fallback, normal particle/decal paths and budgets).
+- [0120: Every camera closer consumes the guard's matching scope](0120-camera-closers-share-the-guards-stack.md) (R20-D, dupe icons and camera aliases).
+- [0121: Source effect categories for this session](0121-source-effect-categories-for-the-session.md) (R20-D, automatic particle/decal and blended-mesh tags).
+- [0122: Offscreen raster canvases keep their native draws](0122-raster-canvases-keep-their-native-draws.md) (R20-D, alpha masks and post-injection canvas updates).
+- [0123: live effective upscaling readback](0123-live-upscaling-readback.md) (R20-E): runtime-owned
+  atomic game-value snapshot, defensive native Lua getter and explicit pending-patch provenance.
 - [0124: Blood Overhaul resources and their PBR ship by permission](0124-blood-overhaul-resources-by-permission.md) (R21-A; supersedes 0118's resource exclusions and stock-material policy).
 - [0125: Model Hotloader game-build findings are diagnostics](0125-hotloader-game-build-findings-are-diagnostics.md) (R21-B, the user accepts current and future game updates; no warning or per-build validation task).
+- [0126: A record of what this repository's own modules were built from](0126-a-record-of-what-this-repositorys-modules-were-built-from.md)
+  (after R20-Q; accepted 2026-11-06): `pins.json` `repository_builds` declares each module's sources and
+  records them with the stored copy; `check_repo.py` fails while they differ; `tools/ci/repo_builds.py
+  refresh` builds, compares and imports only another image.
+- [0127: The part folders' own READMEs do not end the release hold](0127-part-folder-readmes-keep-the-release.md)
+  (after R20; accepted 2026-11-06; amends review R19's hold on 0108's development path):
+  `publish_workshop.py` leaves `packages/README.md` and `packages/<part>/README.md` out of the hold's
+  comparisons and the check for uncommitted inputs; every other file under `packages/` still counts, and
+  the fingerprint is unchanged.

@@ -5833,3 +5833,36 @@ pathspecs `packages ':(exclude)packages/README.md' ':(exclude,glob)packages/*/RE
   (`collect(..., docs=True)`); `companion_i18n.extract()` walks `packages/` for
   `.lua` files only. Everything else comes from `out/inputs/<part>/`, which `inputs.unpack` writes from
   each part's index alone.
+
+## R21: Blood Overhaul's materials under RTX, and the Hotloader's check on build 26439081 (2026-11-06)
+
+Measured by [R21-A](handover/R21-A-report.md) and [R21-B](handover/R21-B-report.md) in the PoC (GMod
+build 26439081, RTX on); evidence under each task worktree's `out/r21a*`, `out/r21b`.
+
+- **Shader names under the RTX fixes' DX6 path.** `IMaterial:GetShader()` reports the fallback in use:
+  the engine's blood subrect resolves to the package's world decal as `LightmappedGeneric_DX6`, or to
+  Crunchy's original as `DecalModulate_dx6` when that copy wins. A substring test
+  on the lower-cased name (`lightmappedgeneric`, `vertexlitgeneric`) finds the tintable ones.
+- **Which copy of a shared material name wins** among legacy add-on folders follows the folder names:
+  with Crunchy's files in a folder named `aaa...` and a legacy copy in `bbb...`, Crunchy's modulate VMTs
+  won over the package's `nlblood`; named `zzz...`/`yyy...`, the package's alpha VMTs won. Where
+  Crunchy's win, engine blood stays visible under RTX with its PBR (the layer also keys Crunchy's
+  original texture hashes, with explicit opacity) but keeps its natural colours.
+- **Rebinding a texture.** Restoring `$basetexture` with the `ITexture` object saved earlier left the
+  engine's own blood decals missing under RTX; `SetTexture` with the texture's name works. Skipping
+  `SetTexture` because the current texture already has that name also failed the RTX visual probe: the
+  binding calls must be made. Two Lua `IMaterial` objects can wrap one engine material: key snapshots by
+  `GetName()`.
+- **Restoring every used material and painting it again** on each enabled scheme change was R21-A's
+  first design; R20's paint-only path (restore only when the master switch goes off) is what ships.
+- **Small droplet stains on a stock white floor plate** do not show in PoC captures with the published
+  v0.15.0 package or with R21, though the landing traces and `util.DecalEx` calls are counted (citizen
+  floor, cumulative: 64/198/331/454 in R20 across clear epochs). Wall, cube, NPC and engine decals
+  render. Cause not established.
+- **The Hotloader's game check on build 26439081**: the client's report marks `engine.dll`,
+  `client.dll`, `materialsystem.dll` and `shaderapidx9.dll` as unverified with no interface findings;
+  the server's `vphysics.dll` matches its profile. Imported characters load and render (53 live draws,
+  draw age 0) with the published natives.
+- **Size of the complete blood part**: 550 indexed inputs, 272 binaries, 365.2 MB uncompressed, 109.4 MB
+  compressed (R20: 261, 112, 138.7 MB, 55.5 MB); the package grows by 226.6 MB to 1,746 files,
+  2.18 GB.

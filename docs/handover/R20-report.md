@@ -61,6 +61,9 @@ branch: 27 native tests, 710 Python tests.
 - **The Model Hotloader's compatibility notice**: its native release lists tested engine hashes that
   predate GMod build 26439081 (Steam's update of 2026-11-05), so it shows a notice and runs anyway.
   Validating its natives on the new build and regenerating that evidence is a task of its own.
+  **Dropped after R20** by the user's decision ([ADR 0125](../decisions/0125-hotloader-game-build-findings-are-diagnostics.md),
+  [R21-B](R21-B-report.md)): the Hotloader is assumed to keep working across game updates, and the
+  package's install check reports game-build findings only on the console.
 - **Modules built from this repository** (`repository_builds` in `tools/ci/pins.json`) have no record
   tying the stored input to its source, unlike the runtime's `base.json` `packaged`; nothing caught
   the stale bootstrap. A check like the runtime's would.
