@@ -53,3 +53,13 @@ about 226.6 MB (1,746 files, about 2.18 GB). Remix replacement textures still lo
   are the user's to remove or keep.
 - Carried from R20: the darker stock ragdoll blood cloud under RTX, and R20-A's two unreproduced 4K
   device losses.
+
+## Published (2026-11-07 UTC)
+
+`main` was pushed at `87cd8b2` (160 new Git LFS objects, 54 MB). The merge's hook built the package
+here from `packages/` and uploaded it to item 3829070317 as **0.0.0-dev.20261107011558+809ceec2**
+(2,181,712,520 bytes, SHA-256 `b4056946da48225d89769fbd1f430d2caedc44cfb0e9ebf0202d7400873b49c5`);
+the push's hook found the same inputs. Steam's public record of the item shows that size, updated at
+01:16:45 UTC. The item had held the v0.15.0 release built on GitHub; this development build carries the
+binaries stored in `packages/` (ADR 0108). Steam had not yet downloaded it into the user's library ten
+minutes later: the game's next start fetches it.
