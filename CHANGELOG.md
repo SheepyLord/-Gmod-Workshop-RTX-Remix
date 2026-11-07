@@ -6,6 +6,20 @@ Versions follow the loader's CMake project version once it ships; until then eve
 
 ## [Unreleased]
 
+### After R20: the part folders' READMEs keep the release on the Workshop item
+
+- **A commit of only `packages/README.md` or a part folder's `README.md` no longer replaces a release
+  on the Workshop item** ([ADR 0127](docs/decisions/0127-part-folder-readmes-keep-the-release.md)).
+  `tools/publish_workshop.py`'s release hold (review R19, M1) compared all of `packages/` with the
+  release commit, so such a commit ended it, and the next commit, merge or push of `main` built the
+  package here and uploaded it over the GitHub-built release, a full download for every subscriber.
+  The hold and the check for uncommitted inputs now leave those READMEs out
+  (`:(exclude)packages/README.md`, `:(exclude,glob)packages/*/README.md`): no packager reads them.
+  Every other file under `packages/` still counts, READMEs deeper in a part and `licenses/` included,
+  and the fingerprint is unchanged. The script also removes the variables that change how git reads
+  pathspecs (`GIT_LITERAL_PATHSPECS` and three more), and a test fails if a part's index, a part in
+  `workshop.json` or a packager ever reads one of those READMEs.
+
 ### After R20: a record of what this repository's own modules were built from
 
 - **`tools\check_repo.py` catches a stale build of the modules this repository compiles itself**

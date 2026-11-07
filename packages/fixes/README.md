@@ -17,6 +17,13 @@ The new input is 460,800 bytes, SHA-256
 Native source allowlisting and immutable catalog policy are unchanged. Rebuild/import this module
 when its linked config/catalog code changes; a local package build otherwise uses the stored input.
 
+After R20 its entry in `tools/ci/pins.json` `repository_builds` records what it was built from
+([ADR 0126](../../docs/decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)):
+`tools\check_repo.py` fails while `loader/client`, `loader/core`, LZMA, the GMod headers or the root
+CMake files differ from the record, and `python tools\ci\repo_builds.py refresh` rebuilds it, imports
+it if it is another image, and records it. A build of commit `a5a3ff1` in a folder of the same path
+length is the same image as this one, so the first record kept it.
+
 ## R19 Lua inputs, ToPBR switches and the flashlight
 
 Imported 2026-11-05 with `inputs.py --file`; every other indexed input is unchanged

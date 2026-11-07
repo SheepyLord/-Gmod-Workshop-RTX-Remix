@@ -17,7 +17,10 @@ package GitHub's workflow built for the release commit (run 42265333187) is on i
 After R20, its open item on modules built from this repository is **done**: `tools\check_repo.py` fails
 while the client or glass module stored in `packages/` is not what its recorded sources build, and
 `tools/ci/repo_builds.py refresh` rebuilds, compares and imports only another image
-([ADR 0126](decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)).
+([ADR 0126](decisions/0126-a-record-of-what-this-repositorys-modules-were-built-from.md)). A commit
+of only the part folders' own READMEs (`packages/README.md`, `packages/<part>/README.md`) no longer
+ends the release hold and replaces the release on the item
+([ADR 0127](decisions/0127-part-folder-readmes-keep-the-release.md)).
 
 R19 (the user's request of 2026-11-05 after the pre-release review: "All real findings, then test and
 publish a new release on Github and workshop") is **done** and released as **v0.14.0** with loader

@@ -9,7 +9,8 @@ its inputs unchanged since the last upload stops at once; one whose build matche
 For a release a person starts GitHub's package workflow, which builds the package with every native
 binary (ADR 0106, 0107); --from-ci then waits for that run of a commit, checks its .gma against the run's
 hash report and uploads exactly that file. While the item holds that release, a hook run whose commit
-has the release commit's packaging inputs uploads nothing (review R19, M1). See publish_workshop.py.md.
+has the release commit's packaging inputs uploads nothing (review R19, M1); the part folders' own READMEs
+are not among them (ADR 0127). See publish_workshop.py.md.
 """
 from __future__ import annotations
 
@@ -37,7 +38,11 @@ GIT_LOCAL_ENV = ('GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_CONFIG', 'GIT_CONFIG_P
                  'GIT_OBJECT_DIRECTORY', 'GIT_DIR', 'GIT_WORK_TREE', 'GIT_IMPLICIT_WORK_TREE', 'GIT_GRAFT_FILE',
                  'GIT_INDEX_FILE', 'GIT_NO_REPLACE_OBJECTS', 'GIT_REPLACE_REF_BASE', 'GIT_PREFIX', 'GIT_SHALLOW_FILE',
                  'GIT_COMMON_DIR')
-for _name in GIT_LOCAL_ENV:
+# How git reads pathspecs. NOT_IN_PACKAGE (below) needs git's own rules and magic: with
+# GIT_LITERAL_PATHSPECS it would name no file and the part folders' READMEs would count again, with
+# GIT_ICASE_PATHSPECS it would also leave out a part's readme.md, which a part may ship.
+GIT_PATHSPEC_ENV = ('GIT_LITERAL_PATHSPECS', 'GIT_GLOB_PATHSPECS', 'GIT_NOGLOB_PATHSPECS', 'GIT_ICASE_PATHSPECS')
+for _name in GIT_LOCAL_ENV + GIT_PATHSPEC_ENV:
     os.environ.pop(_name, None)
 
 
@@ -63,6 +68,15 @@ REPO_INPUTS = ('companion', 'packages', 'tools/inputs.py', 'tools/package_fixes.
                'tools/package_workshop.py', 'tools/package_content.py', 'tools/package_reshade.py', 'third_party/reshade',
                'tools/gmapack/gmapack.py', 'tools/workshop.json', 'tools/companion_i18n.py', 'LICENSE',
                'third_party/gmod/LICENSE', '.gitattributes', 'glass/addon', 'third_party/jolt/LICENSE')
+# What in packages/ is about the parts, not in them (ADR 0127): packages/README.md and each part folder's
+# own README.md, a name tools/inputs.py keeps for the folder itself (PART_DOCS), so no part has a file
+# there, and no packager reads them. A change to them alone leaves the package as it was, so the release
+# hold and the check for uncommitted inputs pass over them (SHIPPED_INPUTS). Git's glob magic keeps * in
+# one folder: a README.md deeper in a part ships with its add-on and still counts, as do a part's LICENSE,
+# COPYING and licenses/, which packagers ship (--add-to-addon). The fingerprint still covers them: it only
+# decides whether a run looks further.
+NOT_IN_PACKAGE = (':(exclude)packages/README.md', ':(exclude,glob)packages/*/README.md')
+SHIPPED_INPUTS = (*REPO_INPUTS, *NOT_IN_PACKAGE)
 BUILDERS = {'package_fixes': 'tools/package_fixes.py', 'package_runtime': 'tools/package_runtime.py',
             'package_content': 'tools/package_content.py', 'package_reshade': 'tools/package_reshade.py'}
 LOCK_WAIT = 2 * 60 * 60
@@ -137,7 +151,8 @@ def unpacked_input(text: str, repo: Path = REPO) -> bool:
 def fingerprint(config: dict, repo: Path = REPO) -> str:
     """Changes whenever an input of the item may have changed: this repository's packaging inputs
     (their tree in HEAD and any uncommitted change) and every other path a part names. Paths under
-    out/inputs are left out: they are derived from packages/, and depend on whether an unpack has run."""
+    out/inputs are left out: they are derived from packages/, and depend on whether an unpack has run.
+    NOT_IN_PACKAGE still counts here: a change to it only makes the run look further (ADR 0127)."""
     state: dict = {'config': config, 'repo': {}}
     for rel in REPO_INPUTS:
         tree = subprocess.run(['git', 'rev-parse', f'HEAD:{rel}'], cwd=repo, capture_output=True, text=True).stdout.strip()
@@ -359,9 +374,10 @@ def upload(config: dict, gma: Path, changes: str, log) -> str:
 
 
 def same_inputs(commit: str, repo: Path = REPO) -> bool | None:
-    """Whether `commit` has the packaging inputs (REPO_INPUTS) that HEAD has: True or False, or None when
-    git cannot tell (the commit is not in this clone)."""
-    done = subprocess.run(['git', 'diff', '--quiet', '--no-ext-diff', '--no-textconv', commit, 'HEAD', '--', *REPO_INPUTS],
+    """Whether `commit` has the packaging inputs that HEAD has (SHIPPED_INPUTS: REPO_INPUTS without the
+    part folders' own READMEs, ADR 0127): True or False, or None when git cannot tell (the commit is not
+    in this clone)."""
+    done = subprocess.run(['git', 'diff', '--quiet', '--no-ext-diff', '--no-textconv', commit, 'HEAD', '--', *SHIPPED_INPUTS],
                           cwd=repo, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return {0: True, 1: False}.get(done.returncode)
 
@@ -371,7 +387,8 @@ def holds_this_release(published: dict, config: dict, log, repo: Path = REPO) ->
     HEAD still has, with the configuration this run uses (review R19, M1). Then a build here would only
     replace that release with a development build of the same sources: the stored binaries, where the
     release's were built on GitHub (ADR 0106, 0108). The record names the release commit in full; one
-    written before R19 does not, and is never taken for this one."""
+    written before R19 does not, and is never taken for this one. The part folders' own READMEs are not
+    compared: no packager reads them (NOT_IN_PACKAGE, ADR 0127)."""
     release = published.get('commit_sha')
     if published.get('source') != 'github' or published.get('item') != str(config['item']) or not release:
         return False
@@ -403,7 +420,8 @@ def publish(config: dict, args, log, repo: Path = REPO) -> dict:
         if want != have:
             raise PublishError(f'this checkout is at {have[:8]}, not at {want[:8]} as asked: nothing published')
     head, head_sha = git('log', '-1', '--format=%h %s', cwd=repo), git('rev-parse', 'HEAD', cwd=repo)
-    dirty = git('status', '--porcelain', '--', *REPO_INPUTS, cwd=repo)
+    # An uncommitted edit of a part folder's README would not go into the item (ADR 0127).
+    dirty = git('status', '--porcelain', '--', *SHIPPED_INPUTS, cwd=repo)
     if dirty and not (args.dry_run or args.allow_dirty):
         raise PublishError('uncommitted changes in the packaging inputs would go into the item:\n' + dirty)
     print_state['fingerprint'] = current = fingerprint(config, repo)
@@ -413,7 +431,8 @@ def publish(config: dict, args, log, repo: Path = REPO) -> dict:
     # Review R19, M1: after a release (--from-ci) the record had no fingerprint, so the next commit, merge
     # or push of main built here and uploaded a development build over the release. While the release's
     # commit has the packaging inputs HEAD has (and none has an uncommitted change), it stays; the
-    # fingerprint is recorded, so the next runs stop at the check above until an input changes.
+    # fingerprint is recorded, so the next runs stop at the check above until an input changes. Neither
+    # comparison counts the part folders' own READMEs (ADR 0127): a commit of only those ended the hold.
     if not args.force and not dirty and holds_this_release(published, config, log, repo):
         log(f"the item holds the release built on GitHub from {published['commit_sha'][:8]}, whose packaging "
             'inputs HEAD has: nothing to upload')

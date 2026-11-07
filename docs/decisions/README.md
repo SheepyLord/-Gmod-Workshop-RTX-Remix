@@ -10,6 +10,11 @@
   (after R20-Q; accepted 2026-11-06): `pins.json` `repository_builds` declares each module's sources and
   records them with the stored copy; `check_repo.py` fails while they differ; `tools/ci/repo_builds.py
   refresh` builds, compares and imports only another image.
+- [0127: The part folders' own READMEs do not end the release hold](0127-part-folder-readmes-keep-the-release.md)
+  (after R20; accepted 2026-11-06; amends review R19's hold on 0108's development path):
+  `publish_workshop.py` leaves `packages/README.md` and `packages/<part>/README.md` out of the hold's
+  comparisons and the check for uncommitted inputs; every other file under `packages/` still counts, and
+  the fingerprint is unchanged.
 
 One file per decision, numbered in order: `NNNN-short-title.md`. An accepted record is never
 rewritten; a later record supersedes it and both say so. Add one whenever a choice would surprise
