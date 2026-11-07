@@ -32,3 +32,5 @@ Texture doubles expose ITexture-style GetName, exercising filename snapshots and
 the same interface as the game rather than returning a raw string from GetTexture.
 The shared model receives one restoration. Native visual QA, rather than the doubles, decides
 which texture-binding calls are required by the RTX renderer.
+During an enabled blue-to-violet change, the texture trace must contain only palette paints and
+no baseline restoration. Master off still restores the originally captured texture and tint once.

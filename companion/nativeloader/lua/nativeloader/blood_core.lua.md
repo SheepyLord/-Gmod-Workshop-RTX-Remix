@@ -37,5 +37,9 @@ off, in blue, and restored after blue; first-use lazy PBR loading needs settling
 Palette painting deliberately rebinds the texture even when its filename matches. Live RTX probes
 rejected a setter-skipping optimization: matching Lua names alone did not establish a drawable
 binding. The original R20 binding recipe is retained; palette samples are freshly stamped for QA.
+Review follow-up keeps enabled palette changes on R20's paint-only path. Original baselines stay
+captured until master off; only that transition restores them by name. This avoids intermediate
+natural-texture restores while switching between tinted schemes. Re-enabling after off still
+captures another add-on's edits made while disabled. The alias regression also checks this path.
 Off does not unmount packaged materials/PBR or clear existing decals. Impact off/amount zero only
 controls extra impacts; master off disables schemes and the mixer too.

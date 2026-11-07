@@ -111,8 +111,9 @@ end
 function BO.Apply()
     local previous = cached
     cached = {}
-    restore()
-    if cv.enable:GetBool() then apply_stock() end
+    -- Enabled palette changes follow R20's paint-only path. Retain the original baseline
+    -- until disabling instead of restoring/repainting every already-used decal material.
+    if cv.enable:GetBool() then apply_stock() else restore() end
     -- Only already-used materials need retinting. Do not load every shape/PBR map at startup.
     for family, code in pairs(CODES) do
         for i, s in ipairs(BO.Shapes) do

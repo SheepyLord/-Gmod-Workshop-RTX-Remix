@@ -68,7 +68,11 @@ function Material(name)
     end
     function mat:GetVector(key) return self[key] or Vector(.7,.8,.9) end
     function mat:SetTexture(key,value)
-        if calls.watch_material==self.name then calls.material_writes=(calls.material_writes or 0)+1 end
+        if calls.watch_material==self.name then
+            calls.material_writes=(calls.material_writes or 0)+1
+            calls.texture_trace=calls.texture_trace or {}
+            calls.texture_trace[#calls.texture_trace+1]=type(value)=='string' and value or value:GetName()
+        end
         self[key]=value
     end
     function mat:SetVector(key,value) self[key]=value end
@@ -302,6 +306,12 @@ else
         assert(original:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/bo_blood1_n')
         assert(model:GetTexture('$basetexture'):GetName()=='decals/bloodoverhaul/tex/flesh1_n')
         assert(model:GetVector('$color2').z>model:GetVector('$color2').x)
+        calls.watch_material=shared_model:GetName() calls.material_writes=0 calls.texture_trace={}
+        RunConsoleCommand('bloodoverhaul_scheme','violet')
+        for _,texture in ipairs(calls.texture_trace) do
+            assert(texture~='original:'..shared_model:GetName(),
+                'enabled palette changes must paint directly, without restoring the baseline in between')
+        end
         calls.watch_material=shared_model:GetName() calls.material_writes=0
         RunConsoleCommand('bloodoverhaul_enable','0')
         assert(calls.material_writes==1,'one restore for each underlying engine material, including wrapper aliases')
